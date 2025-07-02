@@ -27,6 +27,13 @@ interface TaskChatProps {
   onCreateTask?: (taskName: string, projectName: string) => void;
 }
 
+interface User {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+}
+
 const TaskChat = ({ isOpen, onClose, taskName, onCreateTask }: TaskChatProps) => {
   const [isFullPage, setIsFullPage] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -79,6 +86,19 @@ const TaskChat = ({ isOpen, onClose, taskName, onCreateTask }: TaskChatProps) =>
       isCode: true
     }
   ]);
+
+  const mockUsers: User[] = [
+    { id: "1", name: "James Adams", avatar: "https://randomuser.me/api/portraits/men/11.jpg", isOnline: true },
+    { id: "2", name: "Sam Acer", avatar: "https://randomuser.me/api/portraits/men/22.jpg", isOnline: true },
+    { id: "3", name: "Erin Reyes", avatar: "https://randomuser.me/api/portraits/women/33.jpg", isOnline: true },
+    { id: "4", name: "Holt Andrey", avatar: "https://randomuser.me/api/portraits/men/44.jpg", isOnline: true },
+    { id: "5", name: "Simon Steel", avatar: "https://randomuser.me/api/portraits/men/55.jpg", isOnline: true },
+    { id: "6", name: "Regina Nov", avatar: "https://randomuser.me/api/portraits/women/66.jpg", isOnline: true },
+    { id: "7", name: "Ethan Annie", avatar: "https://randomuser.me/api/portraits/men/77.jpg", isOnline: true },
+    { id: "8", name: "Maria Garcia", avatar: "https://randomuser.me/api/portraits/women/88.jpg", isOnline: false },
+    { id: "9", name: "David Chen", avatar: "https://randomuser.me/api/portraits/men/99.jpg", isOnline: true },
+  ];
+  
 
   const [newMessage, setNewMessage] = useState('');
 
@@ -161,8 +181,8 @@ const TaskChat = ({ isOpen, onClose, taskName, onCreateTask }: TaskChatProps) =>
   if (!isOpen) return null;
 
   const containerClasses = isFullPage 
-    ? "fixed inset-0 bg-white z-50 flex flex-col"
-    : "fixed inset-y-0 left-0 w-96 bg-white border-r border-gray-200 shadow-lg z-50 flex flex-col";
+  ? "fixed inset-0 bg-white z-50 flex flex-col"
+  : "fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col";
 
   return (
     <div className={containerClasses}>
@@ -187,34 +207,26 @@ const TaskChat = ({ isOpen, onClose, taskName, onCreateTask }: TaskChatProps) =>
       </div>
 
       {/* Active Agents */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center space-x-2 mb-2">
-          <span className="text-xs font-medium text-gray-500">ACTIVE AGENTS</span>
-          <Badge variant="secondary" className="text-xs">5 online</Badge>
-        </div>
-        <div className="flex space-x-2">
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-600">MainBot</span>
+      
+      <div className="w-full max-w-6xl mx-auto p-6">
+      <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-center">
+        {mockUsers.map((user) => (
+          <div key={user.id} className="flex flex-col items-center justify-evenly  min-w-[80px] cursor-pointer group">
+            <div className="relative mb-2">
+              <img
+                src={user.avatar || "/placeholder.svg"}
+                alt={user.name}
+                className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 group-hover:border-gray-300 transition-colors"
+              />
+              {user.isOnline && (
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+              )}
+            </div>
+            <span className="text-sm text-gray-700 text-center max-w-[80px] truncate">{user.name}</span>
           </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-600">CodeBot</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-600">ArchitectBot</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-xs text-gray-600">TestBot</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-            <span className="text-xs text-gray-600">ReviewBot</span>
-          </div>
-        </div>
+        ))}
       </div>
+    </div>
 
       {/* Messages */}
       <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isFullPage ? 'max-w-4xl mx-auto w-full' : ''}`}>
