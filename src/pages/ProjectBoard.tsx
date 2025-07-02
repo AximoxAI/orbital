@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Home, 
   Bell, 
@@ -20,6 +20,31 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import TaskChat from "@/components/TaskChat";
+
+// Map initials to randomuser.me avatar URLs
+const avatarMap: { [key: string]: string } = {
+  JD: "https://randomuser.me/api/portraits/men/11.jpg",
+  SM: "https://randomuser.me/api/portraits/women/12.jpg",
+  AL: "https://randomuser.me/api/portraits/men/13.jpg",
+  BK: "https://randomuser.me/api/portraits/women/14.jpg",
+  CL: "https://randomuser.me/api/portraits/men/15.jpg",
+  DM: "https://randomuser.me/api/portraits/women/16.jpg",
+  EF: "https://randomuser.me/api/portraits/men/17.jpg",
+  GH: "https://randomuser.me/api/portraits/women/18.jpg",
+  IJ: "https://randomuser.me/api/portraits/men/19.jpg",
+  KL: "https://randomuser.me/api/portraits/women/20.jpg",
+  MN: "https://randomuser.me/api/portraits/men/21.jpg",
+  OP: "https://randomuser.me/api/portraits/women/22.jpg",
+  QR: "https://randomuser.me/api/portraits/men/23.jpg",
+  ST: "https://randomuser.me/api/portraits/women/24.jpg",
+  UV: "https://randomuser.me/api/portraits/men/25.jpg",
+  WX: "https://randomuser.me/api/portraits/women/26.jpg",
+  YZ: "https://randomuser.me/api/portraits/men/27.jpg",
+  AB: "https://randomuser.me/api/portraits/women/28.jpg",
+  CD: "https://randomuser.me/api/portraits/men/29.jpg",
+  MB: "https://randomuser.me/api/portraits/men/30.jpg",
+  AI: "https://randomuser.me/api/portraits/women/31.jpg",
+};
 
 const ProjectBoard = () => {
   const [selectedDate] = useState("Fri, 12 May 2026");
@@ -120,8 +145,10 @@ const ProjectBoard = () => {
         onCreateTask={handleCreateTask}
       />
 
+{/* maybe will use later       */}
+{/* ${chatOpen ? 'ml-96' : ''} */}
       {/* Sidebar */}
-      <div className={`${chatOpen ? 'ml-96' : ''} w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
+      <div className={` w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
@@ -206,6 +233,7 @@ const ProjectBoard = () => {
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3">
             <Avatar>
+              <AvatarImage src="https://randomuser.me/api/portraits/men/40.jpg" alt="Louis Nguyen" />
               <AvatarFallback className="bg-orange-500 text-white">LN</AvatarFallback>
             </Avatar>
             <div className="flex-1">
@@ -219,8 +247,8 @@ const ProjectBoard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? 'mr-96' : ''}`}>
+      {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -364,6 +392,7 @@ const ProjectBoard = () => {
                         <div className="flex -space-x-1">
                           {task.avatars.map((avatar, avatarIndex) => (
                             <Avatar key={avatarIndex} className="w-6 h-6 border-2 border-white">
+                              <AvatarImage src={avatarMap[avatar]} alt={avatar} />
                               <AvatarFallback className="text-xs bg-blue-500 text-white">
                                 {avatar}
                               </AvatarFallback>
