@@ -47,7 +47,6 @@ const avatarMap: { [key: string]: string } = {
 };
 
 const ProjectBoard = () => {
-  const [selectedDate] = useState("Fri, 12 May 2026");
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState("");
   const [projects, setProjects] = useState([
@@ -92,21 +91,11 @@ const ProjectBoard = () => {
     }
   ]);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "COMPLETED": return "bg-green-500";
-      case "In-review": return "bg-blue-500";
-      case "TO-DO": return "bg-gray-400";
-      case "On-going": return "bg-purple-500";
-      default: return "bg-gray-400";
-    }
-  };
-
   const getProgressColor = (progress: number) => {
-    if (progress >= 80) return "text-green-600";
-    if (progress >= 50) return "text-blue-600";
-    if (progress >= 25) return "text-yellow-600";
-    return "text-gray-600";
+    // if (progress >= 80) return "text-green-600";
+    // if (progress >= 50) return "text-blue-600";
+    // if (progress >= 25) return "text-yellow-600";
+    return "text-green-400";
   };
 
   const handleTaskClick = (taskName: string) => {
@@ -153,9 +142,9 @@ const ProjectBoard = () => {
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">P</span>
+              <span className="text-white text-sm font-bold">O</span>
             </div>
-            <span className="font-semibold text-gray-800">Project board</span>
+            <span className="font-semibold text-gray-800">Orbital</span>
           </div>
         </div>
 
@@ -261,11 +250,7 @@ const ProjectBoard = () => {
                 />
               </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <Button variant="outline">Edit view</Button>
-              <Button variant="outline">Edit projects</Button>
-              <Button>Add task</Button>
-            </div>
+           
           </div>
         </header>
 
@@ -294,7 +279,12 @@ const ProjectBoard = () => {
         {/* Quick Actions */}
         <div className="px-6 py-4 bg-white border-b border-gray-200">
           <div className="grid grid-cols-4 gap-4">
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              setChatOpen(true);
+              setSelectedTask("Create new task");
+            }}
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
                   <Plus className="w-4 h-4 text-white" />
@@ -305,7 +295,12 @@ const ProjectBoard = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              setChatOpen(true);
+              setSelectedTask("Create new project");
+            }}
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4 text-white" />
@@ -316,7 +311,12 @@ const ProjectBoard = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              setChatOpen(true);
+              setSelectedTask("Create new folder");
+            }}
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4 text-white" />
@@ -327,7 +327,12 @@ const ProjectBoard = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer">
+            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+            onClick={() => {
+              setChatOpen(true);
+              setSelectedTask("Create new doc");
+            }}
+            >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
                   <FileText className="w-4 h-4 text-white" />
@@ -358,11 +363,8 @@ const ProjectBoard = () => {
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <div className="flex items-center space-x-2">
-                      <ChevronLeft className="w-4 h-4" />
-                      <span>{selectedDate}</span>
-                      <ChevronRight className="w-4 h-4" />
+
                     </div>
-                    <span>Today</span>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
