@@ -35,6 +35,13 @@ interface User {
   isOnline: boolean
 }
 
+interface User {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+}
+
 const TaskChat = ({ isOpen, onClose, taskName, onCreateTask }: TaskChatProps) => {
   const [isFullPage, setIsFullPage] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
