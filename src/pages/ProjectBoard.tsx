@@ -1,25 +1,24 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Home, 
-  Bell, 
-  Inbox, 
-  CheckSquare, 
-  Calendar, 
-  FileText, 
-  Users, 
-  Settings,
+import {
+  Home,
+  Bell,
+  Inbox,
+  CheckSquare,
+  Calendar,
+  FileText,
+  Users,
   Plus,
   Search,
-  ChevronLeft,
-  ChevronRight,
   Filter,
   MoreHorizontal
 } from "lucide-react";
 import { useState } from "react";
 import TaskChat from "@/components/TaskChat";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { useClerk } from "@clerk/clerk-react";
 
 // Map initials to randomuser.me avatar URLs
 const avatarMap: { [key: string]: string } = {
@@ -91,10 +90,9 @@ const ProjectBoard = () => {
     }
   ]);
 
+  const { signOut } = useClerk();
+
   const getProgressColor = (progress: number) => {
-    // if (progress >= 80) return "text-green-600";
-    // if (progress >= 50) return "text-blue-600";
-    // if (progress >= 25) return "text-yellow-600";
     return "text-green-400";
   };
 
@@ -104,14 +102,12 @@ const ProjectBoard = () => {
   };
 
   const handleCreateTask = (taskName: string, projectName: string) => {
-    // Find the project to add the task to (default to first project if not found)
     const projectIndex = projects.findIndex(p => p.name.includes(projectName)) || 0;
-    
     const newTask = {
       name: taskName,
       status: "To-do",
       progress: 0,
-      avatars: ["MB", "AI"] // MainBot and AI avatars
+      avatars: ["MB", "AI"]
     };
 
     setProjects(prevProjects => {
@@ -134,10 +130,8 @@ const ProjectBoard = () => {
         onCreateTask={handleCreateTask}
       />
 
-{/* maybe will use later       */}
-{/* ${chatOpen ? 'ml-96' : ''} */}
       {/* Sidebar */}
-      <div className={` w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
+      <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
@@ -228,16 +222,29 @@ const ProjectBoard = () => {
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900">Louis Nguyen</p>
             </div>
-            <Button variant="ghost" size="sm">
-              <MoreHorizontal className="w-4 h-4" />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="end" className="w-32">
+                <DropdownMenuItem className="cursor-pointer"
+                  onClick={() => {
+                    signOut();
+                  }}
+                >
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? 'mr-96' : ''}`}>
-      {/* Header */}
+        {/* Header */}
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -250,7 +257,6 @@ const ProjectBoard = () => {
                 />
               </div>
             </div>
-           
           </div>
         </header>
 
@@ -280,10 +286,10 @@ const ProjectBoard = () => {
         <div className="px-6 py-4 bg-white border-b border-gray-200">
           <div className="grid grid-cols-4 gap-4">
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => {
-              setChatOpen(true);
-              setSelectedTask("Create new task");
-            }}
+              onClick={() => {
+                setChatOpen(true);
+                setSelectedTask("Create new task");
+              }}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -296,10 +302,10 @@ const ProjectBoard = () => {
               </div>
             </Card>
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => {
-              setChatOpen(true);
-              setSelectedTask("Create new project");
-            }}
+              onClick={() => {
+                setChatOpen(true);
+                setSelectedTask("Create new project");
+              }}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -312,10 +318,10 @@ const ProjectBoard = () => {
               </div>
             </Card>
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => {
-              setChatOpen(true);
-              setSelectedTask("Create new folder");
-            }}
+              onClick={() => {
+                setChatOpen(true);
+                setSelectedTask("Create new folder");
+              }}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
@@ -328,10 +334,10 @@ const ProjectBoard = () => {
               </div>
             </Card>
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => {
-              setChatOpen(true);
-              setSelectedTask("Create new doc");
-            }}
+              onClick={() => {
+                setChatOpen(true);
+                setSelectedTask("Create new doc");
+              }}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
@@ -362,9 +368,7 @@ const ProjectBoard = () => {
                     </Button>
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center space-x-2">
-
-                    </div>
+                    <div className="flex items-center space-x-2"></div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -378,8 +382,8 @@ const ProjectBoard = () => {
                     </Button>
                   </div>
                   {project.tasks.map((task, index) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
                       onClick={() => handleTaskClick(task.name)}
                     >
