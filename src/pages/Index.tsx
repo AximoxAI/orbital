@@ -52,9 +52,9 @@ const Index = () => {
               Explore AI Agents
             </Button>
           </Link>
-          <Link to="/project-board">
+          <Link to="/sign-in">
             <Button size="lg" variant="outline" className="w-full sm:w-auto">
-              View Project Board
+              Log In
             </Button>
           </Link>
         </div>
