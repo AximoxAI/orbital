@@ -1,4 +1,4 @@
-# Echo Inspired UI Kit
+# Smart AI Agent
 
 A modern, AI-powered UI kit and dashboard built with React, Vite, TypeScript, and [shadcn/ui](https://ui.shadcn.com/). This project demonstrates a collaborative workspace for software engineering teams, featuring AI agents, project boards, chat, and productivity tools.
 
