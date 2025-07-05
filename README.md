@@ -1,73 +1,90 @@
-# Welcome to your Lovable project
+# Smart AI Agent
 
-## Project info
+A modern, AI-powered UI kit and dashboard built with React, Vite, TypeScript, and [shadcn/ui](https://ui.shadcn.com/). This project demonstrates a collaborative workspace for software engineering teams, featuring AI agents, project boards, chat, and productivity tools.
 
-**URL**: https://lovable.dev/projects/41d23a7c-30ba-466d-97b2-6fd782386f70
+## Features
 
-## How can I edit this code?
+- **AI Agents**: Smart assistants for code generation, architecture, DevOps, and more.
+- **Project Board**: Kanban-style board for managing tasks, projects, and teams.
+- **Task Chat**: Real-time chat with AI and team members, including code suggestions and task creation.
+- **Responsive UI**: Fully responsive design using Tailwind CSS.
+- **Authentication**: User authentication via Clerk.
+- **Reusable Components**: Built with [shadcn/ui](src/components/ui) and Radix UI primitives.
+- **TypeScript**: Full type safety across the codebase.
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- [React](https://react.dev/)
+- [Vite](https://vitejs.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/)
+- [Radix UI](https://www.radix-ui.com/)
+- [Clerk](https://clerk.com/) (authentication)
+- [Lucide Icons](https://lucide.dev/)
+- [@tanstack/react-query](https://tanstack.com/query/latest)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/41d23a7c-30ba-466d-97b2-6fd782386f70) and start prompting.
+## Getting Started
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
 
-**Use your preferred IDE**
+- [Node.js](https://nodejs.org/) (v18+ recommended)
+- [Bun](https://bun.sh/) or [npm](https://www.npmjs.com/) (for dependency management)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+1. **Clone the repository:**
+   ```sh
+   git clone https://github.com/aximoxai/orbital
+   cd orbital
+   ```
 
-Follow these steps:
+2. **Install dependencies:**
+   ```sh
+   bun install
+   # or
+   npm install
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3. **Set up environment variables:**
+   - Copy `.env.example` to `.env` and fill in your Clerk publishable key.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4. **Start the development server:**
+   ```sh
+   bun run dev
+   # or
+   npm run dev
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+5. **Open [http://localhost:5173](http://localhost:5173) in your browser.**
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+## Project Structure
 
-**Edit a file directly in GitHub**
+- `src/`
+  - `components/` – UI components (including `TaskChat`, `LeftPanel`, `MonacoCanvas`, and [shadcn/ui](src/components/ui))
+  - `pages/` – Main pages (`Index`, `ProjectBoard`, `SoftwareEngineering`, `SignIn`, `SignUp`, `NotFound`)
+  - `hooks/` – Custom React hooks
+  - `lib/` – Utilities
+  - `App.tsx` – Main app entry
+  - `index.css` – Tailwind and design system
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Scripts
 
-**Use GitHub Codespaces**
+- `dev` – Start the development server
+- `build` – Build for production
+- `preview` – Preview the production build
+- `lint` – Run ESLint
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Customization
 
-## What technologies are used for this project?
+- **UI Theme**: Modify `src/index.css` for colors, fonts, and design tokens.
+- **AI Agents**: Edit `src/pages/SoftwareEngineering.tsx` to add or customize AI agents.
+- **Project Board**: Update `src/pages/ProjectBoard.tsx` for task and project logic.
 
-This project is built with:
+## License
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+MIT
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/41d23a7c-30ba-466d-97b2-6fd782386f70) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Inspired by modern SaaS dashboards and collaborative engineering tools.
