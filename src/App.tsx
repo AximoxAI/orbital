@@ -1,4 +1,3 @@
-
 import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -28,8 +27,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
 const App = () => (
   <ClerkProvider
     publishableKey={clerkPubKey}
-    signInUrl="/sign-in"
-    signUpUrl="/sign-up"
+    // signInUrl="/sign-in"
+    // signUpUrl="/sign-up"
   >
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>

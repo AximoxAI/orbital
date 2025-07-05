@@ -17,10 +17,10 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import TaskChat from "@/components/TaskChat";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+// Removed DropdownMenu imports
 import { useClerk } from "@clerk/clerk-react";
+import { useUser } from "@clerk/clerk-react";
 
-// Map initials to randomuser.me avatar URLs
 const avatarMap: { [key: string]: string } = {
   JD: "https://randomuser.me/api/portraits/men/11.jpg",
   SM: "https://randomuser.me/api/portraits/women/12.jpg",
@@ -48,6 +48,7 @@ const avatarMap: { [key: string]: string } = {
 const ProjectBoard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState("");
+  const { user } = useUser();
   const [projects, setProjects] = useState([
     {
       id: 1,
@@ -220,24 +221,8 @@ const ProjectBoard = () => {
               <AvatarFallback className="bg-orange-500 text-white">LN</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Louis Nguyen</p>
+              <p className="text-sm font-medium text-gray-900">{user?.username || "Unknown User"}</p>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent side="top" align="end" className="w-32">
-                <DropdownMenuItem className="cursor-pointer"
-                  onClick={() => {
-                    signOut();
-                  }}
-                >
-                  Log out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </div>
@@ -257,6 +242,16 @@ const ProjectBoard = () => {
                 />
               </div>
             </div>
+            {/* Log out button on top right */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                signOut();
+              }}
+            >
+              Log out
+            </Button>
           </div>
         </header>
 
