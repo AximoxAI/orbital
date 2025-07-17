@@ -1,0 +1,15 @@
+.gitignore
+.npmignore
+.openapi-generator-ignore
+api.ts
+base.ts
+common.ts
+configuration.ts
+docs/BotsApi.md
+docs/ChatApi.md
+docs/HealthApi.md
+docs/ProjectsApi.md
+docs/TasksApi.md
+docs/UsersApi.md
+git_push.sh
+index.ts
