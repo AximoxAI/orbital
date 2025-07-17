@@ -56,7 +56,12 @@ A modern, AI-powered UI kit and dashboard built with React, Vite, TypeScript, an
    npm run dev
    ```
 
-5. **Open [http://localhost:5173](http://localhost:5173) in your browser.**
+5. **Command To Generate Client**
+```
+openapi-generator-cli generate -i swagger-spec.json -g typescript-axios -o src/api-client
+```
+
+6. **Open [http://localhost:5173](http://localhost:5173) in your browser.**
 
 ## Project Structure
 
