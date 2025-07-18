@@ -15,41 +15,197 @@ import {
   Filter,
   MoreHorizontal
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TaskChat from "@/components/TaskChat";
-// Removed DropdownMenu imports
-import { useClerk } from "@clerk/clerk-react";
-import { useUser } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/clerk-react";
+import { Configuration, ProjectsApi } from "@/api-client";
+import CreateProject from "@/components/CreateProject";
+import GenerateRequirements from "@/components/GenerateRequirements";
+import { CreateTask } from "@/components/CreateTask";
+
+// --- Define the Project and Task types ---
+interface Task {
+  id: string;
+  project_id: string;
+  title: string;
+  description: string;
+  status: 'design' | 'development' | 'testing' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  progress: number;
+  estimated_hours: number | null;
+  due_date: string | null;
+  ai_generated: boolean;
+  ai_confidence: number | null;
+  created_at: string;
+  updated_at: string;
+  avatars?: string[];
+}
+
+interface Project {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  tasks: Task[];
+  created_at: string;
+  updated_at: string;
+}
+
+const configuration = new Configuration({
+  basePath: 'http://localhost:3000',
+});
+
+const projectsApi = new ProjectsApi(configuration);
 
 const avatarMap: { [key: string]: string } = {
-  JD: "https://randomuser.me/api/portraits/men/11.jpg",
-  SM: "https://randomuser.me/api/portraits/women/12.jpg",
-  AL: "https://randomuser.me/api/portraits/men/13.jpg",
-  BK: "https://randomuser.me/api/portraits/women/14.jpg",
-  CL: "https://randomuser.me/api/portraits/men/15.jpg",
-  DM: "https://randomuser.me/api/portraits/women/16.jpg",
-  EF: "https://randomuser.me/api/portraits/men/17.jpg",
-  GH: "https://randomuser.me/api/portraits/women/18.jpg",
-  IJ: "https://randomuser.me/api/portraits/men/19.jpg",
-  KL: "https://randomuser.me/api/portraits/women/20.jpg",
-  MN: "https://randomuser.me/api/portraits/men/21.jpg",
-  OP: "https://randomuser.me/api/portraits/women/22.jpg",
-  QR: "https://randomuser.me/api/portraits/men/23.jpg",
-  ST: "https://randomuser.me/api/portraits/women/24.jpg",
-  UV: "https://randomuser.me/api/portraits/men/25.jpg",
-  WX: "https://randomuser.me/api/portraits/women/26.jpg",
-  YZ: "https://randomuser.me/api/portraits/men/27.jpg",
-  AB: "https://randomuser.me/api/portraits/women/28.jpg",
-  CD: "https://randomuser.me/api/portraits/men/29.jpg",
-  MB: "https://randomuser.me/api/portraits/men/30.jpg",
-  AI: "https://randomuser.me/api/portraits/women/31.jpg",
+    'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
+    'AW': 'https://avatars.githubusercontent.com/u/2?v=4',
+    'SM': 'https://avatars.githubusercontent.com/u/3?v=4',
+    'JD': "https://randomuser.me/api/portraits/men/11.jpg",
+    'AL': "https://randomuser.me/api/portraits/men/13.jpg",
+    'BK': "https://randomuser.me/api/portraits/women/14.jpg",
+    'CL': "https://randomuser.me/api/portraits/men/15.jpg",
+    'DM': "https://randomuser.me/api/portraits/women/16.jpg",
+    'EF': "https://randomuser.me/api/portraits/men/17.jpg",
+    'GH': "https://randomuser.me/api/portraits/women/18.jpg",
+    'IJ': "https://randomuser.me/api/portraits/men/19.jpg",
+    'KL': "https://randomuser.me/api/portraits/women/20.jpg",
+    'MN': "https://randomuser.me/api/portraits/men/21.jpg",
+    'OP': "https://randomuser.me/api/portraits/women/22.jpg",
+    'QR': "https://randomuser.me/api/portraits/men/23.jpg",
+    'ST': "https://randomuser.me/api/portraits/women/24.jpg",
+    'UV': "https://randomuser.me/api/portraits/men/25.jpg",
+    'WX': "https://randomuser.me/api/portraits/women/26.jpg",
+    'YZ': "https://randomuser.me/api/portraits/men/27.jpg",
+    'AB': "https://randomuser.me/api/portraits/women/28.jpg",
+    'CD': "https://randomuser.me/api/portraits/men/29.jpg",
+    'MB': "https://randomuser.me/api/portraits/men/30.jpg",
+    'AI': "https://randomuser.me/api/portraits/women/31.jpg",
 };
 
+interface ProjectsListProps {
+  projects: Project[];
+  loading: boolean;
+  error: Error | null;
+  onTaskClick: (taskTitle: string) => void;
+  avatarMap: { [key: string]: string };
+  onGenerateRequirements: (projectId: string) => void;
+}
+
+const getProgressColor = (progress: number): string => {
+  return 'text-green-300';
+};
+
+function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGenerateRequirements }: ProjectsListProps) {
+  if (loading) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center">
+        <p className="text-lg text-gray-600">Loading projects...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex-1 p-6 flex items-center justify-center text-red-500">
+        <p className="text-lg">Error fetching projects: <strong>{error.message}</strong>. Please try again later.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 p-6 overflow-auto">
+      {projects.length === 0 ? (
+        <div className="text-center text-gray-500 mt-10">
+          <p>No projects found. Start by creating a new project!</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {projects.map((project) => (
+            <Card key={project.id} className="h-fit">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <CardTitle className="text-sm font-medium">{project.name}</CardTitle>
+                  </div>
+                  <Button
+                    variant="default"
+                    className="text-[13px] w-[100px]"
+                    size="sm"
+                    onClick={() => onGenerateRequirements(project.id)}
+                  >
+                    Generate
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center space-x-2">
+                    <span>{project.type}</span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center space-x-2 mb-4 overflow-x-auto pb-2">
+                  <Badge variant="secondary" className="text-xs">DESIGN</Badge>
+                  <Badge variant="secondary" className="text-xs">IN REVIEW</Badge>
+                  <Badge variant="secondary" className="text-xs">TO-DO</Badge>
+                  <Badge variant="secondary" className="text-xs">COMPLETED</Badge>
+                  <Button variant="ghost" size="sm" className="flex-shrink-0">
+                    <Filter className="w-4 h-4" />
+                  </Button>
+                </div>
+                {project.tasks && project.tasks.length > 0 ? (
+                  project.tasks.map((task) => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
+                      onClick={() => onTaskClick(task.title)}
+                    >
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
+                        <span className="text-sm text-gray-700">{task.title}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-xs font-medium ${getProgressColor(task.progress)}`}>
+                          {task.progress}%
+                        </span>
+                        <div className="flex -space-x-1">
+                          {task.avatars && task.avatars.map((avatar, avatarIndex) => (
+                            <Avatar key={avatarIndex} className="w-6 h-6 border-2 border-white">
+                              <AvatarImage src={avatarMap[avatar]} alt={avatar} />
+                              <AvatarFallback className="text-xs bg-blue-500 text-white">
+                                {avatar}
+                              </AvatarFallback>
+                            </Avatar>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">No tasks for this project yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Main ProjectBoard Component ---
 const ProjectBoard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState("");
-  const { user } = useUser();
-  const [projects, setProjects] = useState([
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
+  const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [requirementsProjectId, setRequirementsProjectId] = useState("");
+  const [mockProjects, setMockProjects] = useState([
     {
       id: 1,
       name: "Thoughts™ Landing Page",
@@ -91,39 +247,66 @@ const ProjectBoard = () => {
     }
   ]);
 
+  const { user } = useUser();
   const { signOut } = useClerk();
 
-  const getProgressColor = (progress: number) => {
-    return "text-green-400";
-  };
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response:any = await projectsApi.projectsControllerFindAll();
+        const projectsData = response.data || response;
 
-  const handleTaskClick = (taskName: string) => {
-    setSelectedTask(taskName);
-    setChatOpen(true);
-  };
-
-  const handleCreateTask = (taskName: string, projectName: string) => {
-    const projectIndex = projects.findIndex(p => p.name.includes(projectName)) || 0;
-    const newTask = {
-      name: taskName,
-      status: "To-do",
-      progress: 0,
-      avatars: ["MB", "AI"]
+        const projectsWithAvatars = projectsData.map((project: Project) => ({
+          ...project,
+          tasks: project.tasks.map(task => ({
+            ...task,
+            avatars: task.avatars && task.avatars.length > 0 ? task.avatars : ['JS', 'AW',],
+          }))
+        }));
+        setProjects(projectsWithAvatars);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setLoading(false);
+      }
     };
 
+    fetchProjects();
+  }, []);
+
+  const handleCreateTask = (taskName: string, projectName: string) => {
     setProjects(prevProjects => {
-      const updatedProjects = [...prevProjects];
-      updatedProjects[projectIndex] = {
-        ...updatedProjects[projectIndex],
-        tasks: [...updatedProjects[projectIndex].tasks, newTask]
-      };
+      const updatedProjects = prevProjects.map(project => {
+        if (project.name.includes(projectName)) {
+          const newTask: Task = {
+            id: `task-${Date.now()}-${Math.random()}`,
+            project_id: project.id,
+            title: taskName,
+            description: "",
+            status: "design",
+            priority: "medium",
+            progress: 0,
+            estimated_hours: null,
+            due_date: null,
+            ai_generated: false,
+            ai_confidence: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            avatars: ["MB", "AI"]
+          };
+          return {
+            ...project,
+            tasks: [...project.tasks, newTask]
+          };
+        }
+        return project;
+      });
       return updatedProjects;
     });
   };
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Task Chat Overlay */}
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
@@ -131,9 +314,7 @@ const ProjectBoard = () => {
         onCreateTask={handleCreateTask}
       />
 
-      {/* Sidebar */}
       <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
-        {/* Logo */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
@@ -142,8 +323,6 @@ const ProjectBoard = () => {
             <span className="font-semibold text-gray-800">Orbital</span>
           </div>
         </div>
-
-        {/* Navigation */}
         <nav className="flex-1 p-4">
           <div className="space-y-2">
             <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
@@ -163,7 +342,6 @@ const ProjectBoard = () => {
               <span>Your tasks</span>
             </a>
           </div>
-
           <div className="mt-8">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">WORKSPACE</h3>
             <div className="space-y-2">
@@ -189,7 +367,6 @@ const ProjectBoard = () => {
               </a>
             </div>
           </div>
-
           <div className="mt-8">
             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">SPACES</h3>
             <div className="space-y-2">
@@ -212,8 +389,6 @@ const ProjectBoard = () => {
             </div>
           </div>
         </nav>
-
-        {/* User Profile */}
         <div className="p-4 border-t border-gray-200">
           <div className="flex items-center space-x-3">
             <Avatar>
@@ -226,10 +401,7 @@ const ProjectBoard = () => {
           </div>
         </div>
       </div>
-
-      {/* Main Content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? 'mr-96' : ''}`}>
-        {/* Header */}
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? '' : ''}`}>
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -242,7 +414,6 @@ const ProjectBoard = () => {
                 />
               </div>
             </div>
-            {/* Log out button on top right */}
             <Button
               variant="outline"
               size="sm"
@@ -254,8 +425,6 @@ const ProjectBoard = () => {
             </Button>
           </div>
         </header>
-
-        {/* Productivity Banner */}
         <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -276,31 +445,10 @@ const ProjectBoard = () => {
             </div>
           </div>
         </div>
-
-        {/* Quick Actions */}
         <div className="px-6 py-4 bg-white border-b border-gray-200">
           <div className="grid grid-cols-4 gap-4">
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                setChatOpen(true);
-                setSelectedTask("Create new task");
-              }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Create new task</p>
-                  <p className="text-xs text-gray-500">New task in your project</p>
-                </div>
-              </div>
-            </Card>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                setChatOpen(true);
-                setSelectedTask("Create new project");
-              }}
+              onClick={() => setShowCreateProjectModal(true)}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -309,6 +457,21 @@ const ProjectBoard = () => {
                 <div>
                   <p className="font-medium text-gray-900">Create new project</p>
                   <p className="text-xs text-gray-500">New project in your space</p>
+                </div>
+              </div>
+            </Card>
+            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => {
+                 setShowCreateTaskModal(true)}
+              }
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium text-gray-900">Create new task</p>
+                  <p className="text-xs text-gray-500">New task in your project</p>
                 </div>
               </div>
             </Card>
@@ -346,68 +509,59 @@ const ProjectBoard = () => {
             </Card>
           </div>
         </div>
-
-        {/* Project Boards */}
-        <div className="flex-1 p-6 overflow-auto">
-          <div className="grid grid-cols-3 gap-6">
-            {projects.map((project) => (
-              <Card key={project.id} className="h-fit">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <CardTitle className="text-sm font-medium">{project.name}</CardTitle>
-                    </div>
-                    <Button variant="ghost" size="sm">
-                      <MoreHorizontal className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center space-x-2"></div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center space-x-2 mb-4">
-                    <Badge variant="secondary" className="text-xs">DESIGN</Badge>
-                    <Badge variant="secondary" className="text-xs">IN REVIEW</Badge>
-                    <Badge variant="secondary" className="text-xs">TO-DO</Badge>
-                    <Badge variant="secondary" className="text-xs">COMPLETED</Badge>
-                    <Button variant="ghost" size="sm">
-                      <Filter className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  {project.tasks.map((task, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
-                      onClick={() => handleTaskClick(task.name)}
-                    >
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
-                        <span className="text-sm text-gray-700">{task.name}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-xs font-medium ${getProgressColor(task.progress)}`}>
-                          {task.progress}%
-                        </span>
-                        <div className="flex -space-x-1">
-                          {task.avatars.map((avatar, avatarIndex) => (
-                            <Avatar key={avatarIndex} className="w-6 h-6 border-2 border-white">
-                              <AvatarImage src={avatarMap[avatar]} alt={avatar} />
-                              <AvatarFallback className="text-xs bg-blue-500 text-white">
-                                {avatar}
-                              </AvatarFallback>
-                            </Avatar>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            ))}
+        <ProjectsList
+          projects={projects}
+          loading={loading}
+          error={error}
+          onTaskClick={(taskTitle) => {
+            setSelectedTask(taskTitle);
+            setChatOpen(true);
+          }}
+          avatarMap={avatarMap}
+          onGenerateRequirements={(projectId: string) => {
+            setRequirementsProjectId(projectId);
+            setShowRequirementsModal(true);
+          }}
+        />
+        {showCreateProjectModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-lg w-full">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                onClick={() => setShowCreateProjectModal(false)}
+              >
+                ×
+              </button>
+              <CreateProject />
+            </div>
           </div>
-        </div>
+        )}
+        {showCreateTaskModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-lg w-full">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                onClick={() => setShowCreateTaskModal(false)}
+              >
+                ×
+              </button>
+              <CreateTask />
+            </div>
+          </div>
+        )}
+        {showRequirementsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-xl w-full">
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                onClick={() => setShowRequirementsModal(false)}
+              >
+                ×
+              </button>
+              <GenerateRequirements defaultProjectId={requirementsProjectId} />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
