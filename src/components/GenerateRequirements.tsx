@@ -9,23 +9,13 @@ import { Loader2, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { Configuration, ProjectsApi } from "@/api-client";
 
 const configuration = new Configuration({
-  basePath: 'http://localhost:3000',
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
 });
 
 const projectsApi = new ProjectsApi(configuration);
 
-interface ConversationalProjectRequest {
-  requirements: string;
-  project_id: string;
-  auto_create_tasks: boolean;
-}
-
-interface GenerateRequirementsProps {
-  defaultProjectId?: string;
-}
-
-const GenerateRequirements: React.FC<GenerateRequirementsProps> = ({ defaultProjectId }) => {
-  const [formData, setFormData] = useState<ConversationalProjectRequest>({
+const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ defaultProjectId }) => {
+  const [formData, setFormData] = useState({
     requirements: "",
     project_id: defaultProjectId || "",
     auto_create_tasks: true
@@ -45,7 +35,7 @@ const GenerateRequirements: React.FC<GenerateRequirementsProps> = ({ defaultProj
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleInputChange = (field: keyof ConversationalProjectRequest, value: string | boolean) => {
+  const handleInputChange = (field: "requirements" | "project_id" | "auto_create_tasks", value: string | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -82,7 +72,7 @@ const GenerateRequirements: React.FC<GenerateRequirementsProps> = ({ defaultProj
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Send className="w-5 h-5" />
-            <span>Create Conversational Project</span>
+            <span>Generate Tasks</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -99,15 +89,6 @@ const GenerateRequirements: React.FC<GenerateRequirementsProps> = ({ defaultProj
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="project_id">Project ID *</Label>
-              <Input
-                id="project_id"
-                type="text"
-                placeholder="e.g., proj_b44ed7a2-0a62-4465-95d1-e7d889f0ba22"
-                value={formData.project_id}
-                onChange={(e) => handleInputChange('project_id', e.target.value)}
-                required
-              />
             </div>
             <div className="flex items-center space-x-2">
               

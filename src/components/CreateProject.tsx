@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/card';
 
 const config = new Configuration({
-  basePath: "http://localhost:3000",
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
 });
 
 const api = new ProjectsApi(config);

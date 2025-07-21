@@ -12,7 +12,7 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { TasksApi, Configuration } from "@/api-client";
 
-const api = new TasksApi(new Configuration({ basePath: "http://localhost:3000" }));
+const api = new TasksApi(new Configuration({ basePath: import.meta.env.VITE_BACKEND_API_KEY }));
 
 export function CreateTask() {
   const { toast } = useToast();

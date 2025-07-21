@@ -23,34 +23,6 @@ import CreateProject from "@/components/CreateProject";
 import GenerateRequirements from "@/components/GenerateRequirements";
 import { CreateTask } from "@/components/CreateTask";
 
-// --- Define the Project and Task types ---
-interface Task {
-  id: string;
-  project_id: string;
-  title: string;
-  description: string;
-  status: 'design' | 'development' | 'testing' | 'completed';
-  priority: 'low' | 'medium' | 'high';
-  progress: number;
-  estimated_hours: number | null;
-  due_date: string | null;
-  ai_generated: boolean;
-  ai_confidence: number | null;
-  created_at: string;
-  updated_at: string;
-  avatars?: string[];
-}
-
-interface Project {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  tasks: Task[];
-  created_at: string;
-  updated_at: string;
-}
-
 const configuration = new Configuration({
   basePath: 'http://localhost:3000',
 });
@@ -83,20 +55,11 @@ const avatarMap: { [key: string]: string } = {
     'AI': "https://randomuser.me/api/portraits/women/31.jpg",
 };
 
-interface ProjectsListProps {
-  projects: Project[];
-  loading: boolean;
-  error: Error | null;
-  onTaskClick: (taskTitle: string) => void;
-  avatarMap: { [key: string]: string };
-  onGenerateRequirements: (projectId: string) => void;
-}
-
 const getProgressColor = (progress: number): string => {
   return 'text-green-300';
 };
 
-function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGenerateRequirements }: ProjectsListProps) {
+function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGenerateRequirements }: any) {
   if (loading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -121,7 +84,7 @@ function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGene
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {projects.map((project: any) => (
             <Card key={project.id} className="h-fit">
               <CardHeader className="pb-4">
                 <div className="flex items-center justify-between">
@@ -155,11 +118,11 @@ function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGene
                   </Button>
                 </div>
                 {project.tasks && project.tasks.length > 0 ? (
-                  project.tasks.map((task) => (
+                  project.tasks.map((task: any) => (
                     <div
                       key={task.id}
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
-                      onClick={() => onTaskClick(task.title)}
+                      onClick={() => onTaskClick(task.id, task.title)}
                     >
                       <div className="flex items-center space-x-3 flex-1">
                         <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
@@ -170,7 +133,7 @@ function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGene
                           {task.progress}%
                         </span>
                         <div className="flex -space-x-1">
-                          {task.avatars && task.avatars.map((avatar, avatarIndex) => (
+                          {task.avatars && task.avatars.map((avatar: any, avatarIndex: number) => (
                             <Avatar key={avatarIndex} className="w-6 h-6 border-2 border-white">
                               <AvatarImage src={avatarMap[avatar]} alt={avatar} />
                               <AvatarFallback className="text-xs bg-blue-500 text-white">
@@ -197,55 +160,15 @@ function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGene
 // --- Main ProjectBoard Component ---
 const ProjectBoard = () => {
   const [chatOpen, setChatOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState("");
-  const [projects, setProjects] = useState<Project[]>([]);
+  const [selectedTask, setSelectedTask] = useState<{ id: string, title: string } | null>(null);
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
   const [requirementsProjectId, setRequirementsProjectId] = useState("");
-  const [mockProjects, setMockProjects] = useState([
-    {
-      id: 1,
-      name: "Thoughts™ Landing Page",
-      tasks: [
-        { name: "Identify Target Audience", status: "On-going", progress: 80, avatars: ["JD", "SM"] },
-        { name: "Analyze Competitors", status: "On-going", progress: 70, avatars: ["AL", "BK"] },
-        { name: "Conduct User Surveys", status: "On-going", progress: 60, avatars: ["CL", "DM"] },
-        { name: "Perform SEO Analysis", status: "To-do", progress: 0, avatars: ["EF", "GH"] },
-        { name: "Create Wireframes", status: "On-going", progress: 85, avatars: ["IJ", "KL"] },
-        { name: "Develop Style Guide", status: "On-going", progress: 25, avatars: ["MN", "OP"] },
-        { name: "Design Mockups", status: "To-do", progress: 0, avatars: ["QR", "ST"] },
-        { name: "Set Up Development Environment", status: "To-do", progress: 0, avatars: ["UV", "WX"] },
-        { name: "Code the Structure", status: "To-do", progress: 0, avatars: ["YZ", "AB"] },
-        { name: "Create User Personas", status: "On-going", progress: 80, avatars: ["CD", "EF"] }
-      ]
-    },
-    {
-      id: 2,
-      name: "GoodWriter™ Web Development",
-      tasks: [
-        { name: "Plan Visual Hierarchy", status: "On-going", progress: 90, avatars: ["GH", "IJ"] },
-        { name: "Create Interactive Elements", status: "In-review", progress: 100, avatars: ["KL", "MN"] },
-        { name: "Optimize for Mobile", status: "On-going", progress: 15, avatars: ["OP", "QR"] },
-        { name: "Ensure Responsiveness", status: "On-going", progress: 60, avatars: ["ST", "UV"] },
-        { name: "Integrate Interactive Elements", status: "To-do", progress: 0, avatars: ["WX", "YZ"] },
-        { name: "Test Functionality", status: "On-going", progress: 75, avatars: ["AB", "CD"] }
-      ]
-    },
-    {
-      id: 3,
-      name: "Paper.so Style Research",
-      tasks: [
-        { name: "Review Analytics Data", status: "On-going", progress: 90, avatars: ["EF", "GH"] },
-        { name: "Understand Client's Goals", status: "On-going", progress: 10, avatars: ["IJ", "KL"] },
-        { name: "Investigate Industry Trends", status: "On-going", progress: 0, avatars: ["MN", "OP"] },
-        { name: "Create Custom Illustrations", status: "On-going", progress: 90, avatars: ["QR", "ST"] },
-        { name: "Plan A/B Testing Variants", status: "On-going", progress: 0, avatars: ["UV", "WX"] }
-      ]
-    }
-  ]);
+  // mockProjects not used, left for reference
 
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -253,14 +176,13 @@ const ProjectBoard = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response:any = await projectsApi.projectsControllerFindAll();
+        const response: any = await projectsApi.projectsControllerFindAll();
         const projectsData = response.data || response;
-
-        const projectsWithAvatars = projectsData.map((project: Project) => ({
+        const projectsWithAvatars = projectsData.map((project: any) => ({
           ...project,
-          tasks: project.tasks.map(task => ({
+          tasks: project.tasks.map((task: any) => ({
             ...task,
-            avatars: task.avatars && task.avatars.length > 0 ? task.avatars : ['JS', 'AW',],
+            avatars: task.avatars && task.avatars.length > 0 ? task.avatars : ['JS', 'AW'],
           }))
         }));
         setProjects(projectsWithAvatars);
@@ -278,7 +200,7 @@ const ProjectBoard = () => {
     setProjects(prevProjects => {
       const updatedProjects = prevProjects.map(project => {
         if (project.name.includes(projectName)) {
-          const newTask: Task = {
+          const newTask = {
             id: `task-${Date.now()}-${Math.random()}`,
             project_id: project.id,
             title: taskName,
@@ -310,7 +232,8 @@ const ProjectBoard = () => {
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
-        taskName={selectedTask}
+        taskName={selectedTask?.title ?? ""}
+        taskId={selectedTask?.id ?? ""}
         onCreateTask={handleCreateTask}
       />
 
@@ -478,7 +401,7 @@ const ProjectBoard = () => {
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
                 setChatOpen(true);
-                setSelectedTask("Create new folder");
+                setSelectedTask({ id: "folder", title: "Create new folder" });
               }}
             >
               <div className="flex items-center space-x-3">
@@ -494,7 +417,7 @@ const ProjectBoard = () => {
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
                 setChatOpen(true);
-                setSelectedTask("Create new doc");
+                setSelectedTask({ id: "doc", title: "Create new doc" });
               }}
             >
               <div className="flex items-center space-x-3">
@@ -513,8 +436,8 @@ const ProjectBoard = () => {
           projects={projects}
           loading={loading}
           error={error}
-          onTaskClick={(taskTitle) => {
-            setSelectedTask(taskTitle);
+          onTaskClick={(taskId: string, taskTitle: string) => {
+            setSelectedTask({ id: taskId, title: taskTitle });
             setChatOpen(true);
           }}
           avatarMap={avatarMap}

@@ -1,4 +1,3 @@
-
 {
   "openapi": "3.0.0",
   "paths": {
@@ -18,9 +17,25 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Returns the created project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "proj_b312ede9-4f6c-45fc-adcd-7b5f1254e6f6",
+                    "name": "Web Development Travel Site",
+                    "description": "Landing page development project",
+                    "type": "web_development",
+                    "tasks": [],
+                    "created_at": "2025-07-18T03:19:50.255Z",
+                    "updated_at": "2025-07-18T03:19:50.255Z"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Create a new project",
         "tags": [
           "Projects"
         ]
@@ -30,9 +45,36 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Returns a list of all projects",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": [
+                    {
+                      "id": "proj_ab86082a-18cd-45f0-8a81-c420840007e9",
+                      "name": "GoodWriterTM Web Development",
+                      "description": "Landing page development project",
+                      "type": "web_development",
+                      "tasks": [],
+                      "created_at": "2025-07-15T10:23:24.569Z",
+                      "updated_at": "2025-07-15T10:23:24.569Z"
+                    },
+                    {
+                      "id": "proj_b312ede9-4f6c-45fc-adcd-7b5f1254e6f6",
+                      "name": "Web Development Travel Site",
+                      "description": "Landing page development project",
+                      "type": "web_development",
+                      "tasks": [],
+                      "created_at": "2025-07-18T03:19:50.255Z",
+                      "updated_at": "2025-07-18T03:19:50.255Z"
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
+        "summary": "Get all projects",
         "tags": [
           "Projects"
         ]
@@ -54,9 +96,33 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Returns the created conversational project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "proj_123abc456def789ghi",
+                    "name": "AI Chatbot Builder",
+                    "description": "An AI chatbot project",
+                    "type": "conversational",
+                    "requirements": "Build an AI chatbot that handles FAQs for an e-commerce site",
+                    "auto_create_tasks": true,
+                    "tasks": [
+                      {
+                        "id": "task_a1b2c3d4",
+                        "title": "Define chatbot scope",
+                        "status": "to_do"
+                      }
+                    ],
+                    "created_at": "2025-07-18T08:30:00.000Z",
+                    "updated_at": "2025-07-18T08:30:00.000Z"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Create a new conversational project with requirements",
         "tags": [
           "Projects"
         ]
@@ -77,9 +143,25 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Returns a single project by ID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "proj_b312ede9-4f6c-45fc-adcd-7b5f1254e6f6",
+                    "name": "Web Development Travel Site",
+                    "description": "Landing page development project",
+                    "type": "web_development",
+                    "tasks": [],
+                    "created_at": "2025-07-18T03:19:50.255Z",
+                    "updated_at": "2025-07-18T03:19:50.255Z"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Get a project by ID",
         "tags": [
           "Projects"
         ]
@@ -152,9 +234,17 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Task created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Create a new task under a project",
         "tags": [
           "Tasks"
         ]
@@ -181,9 +271,34 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of tasks for a given project",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": [
+                    {
+                      "id": "task_a1b2c3d4-e5f6-7890-1234-567890abcdef",
+                      "project_id": "proj_ab86082a-18cd-45f0-8a81-c420840007e9",
+                      "title": "Project Initialization & Design System Setup",
+                      "description": "Set up the foundational project structure (e.g., React with Vite/Next.js)...",
+                      "status": "in_progress",
+                      "priority": "high",
+                      "progress": 0,
+                      "estimated_hours": 8,
+                      "due_date": null,
+                      "ai_generated": true,
+                      "ai_confidence": "0.95",
+                      "assignees": [],
+                      "created_at": "2025-07-18T00:15:25.811Z",
+                      "updated_at": "2025-07-18T00:17:48.596Z"
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
+        "summary": "Get all tasks under a project",
         "tags": [
           "Tasks"
         ]
@@ -204,9 +319,32 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Returns a specific task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "task_e5f6a7b8-c9d0-1234-5678-90abcdef0123",
+                    "project_id": "proj_ab86082a-18cd-45f0-8a81-c420840007e9",
+                    "title": "SEO Optimization & Deployment Preparation",
+                    "description": "Implement on-page SEO best practices...",
+                    "status": "draft",
+                    "priority": "medium",
+                    "progress": 0,
+                    "estimated_hours": 10,
+                    "due_date": null,
+                    "ai_generated": true,
+                    "ai_confidence": "0.94",
+                    "assignees": [],
+                    "created_at": "2025-07-18T00:15:25.811Z",
+                    "updated_at": "2025-07-18T00:15:25.811Z"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Get a task by ID",
         "tags": [
           "Tasks"
         ]
@@ -225,9 +363,10 @@
         ],
         "responses": {
           "204": {
-            "description": ""
+            "description": "Task successfully deleted"
           }
         },
+        "summary": "Delete a task by ID",
         "tags": [
           "Tasks"
         ]
@@ -258,9 +397,17 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Task updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Update status of a single task",
         "tags": [
           "Tasks"
         ]
@@ -291,9 +438,20 @@
         },
         "responses": {
           "200": {
-            "description": ""
+            "description": "Tasks updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TaskResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Bulk update status of tasks within a project",
         "tags": [
           "Tasks"
         ]
@@ -324,9 +482,28 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Message created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "msg_123",
+                    "task_id": "task_abc",
+                    "sender_id": "user_789",
+                    "sender_type": "user",
+                    "content": "What would be the best way to structure this feature?",
+                    "type": "text",
+                    "mentions": [
+                      "@CodeBot"
+                    ],
+                    "timestamp": "2025-07-18T10:45:00.000Z"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Send a new message in a task chat",
         "tags": [
           "Chat"
         ]
@@ -345,9 +522,40 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of messages for the given task",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": [
+                    {
+                      "id": "msg_001",
+                      "task_id": "task_abc",
+                      "sender_id": "user_123",
+                      "sender_type": "user",
+                      "content": "Initial project planning discussion.",
+                      "type": "text",
+                      "mentions": [],
+                      "timestamp": "2025-07-18T10:00:00.000Z"
+                    },
+                    {
+                      "id": "msg_002",
+                      "task_id": "task_abc",
+                      "sender_id": "user_456",
+                      "sender_type": "user",
+                      "content": "Should we use Vite or Next.js for this?",
+                      "type": "text",
+                      "mentions": [
+                        "@CodeBot"
+                      ],
+                      "timestamp": "2025-07-18T10:02:00.000Z"
+                    }
+                  ]
+                }
+              }
+            }
           }
         },
+        "summary": "Get all messages for a task chat",
         "tags": [
           "Chat"
         ]
@@ -359,9 +567,42 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of bots",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "bots": [
+                      {
+                        "id": "project-planner",
+                        "name": "ProjectBot",
+                        "description": "I analyze requirements and break them down into actionable tasks",
+                        "status": "online",
+                        "capabilities": [
+                          "requirement_analysis",
+                          "task_breakdown",
+                          "project_estimation"
+                        ]
+                      },
+                      {
+                        "id": "codebot",
+                        "name": "CodeBot",
+                        "description": "I help with code analysis and suggestions",
+                        "status": "online",
+                        "capabilities": [
+                          "code_analysis",
+                          "code_generation",
+                          "technical_guidance"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "List all available bots",
         "tags": [
           "Bots"
         ]
@@ -383,9 +624,43 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "AI project analysis and suggested tasks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "ai_analysis": {
+                      "project_complexity": "high",
+                      "estimated_duration": "4-6 months",
+                      "recommended_team_size": 5,
+                      "key_technologies": [
+                        "NestJS",
+                        "React",
+                        "PostgreSQL",
+                        "Docker"
+                      ]
+                    },
+                    "suggested_tasks": [
+                      {
+                        "title": "Setup User Authentication (OAuth 2.0)",
+                        "priority": "high"
+                      },
+                      {
+                        "title": "Design Database Schema",
+                        "priority": "high"
+                      },
+                      {
+                        "title": "Develop Core API for Food Delivery Logic",
+                        "priority": "medium"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Analyze project requirements using the ProjectBot",
         "tags": [
           "Bots"
         ]
@@ -406,9 +681,27 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Bot details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "id": "project-planner",
+                    "name": "ProjectBot",
+                    "description": "I analyze requirements and break them down into actionable tasks",
+                    "status": "online",
+                    "capabilities": [
+                      "requirement_analysis",
+                      "task_breakdown",
+                      "project_estimation"
+                    ]
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Get a specific bot by ID",
         "tags": [
           "Bots"
         ]
@@ -439,9 +732,30 @@
         },
         "responses": {
           "201": {
-            "description": ""
+            "description": "Bot response to a task-related query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "bot_id": "codebot",
+                    "response": {
+                      "content": "Based on the task requirements, I recommend a modular approach...",
+                      "type": "text",
+                      "suggestions": [
+                        {
+                          "type": "task",
+                          "title": "Create unit tests for new feature",
+                          "priority": "medium"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Send a message to the bot for a task",
         "tags": [
           "Bots"
         ]
@@ -453,9 +767,20 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "List of all users",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponseDto"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Get all users",
         "tags": [
           "Users"
         ]
@@ -476,9 +801,17 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "User details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponseDto"
+                }
+              }
+            }
           }
         },
+        "summary": "Get a user by ID",
         "tags": [
           "Users"
         ]
@@ -490,9 +823,25 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Returns health status of services",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "healthy",
+                    "timestamp": "2025-07-17T10:00:00.000Z",
+                    "services": {
+                      "database": "healthy",
+                      "ai_service": "healthy",
+                      "websocket": "healthy"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Check full system health",
         "tags": [
           "Health"
         ]
@@ -504,9 +853,19 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "Returns simple service status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "status": "ok"
+                  }
+                }
+              }
+            }
           }
         },
+        "summary": "Basic status ping",
         "tags": [
           "Health"
         ]
@@ -537,35 +896,376 @@
     "schemas": {
       "CreateProjectDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "GoodWriterTM Web Development",
+            "description": "Name of the project being created"
+          },
+          "description": {
+            "type": "string",
+            "example": "Landing page development project",
+            "description": "Short description of the project"
+          },
+          "type": {
+            "type": "string",
+            "example": "web_development",
+            "description": "Type of the project (e.g., web_development, conversational)"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ]
       },
       "CreateConversationalProjectDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "requirements": {
+            "type": "string",
+            "example": "Build a responsive landing page for GoodWriter with modern sections and clean design.",
+            "description": "Concise project requirements or goals"
+          },
+          "project_id": {
+            "type": "string",
+            "example": "proj_ab86082a-18cd-45f0-8a81-c420840007e9",
+            "description": "Unique identifier of the parent project"
+          },
+          "auto_create_tasks": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether the system should automatically generate tasks from the requirements"
+          }
+        },
+        "required": [
+          "requirements",
+          "project_id"
+        ]
       },
       "CreateTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Review Analytics Data",
+            "description": "Title of the task"
+          },
+          "description": {
+            "type": "string",
+            "example": "Analyze user behavior patterns",
+            "description": "Optional description of the task"
+          },
+          "status": {
+            "type": "string",
+            "example": "design",
+            "description": "Current status of the task. Valid values: draft, design, in_review, to_do, in_progress, completed"
+          },
+          "priority": {
+            "type": "string",
+            "example": "low",
+            "description": "Priority level of the task. One of: low, medium, high"
+          },
+          "assignees": {
+            "example": [
+              "abc123"
+            ],
+            "description": "List of user IDs assigned to this task",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "estimated_hours": {
+            "type": "number",
+            "example": 15,
+            "description": "Estimated number of hours to complete the task"
+          }
+        },
+        "required": [
+          "title",
+          "status"
+        ]
+      },
+      "TaskResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "task_abc123"
+          },
+          "project_id": {
+            "type": "string",
+            "example": "proj_xyz123"
+          },
+          "title": {
+            "type": "string",
+            "example": "Design landing page"
+          },
+          "description": {
+            "type": "string",
+            "example": "Build responsive layout using Tailwind"
+          },
+          "status": {
+            "type": "string",
+            "example": "draft"
+          },
+          "priority": {
+            "type": "string",
+            "example": "high"
+          },
+          "progress": {
+            "type": "number",
+            "example": 0
+          },
+          "estimated_hours": {
+            "type": "number",
+            "example": 10
+          },
+          "due_date": {
+            "type": "string",
+            "example": "2025-07-20T00:00:00Z",
+            "nullable": true
+          },
+          "ai_generated": {
+            "type": "boolean",
+            "example": true
+          },
+          "ai_confidence": {
+            "type": "number",
+            "example": 0.92
+          },
+          "assignees": {
+            "example": [
+              "user123",
+              "user456"
+            ],
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "example": "2025-07-18T00:15:25.811Z"
+          },
+          "updated_at": {
+            "type": "string",
+            "example": "2025-07-18T00:15:25.811Z"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "title",
+          "description",
+          "status",
+          "priority",
+          "progress",
+          "estimated_hours",
+          "due_date",
+          "ai_generated",
+          "ai_confidence",
+          "assignees",
+          "created_at",
+          "updated_at"
+        ]
       },
       "UpdateTaskStatusDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "design",
+            "description": "New status to apply. Valid values: draft, design, in_review, to_do, in_progress, completed"
+          },
+          "assignees": {
+            "example": [
+              "user123"
+            ],
+            "description": "Optional list of user IDs to assign",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "due_date": {
+            "type": "string",
+            "example": "2025-07-20T00:00:00Z",
+            "description": "Optional due date for the task in ISO format"
+          }
+        },
+        "required": [
+          "status"
+        ]
       },
       "BulkUpdateTaskStatusDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "task_ids": {
+            "example": [
+              "task_6d777f1f-1133-45d4-b250-c900781cf379",
+              "task_1bce1b22-6bed-47b1-832d-60a668ace8d0",
+              "task_4965352a-4ba5-4d33-a732-9fe0e2ddd339"
+            ],
+            "description": "Array of task IDs to update",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "example": "design",
+            "description": "New status to apply. Valid values: draft, design, in_review, to_do, in_progress, completed"
+          },
+          "assignees": {
+            "example": [
+              "user123",
+              "abc123"
+            ],
+            "description": "Optional list of user IDs to assign to each task",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "task_ids",
+          "status"
+        ]
       },
       "CreateMessageDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "content": {
+            "type": "string",
+            "example": "What would be the best way to structure this feature?",
+            "description": "The actual content of the message"
+          },
+          "type": {
+            "type": "string",
+            "example": "text",
+            "description": "Type of the message. One of: text, image, code"
+          },
+          "mentions": {
+            "example": [
+              "@CodeBot"
+            ],
+            "description": "List of user mentions in the message",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "content"
+        ]
       },
       "ProjectAnalysisDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "requirements": {
+            "type": "string",
+            "example": "Build a mobile app for food delivery",
+            "description": "Requirements for the AI to analyze"
+          },
+          "context": {
+            "type": "object",
+            "description": "Optional context like budget, timeline, platform, etc.",
+            "example": {
+              "budget": "medium",
+              "timeline": "6 months",
+              "platform": "iOS and Android"
+            }
+          }
+        },
+        "required": [
+          "requirements"
+        ]
+      },
+      "ChatContextDto": {
+        "type": "object",
+        "properties": {
+          "include_task_details": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether to include detailed task info in the bot response"
+          },
+          "include_recent_messages": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether to include recent chat messages in the bot context"
+          }
+        }
       },
       "BotChatDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "example": "task_1bce1b22-6bed-47b1-832d-60a668ace8d0",
+            "description": "ID of the task for which the bot is generating a response"
+          },
+          "message": {
+            "type": "string",
+            "example": "Can you analyze this task and suggest improvements?",
+            "description": "Message sent to the bot"
+          },
+          "context": {
+            "description": "Optional context to guide the bot’s response",
+            "example": {
+              "include_task_details": true,
+              "include_recent_messages": true
+            },
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ChatContextDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "task_id",
+          "message"
+        ]
+      },
+      "UserResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "user_220a8c7d-dd96-4cda-ab80-9fb1eed93959"
+          },
+          "name": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "email": {
+            "type": "string",
+            "example": "john@example.com"
+          },
+          "avatar": {
+            "type": "string",
+            "example": "https://example.com/avatar.jpg"
+          },
+          "status": {
+            "type": "string",
+            "example": "online",
+            "enum": [
+              "online",
+              "offline"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "avatar",
+          "status"
+        ]
       }
     }
   }
