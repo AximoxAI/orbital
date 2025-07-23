@@ -14,12 +14,11 @@ import { TasksApi, Configuration } from "@/api-client";
 
 const api = new TasksApi(new Configuration({ basePath: import.meta.env.VITE_BACKEND_API_KEY }));
 
-export function CreateTask() {
+export function CreateTask({ defaultProjectId }) {
   const { toast } = useToast();
 
   const form = useForm({
     defaultValues: {
-      projectId: "",
       title: "",
       description: "",
       status: "design",
@@ -30,14 +29,6 @@ export function CreateTask() {
   });
 
   const onSubmit = async (values: any) => {
-    if (!values.projectId) {
-      toast({
-        title: "Project ID is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
     const payload = {
       ...values,
       assignees: values.assignees
@@ -47,7 +38,7 @@ export function CreateTask() {
     };
 
     try {
-      await api.tasksControllerCreate(values.projectId, payload);
+      await api.tasksControllerCreate( defaultProjectId,payload);
       toast({ title: "Task created successfully!" });
       form.reset();
     } catch (err: any) {
@@ -62,23 +53,6 @@ export function CreateTask() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 h-[450px] overflow-y-scroll max-w-xl">
-
-        {/* Project ID */}
-        <FormField
-          name="projectId"
-          control={form.control}
-          rules={{ required: "Project ID is required" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Project ID</FormLabel>
-              <FormControl>
-                <Input {...field} placeholder="Enter project ID" />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
         {/* Title */}
         <FormField
           name="title"

@@ -3,13 +3,27 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
 import Index from "./pages/Index";
 import SoftwareEngineering from "./pages/SoftwareEngineering";
 import ProjectBoard from "./pages/ProjectBoard";
 import NotFound from "./pages/NotFound";
 import SignUpPage from "./pages/SignUp";
 import SignInPage from "./pages/SignIn";
+import TaskChat from "./components/TaskChat";
+
+const TaskChatRoute = () => {
+  const { taskId } = useParams<{ taskId: string }>();
+  const taskName = taskId ? `Task #${taskId}` : "Task";
+  return (
+    <TaskChat
+      isOpen={!!taskId}
+      onClose={() => window.history.back()}
+      taskName={taskName}
+      taskId={taskId || ""}
+    />
+  );
+};
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
@@ -50,6 +64,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectBoard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks/:taskId"
+              element={
+                <ProtectedRoute>
+                  <TaskChatRoute />
                 </ProtectedRoute>
               }
             />

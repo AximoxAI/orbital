@@ -6,6 +6,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import LeftPanel from "./LeftPanel";
 import MonacoCanvas from "./MonacoCanvas";
+import { useClerk, useUser } from "@clerk/clerk-react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import { ChatApi, Configuration } from "@/api-client";
 
@@ -17,7 +19,6 @@ interface TaskChatProps {
   onCreateTask?: (taskName: string, projectName: string) => void;
 }
 
-// Re-add static mock users/avatars
 interface UserType {
   id: string
   name: string
@@ -43,32 +44,72 @@ const mockUsers: UserType[] = [
   { id: "15", name: "Raj Singh", avatar: "https://randomuser.me/api/portraits/men/95.jpg", isOnline: false },
 ];
 
+// --- Helper: Format datetime to readable ---
+function formatDateTime(datetime: string) {
+  if (!datetime) return "";
+  const d = new Date(datetime);
+  if (isNaN(d.getTime())) return datetime;
+  return d.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
 const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [editorValue, setEditorValue] = useState('// Type your code here...');
   const [loading, setLoading] = useState(false);
 
-  // ChatApi instance
   const chatApi = new ChatApi(new Configuration({ basePath: "http://localhost:3000" }));
 
-  // Fetch messages when chat opens or when taskId changes
+  const { user } = useUser();
+
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const [isFullPage, setIsFullPage] = useState(false);
+  const [prevPath, setPrevPath] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isFullPage) {
+      if (!prevPath) setPrevPath(location.pathname + location.search + location.hash);
+      if (location.pathname !== `/tasks/${taskId}`) {
+        navigate(`/tasks/${taskId}`, { replace: false });
+      }
+    } else {
+      if (prevPath && location.pathname === `/tasks/${taskId}`) {
+        navigate(prevPath, { replace: false });
+        setPrevPath(null);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFullPage, isOpen, taskId]);
+
+  useEffect(() => {
+    if (isOpen && location.pathname === `/tasks/${taskId}`) {
+      setIsFullPage(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, location.pathname, taskId]);
+
   useEffect(() => {
     if (!isOpen || !taskId) return;
     setLoading(true);
     const fetchMessages = async () => {
       try {
         const response = await chatApi.chatControllerFindAll(taskId);
-        const apiMessages = Array.isArray(response.data)
-          ? response.data
-          : [];
-        // Map API response to Message[]
+        const apiMessages = Array.isArray(response.data) ? response.data : [];
         const mapped: any = apiMessages.map((msg: any) => ({
           id: msg.id || String(Date.now()),
           type: msg.type === "human" ? "human" : "ai",
-          author: msg.sender_id || (msg.type === "human" ? "You" : "Bot"),
+          author: user?.username ,
           content: msg.content,
-          timestamp: msg.timestamp || "Just now",
+          timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
           isCode: !!msg.isCode,
           taskSuggestion: msg.taskSuggestion || undefined,
         }));
@@ -91,50 +132,74 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
 
   const sendMessageToApi = async (content: string) => {
     if (!taskId) return;
+    const tempId = `temp-${Date.now()}`;
+    const optimisticMessage = {
+      id: tempId,
+      type: "human",
+      author: user?.username,
+      content,
+      timestamp: "Just now",
+      isCode: false,
+      pending: true,
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+
     try {
+      // Only include @CodeBot in mentions if "@codebot" is typed in the message (case-insensitive)
+      const mentions = /@codebot/i.test(content) ? ["@CodeBot"] : [];
       const body = {
         content,
         type: "text",
-        mentions: ["@CodeBot"]
+        mentions,
       };
       const response = await chatApi.chatControllerCreate(taskId, body);
       let apiMessage = (response.data as any) || {};
       if (apiMessage && apiMessage.id) {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: apiMessage.id,
-            type: apiMessage.type === "human" ? "human" : "ai",
-            author: apiMessage.author,
-            content: apiMessage.content,
-            timestamp: apiMessage.timestamp,
-            isCode: !!apiMessage.isCode,
-            taskSuggestion: apiMessage.taskSuggestion || undefined
-          }
-        ]);
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === tempId
+              ? {
+                  id: apiMessage.id,
+                  type: apiMessage.type === "human" ? "human" : "ai",
+                  author: user?.username,
+                  content: apiMessage.content,
+                  timestamp: apiMessage.timestamp ? formatDateTime(apiMessage.timestamp) : "Just now",
+                  isCode: !!apiMessage.isCode,
+                  taskSuggestion: apiMessage.taskSuggestion || undefined,
+                  pending: false,
+                }
+              : msg
+          )
+        );
       } else {
-        setMessages(prev => [
-          ...prev,
-          {
-            id: String(Date.now()),
-            type: "ai",
-            author: "System",
-            content: "No response from server.",
-            timestamp: "Just now"
-          }
-        ]);
+        setMessages(prev =>
+          prev.map(msg =>
+            msg.id === tempId
+              ? {
+                  ...msg,
+                  type: "ai",
+                  author: "System",
+                  content: "No response from server.",
+                  pending: false
+                }
+              : msg
+          )
+        );
       }
     } catch (error) {
-      setMessages(prev => [
-        ...prev,
-        {
-          id: String(Date.now()),
-          type: "ai",
-          author: "System",
-          content: "Sorry, I couldn't send your message to the server.",
-          timestamp: "Just now"
-        }
-      ]);
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                type: "ai",
+                author: "System",
+                content: "Sorry, I couldn't send your message to the server.",
+                pending: false
+              }
+            : msg
+        )
+      );
     }
   };
 
@@ -156,8 +221,6 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     };
     return colors[author as keyof typeof colors] || 'bg-gray-500';
   };
-
-  const [isFullPage, setIsFullPage] = useState(false);
 
   if (!isOpen) return null;
 
@@ -213,7 +276,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
             <div className="text-center text-gray-400">Loading messages...</div>
           ) : (
             messages.map((message) => (
-              <div key={message.id} className="flex space-x-3">
+              <div key={message.id} className="flex space-x-3 opacity-100" style={message.pending ? { opacity: 0.6 } : {}}>
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
                     {message.type === 'ai' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -223,6 +286,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-sm font-medium text-gray-900">{message.author}</span>
                     <span className="text-xs text-gray-500">{message.timestamp}</span>
+                    {message.pending && <span className="text-xs text-blue-400 animate-pulse ml-2">Sending...</span>}
                   </div>
                   <div className={`text-sm text-gray-700 ${message.isCode ? 'bg-gray-50 p-3 rounded-lg font-mono' : ''}`}>
                     {message.isCode ? (
@@ -288,7 +352,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
         </div>
       </div>
       {isFullPage && (
-        <MonacoCanvas value={editorValue} setValue={setEditorValue} />
+        <MonacoCanvas value={editorValue} taskId={taskId} setValue={setEditorValue} />
       )}
     </div>
   );

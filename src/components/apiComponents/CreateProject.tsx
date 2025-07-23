@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ProjectsApi, Configuration } from '../api-client';
+import { ProjectsApi, Configuration } from '../../api-client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -73,13 +73,13 @@ const CreateProject = () => {
             onChange={handleChange}
             required
           />
-          <Input
+          {/* <Input
             name="repo_url"
             placeholder="Repository URL"
             value={form.repo_url}
             onChange={handleChange}
             required
-          />
+          /> */}
           <Button type="submit">Create Project</Button>
         </form>
         {error && (

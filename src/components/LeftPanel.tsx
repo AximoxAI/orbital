@@ -52,9 +52,6 @@ const LeftPanel = () => {
           <Button variant="outline" className="flex-1 flex gap-2 items-center justify-center text-indigo-600 border-gray-200">
             <Book className="w-4 h-4" /> Docs
           </Button>
-          <Button variant="outline" size="icon" className="text-indigo-600 border-gray-200">
-            <Gamepad2 className="w-4 h-4" />
-          </Button>
         </div>
       </div>
     </div>

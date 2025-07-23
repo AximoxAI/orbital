@@ -13,15 +13,22 @@ import {
   Plus,
   Search,
   Filter,
-  MoreHorizontal
+  MoreHorizontal,
+  EllipsisVertical,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import TaskChat from "@/components/TaskChat";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Configuration, ProjectsApi } from "@/api-client";
-import CreateProject from "@/components/CreateProject";
-import GenerateRequirements from "@/components/GenerateRequirements";
-import { CreateTask } from "@/components/CreateTask";
+import CreateProject from "@/components/apiComponents/CreateProject";
+import GenerateRequirements from "@/components/apiComponents/GenerateRequirements";
+import { CreateTask } from "@/components/apiComponents/CreateTask";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 
 const configuration = new Configuration({
   basePath: 'http://localhost:3000',
@@ -30,36 +37,44 @@ const configuration = new Configuration({
 const projectsApi = new ProjectsApi(configuration);
 
 const avatarMap: { [key: string]: string } = {
-    'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
-    'AW': 'https://avatars.githubusercontent.com/u/2?v=4',
-    'SM': 'https://avatars.githubusercontent.com/u/3?v=4',
-    'JD': "https://randomuser.me/api/portraits/men/11.jpg",
-    'AL': "https://randomuser.me/api/portraits/men/13.jpg",
-    'BK': "https://randomuser.me/api/portraits/women/14.jpg",
-    'CL': "https://randomuser.me/api/portraits/men/15.jpg",
-    'DM': "https://randomuser.me/api/portraits/women/16.jpg",
-    'EF': "https://randomuser.me/api/portraits/men/17.jpg",
-    'GH': "https://randomuser.me/api/portraits/women/18.jpg",
-    'IJ': "https://randomuser.me/api/portraits/men/19.jpg",
-    'KL': "https://randomuser.me/api/portraits/women/20.jpg",
-    'MN': "https://randomuser.me/api/portraits/men/21.jpg",
-    'OP': "https://randomuser.me/api/portraits/women/22.jpg",
-    'QR': "https://randomuser.me/api/portraits/men/23.jpg",
-    'ST': "https://randomuser.me/api/portraits/women/24.jpg",
-    'UV': "https://randomuser.me/api/portraits/men/25.jpg",
-    'WX': "https://randomuser.me/api/portraits/women/26.jpg",
-    'YZ': "https://randomuser.me/api/portraits/men/27.jpg",
-    'AB': "https://randomuser.me/api/portraits/women/28.jpg",
-    'CD': "https://randomuser.me/api/portraits/men/29.jpg",
-    'MB': "https://randomuser.me/api/portraits/men/30.jpg",
-    'AI': "https://randomuser.me/api/portraits/women/31.jpg",
+  'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
+  'AW': 'https://avatars.githubusercontent.com/u/2?v=4',
+  'SM': 'https://avatars.githubusercontent.com/u/3?v=4',
+  'JD': "https://randomuser.me/api/portraits/men/11.jpg",
+  'AL': "https://randomuser.me/api/portraits/men/13.jpg",
+  'BK': "https://randomuser.me/api/portraits/women/14.jpg",
+  'CL': "https://randomuser.me/api/portraits/men/15.jpg",
+  'DM': "https://randomuser.me/api/portraits/women/16.jpg",
+  'EF': "https://randomuser.me/api/portraits/men/17.jpg",
+  'GH': "https://randomuser.me/api/portraits/women/18.jpg",
+  'IJ': "https://randomuser.me/api/portraits/men/19.jpg",
+  'KL': "https://randomuser.me/api/portraits/women/20.jpg",
+  'MN': "https://randomuser.me/api/portraits/men/21.jpg",
+  'OP': "https://randomuser.me/api/portraits/women/22.jpg",
+  'QR': "https://randomuser.me/api/portraits/men/23.jpg",
+  'ST': "https://randomuser.me/api/portraits/women/24.jpg",
+  'UV': "https://randomuser.me/api/portraits/men/25.jpg",
+  'WX': "https://randomuser.me/api/portraits/women/26.jpg",
+  'YZ': "https://randomuser.me/api/portraits/men/27.jpg",
+  'AB': "https://randomuser.me/api/portraits/women/28.jpg",
+  'CD': "https://randomuser.me/api/portraits/men/29.jpg",
+  'MB': "https://randomuser.me/api/portraits/men/30.jpg",
+  'AI': "https://randomuser.me/api/portraits/women/31.jpg",
 };
 
 const getProgressColor = (progress: number): string => {
   return 'text-green-300';
 };
 
-function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGenerateRequirements }: any) {
+function ProjectsList({
+  projects,
+  loading,
+  error,
+  onTaskClick,
+  avatarMap,
+  onGenerateRequirements,
+  onShowCreateTaskModal,
+}: any) {
   if (loading) {
     return (
       <div className="flex-1 p-6 flex items-center justify-center">
@@ -92,14 +107,27 @@ function ProjectsList({ projects, loading, error, onTaskClick, avatarMap, onGene
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                     <CardTitle className="text-sm font-medium">{project.name}</CardTitle>
                   </div>
-                  <Button
-                    variant="default"
-                    className="text-[13px] w-[100px]"
-                    size="sm"
-                    onClick={() => onGenerateRequirements(project.id)}
-                  >
-                    Generate
-                  </Button>
+                  <div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <EllipsisVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => onShowCreateTaskModal(project.id)}
+                        >
+                          Create new task
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => onGenerateRequirements(project.id)}
+                        >
+                          Generate Requirements
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <div className="flex items-center space-x-2">
@@ -168,7 +196,7 @@ const ProjectBoard = () => {
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
   const [requirementsProjectId, setRequirementsProjectId] = useState("");
-  // mockProjects not used, left for reference
+  const [createTaskProjectId, setCreateTaskProjectId] = useState<string | null>(null);
 
   const { user } = useUser();
   const { signOut } = useClerk();
@@ -227,6 +255,16 @@ const ProjectBoard = () => {
     });
   };
 
+  const handleShowCreateTaskModal = (projectId: string) => {
+    setCreateTaskProjectId(projectId);
+    setShowCreateTaskModal(true);
+  };
+
+  const handleShowRequirementsModal = (projectId: string) => {
+    setRequirementsProjectId(projectId);
+    setShowRequirementsModal(true);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <TaskChat
@@ -237,7 +275,7 @@ const ProjectBoard = () => {
         onCreateTask={handleCreateTask}
       />
 
-      <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300`}>
+      <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-y-scroll`}>
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
@@ -369,7 +407,7 @@ const ProjectBoard = () => {
           </div>
         </div>
         <div className="px-6 py-4 bg-white border-b border-gray-200">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => setShowCreateProjectModal(true)}
             >
@@ -383,21 +421,7 @@ const ProjectBoard = () => {
                 </div>
               </div>
             </Card>
-            <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                 setShowCreateTaskModal(true)}
-              }
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                  <Plus className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Create new task</p>
-                  <p className="text-xs text-gray-500">New task in your project</p>
-                </div>
-              </div>
-            </Card>
+
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
                 setChatOpen(true);
@@ -441,10 +465,8 @@ const ProjectBoard = () => {
             setChatOpen(true);
           }}
           avatarMap={avatarMap}
-          onGenerateRequirements={(projectId: string) => {
-            setRequirementsProjectId(projectId);
-            setShowRequirementsModal(true);
-          }}
+          onGenerateRequirements={handleShowRequirementsModal}
+          onShowCreateTaskModal={handleShowCreateTaskModal}
         />
         {showCreateProjectModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -455,7 +477,7 @@ const ProjectBoard = () => {
               >
                 ×
               </button>
-              <CreateProject />
+              <CreateProject/>
             </div>
           </div>
         )}
@@ -468,7 +490,7 @@ const ProjectBoard = () => {
               >
                 ×
               </button>
-              <CreateTask />
+              <CreateTask defaultProjectId={requirementsProjectId}/>
             </div>
           </div>
         )}
