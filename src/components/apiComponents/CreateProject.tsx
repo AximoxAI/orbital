@@ -73,13 +73,12 @@ const CreateProject = () => {
             onChange={handleChange}
             required
           />
-          {/* <Input
+          <Input
             name="repo_url"
             placeholder="Repository URL"
             value={form.repo_url}
             onChange={handleChange}
-            required
-          /> */}
+          />
           <Button type="submit">Create Project</Button>
         </form>
         {error && (
