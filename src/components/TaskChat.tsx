@@ -222,6 +222,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     return colors[author as keyof typeof colors] || 'bg-gray-500';
   };
 
+
   if (!isOpen) return null;
 
   const containerClasses = isFullPage
