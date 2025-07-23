@@ -133,37 +133,6 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
     }
   };
 
-  // Get file extension for icon/language detection
-  const getFileExtension = (path: string) => {
-    return path.split('.').pop()?.toLowerCase() || '';
-  };
-
-  const getLanguageFromExtension = (ext: string) => {
-    const languageMap: { [key: string]: string } = {
-      'js': 'javascript',
-      'jsx': 'javascript',
-      'ts': 'typescript',
-      'tsx': 'typescript',
-      'css': 'css',
-      'html': 'html',
-      'json': 'json',
-      'md': 'markdown',
-      'py': 'python',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
-      'php': 'php',
-      'rb': 'ruby',
-      'go': 'go',
-      'rs': 'rust',
-      'vue': 'vue',
-      'xml': 'xml',
-      'yaml': 'yaml',
-      'yml': 'yaml'
-    };
-    return languageMap[ext] || 'plaintext';
-  };
-
   // --- UI: Execute task ---
   const handleExecuteTask = () => {
     if (!taskId || !agentId) {
@@ -188,37 +157,17 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
   const statusColor = connected ? "#28a745" : "#dc3545";
   const statusText = connected ? "Connected" : "Disconnected";
 
+  // Always use 'plaintext' for the editor language with the extension logic removed
   const selectedFileContent = selectedFile ? files.find(f => f.path === selectedFile)?.content || '' : value;
-  const selectedFileExt = selectedFile ? getFileExtension(selectedFile) : 'ts';
-  const editorLanguage = getLanguageFromExtension(selectedFileExt);
+  const editorLanguage = "plaintext";
 
   return (
     <div className="flex flex-col w-[30%] min-w-[260px] max-w-[600px] bg-gray-50 h-full">
       <div className="font-semibold text-gray-700 p-2 flex items-center">
-        Canvas
-        <span
-          title={statusText}
-          style={{
-            display: "inline-block",
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            backgroundColor: statusColor,
-            marginLeft: 8,
-            marginRight: 4,
-          }}
-        />
-        <span style={{ fontSize: 13, color: "#555" }}>{statusText}</span>
+               
       </div>
 
       <div className="flex flex-col gap-2 px-2">
-        <input
-          type="text"
-          value={taskId || ""}
-          readOnly
-          placeholder="Task ID"
-          className="border border-gray-300 rounded px-2 py-1 text-sm mb-1 bg-gray-100"
-        />
         <div className="flex gap-2">
           <button
             className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400"
@@ -269,8 +218,7 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
               minimap: { enabled: false },
               fontSize: 14,
               scrollBeyondLastLine: false,
-              automaticLayout: true,
-              readOnly: !!selectedFile, // Make readonly when viewing files from socket
+              automaticLayout: true
             }}
             onChange={v => !selectedFile && setValue(v || "")}
           />
