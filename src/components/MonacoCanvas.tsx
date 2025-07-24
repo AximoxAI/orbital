@@ -6,6 +6,7 @@ interface MonacoCanvasProps {
   value: string;
   setValue: (val: string) => void;
   taskId?: string; // Optional: ID of the task for socket updates
+  executeTaskRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 interface FileItem {
@@ -17,7 +18,7 @@ interface FileItem {
 const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
 const DEFAULT_AGENT_ID = "codebot";
 
-const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
+const MonacoCanvas = ({ value, setValue, taskId, executeTaskRef }: MonacoCanvasProps) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [agentId] = useState(DEFAULT_AGENT_ID);
@@ -48,25 +49,25 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
     });
 
     socket.on('execution_result', (data) => {
-      const { taskId, status, message, summary, timestamp } = data;
+      const { taskId: resultTaskId, status, message, summary, timestamp } = data;
       console.log('📨', data);
 
       // Update editor value if this is from our taskId, in_progress, and message is string
       if (
-        data.taskId === taskId &&
-        data.status === "in_progress" &&
-        typeof data.message === "string"
+        resultTaskId === taskId &&
+        status === "in_progress" &&
+        typeof message === "string"
       ) {
-        if (value !== data.message) {
-          setValue(data.message);
+        if (value !== message) {
+          setValue(message);
         }
       }
 
       // Handle file content updates - add to file list
       if (
-        data.taskId === taskId &&
-        data.status === "file" &&
-        message && 
+        resultTaskId === taskId &&
+        status === "file" &&
+        message &&
         typeof message === "object" &&
         message.content &&
         message.path
@@ -122,7 +123,7 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [taskId, value, setValue]);
+  }, [taskId, setValue]); // <--- Only depends on taskId & setValue now
 
   // Handle file selection
   const handleFileSelect = (filePath: string) => {
@@ -133,7 +134,7 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
     }
   };
 
-  // --- UI: Execute task ---
+  // --- Execute task function (moved from button click) ---
   const handleExecuteTask = () => {
     if (!taskId || !agentId) {
       console.error("Please provide both Task ID and Agent ID");
@@ -153,6 +154,12 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
     }
   };
 
+  useEffect(() => {
+    if (executeTaskRef) {
+      executeTaskRef.current = handleExecuteTask;
+    }
+  }, [executeTaskRef, taskId, agentId, connected]);
+
   // --- UI: Status indicator ---
   const statusColor = connected ? "#28a745" : "#dc3545";
   const statusText = connected ? "Connected" : "Disconnected";
@@ -164,21 +171,9 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
   return (
     <div className="flex flex-col w-[30%] min-w-[260px] max-w-[600px] bg-gray-50 h-full">
       <div className="font-semibold text-gray-700 p-2 flex items-center">
-               
       </div>
 
-      <div className="flex flex-col gap-2 px-2">
-        <div className="flex gap-2">
-          <button
-            className="bg-blue-600 text-white px-3 py-1 rounded text-sm font-medium hover:bg-blue-700 disabled:bg-gray-400"
-            onClick={handleExecuteTask}
-            disabled={!connected || !taskId}
-            type="button"
-          >
-            Execute Task
-          </button>
-        </div>
-      </div>
+      {/* Removed the Execute Task button since execution now happens via Send button */}
 
       {/* Editor with File Sidebar */}
       <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
@@ -228,4 +223,4 @@ const MonacoCanvas = ({ value, setValue, taskId }: MonacoCanvasProps) => {
   );
 };
 
-export default MonacoCanvas;
+export default MonacoCanvas

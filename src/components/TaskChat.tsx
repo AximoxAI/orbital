@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Send, User, Bot, Code, Maximize2, Minimize2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -137,6 +137,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
       id: tempId,
       type: "human",
       author: user?.username,
+      sender_id: user?.username,
       content,
       timestamp: "Just now",
       isCode: false,
@@ -203,10 +204,23 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     }
   };
 
+  // Reference to store the execute task function from MonacoCanvas
+  const executeTaskRef = useRef<(() => void) | null>(null);
+
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       sendMessageToApi(newMessage);
+      
+      // Check if message starts with "@orbital_cli" or "@gemini_cli" to trigger task execution
+      const trimmedMessage = newMessage.trim();
+      const shouldExecuteTask = trimmedMessage.startsWith("@orbital_cli") || trimmedMessage.startsWith("@gemini_cli") || trimmedMessage.startsWith("@claude_code");
+      
       setNewMessage('');
+      
+      // Execute task after sending message if executeTaskRef is available and message starts with trigger words
+      if (shouldExecuteTask && executeTaskRef.current) {
+        executeTaskRef.current();
+      }
     }
   };
 
@@ -346,14 +360,22 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
                 }
               }}
             />
-            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
+            <Button 
+              onClick={handleSendMessage} 
+              disabled={!newMessage.trim()}
+            >
               <Send className="w-4 h-4" />
             </Button>
           </div>
         </div>
       </div>
       {isFullPage && (
-        <MonacoCanvas value={editorValue} taskId={taskId} setValue={setEditorValue} />
+        <MonacoCanvas 
+          value={editorValue} 
+          taskId={taskId} 
+          setValue={setEditorValue}
+          executeTaskRef={executeTaskRef}
+        />
       )}
     </div>
   );
