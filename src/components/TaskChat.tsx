@@ -107,6 +107,10 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
   const [selectedBotIndex, setSelectedBotIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(0);
 
+  // MonacoCanvas visibility states
+  const [showMonacoCanvas, setShowMonacoCanvas] = useState(false);
+  const [socketConnected, setSocketConnected] = useState(false);
+
   const chatApi = new ChatApi(new Configuration({ basePath: "http://localhost:3000" }));
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -335,6 +339,11 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
   // Reference to store the execute task function from MonacoCanvas
   const executeTaskRef = useRef<(() => void) | null>(null);
 
+  // Handle socket connection status from MonacoCanvas
+  const handleSocketConnected = (connected: boolean) => {
+    setSocketConnected(connected);
+  };
+
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       sendMessageToApi(newMessage);
@@ -342,6 +351,11 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
       // Check if message starts with "@orbital_cli" or "@gemini_cli" to trigger task execution
       const trimmedMessage = newMessage.trim();
       const shouldExecuteTask = trimmedMessage.startsWith("@orbital_cli") || trimmedMessage.startsWith("@gemini_cli") || trimmedMessage.startsWith("@claude_code");
+      
+      // Show MonacoCanvas when a bot is mentioned
+      if (shouldExecuteTask) {
+        setShowMonacoCanvas(true);
+      }
       
       setNewMessage('');
       setShowBotSuggestions(false);
@@ -393,10 +407,17 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     ? "fixed inset-0 bg-white z-50 flex flex-row"
     : "fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col";
 
+  // Determine chat width based on MonacoCanvas visibility
+  const chatWidthClass = isFullPage && showMonacoCanvas 
+    ? "flex flex-col w-[70%] min-w-[384px] h-full bg-white border-r border-gray-100" 
+    : isFullPage 
+    ? "flex flex-col flex-1 h-full bg-white" 
+    : "flex flex-col w-full h-full";
+
   return (
     <div className={containerClasses}>
       {isFullPage && <LeftPanel />}
-      <div className={isFullPage ? "flex flex-col w-[49%] min-w-[384px] h-full bg-white border-r border-gray-100" : "flex flex-col w-full h-full"}>
+      <div className={chatWidthClass}>
         <div className="p-4 border-b border-gray-200 flex items-center justify-between">
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900">Task Discussion</h3>
@@ -436,7 +457,8 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
           </div>
         </div>
 
-        <div className={`flex-1 overflow-y-auto p-4 space-y-4 ${isFullPage ? 'max-w-4xl mx-auto w-full' : ''}`}>
+        {/* FULL WIDTH MESSAGES */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <div className="text-center text-gray-400">Loading messages...</div>
           ) : (
@@ -497,7 +519,8 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
           )}
         </div>
 
-        <div className={`p-4 border-t border-gray-200 relative ${isFullPage ? 'max-w-4xl mx-auto w-full' : ''}`}>
+        {/* FULL WIDTH INPUT BOX */}
+        <div className="p-4 border-t border-gray-200 relative">
           {/* Bot suggestions dropdown */}
           {showBotSuggestions && (
             <div className="absolute bottom-full left-4 right-4 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -544,6 +567,8 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
           taskId={taskId} 
           setValue={setEditorValue}
           executeTaskRef={executeTaskRef}
+          isVisible={showMonacoCanvas}
+          onSocketConnected={handleSocketConnected}
         />
       )}
     </div>
