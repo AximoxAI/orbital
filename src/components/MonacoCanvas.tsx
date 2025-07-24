@@ -18,6 +18,22 @@ interface FileItem {
 const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
 const DEFAULT_AGENT_ID = "codebot";
 
+// Simple function to get language from file extension
+const getLanguage = (filePath: string) => {
+  if (!filePath) return "plaintext";
+  const ext = filePath.split('.').pop()?.toLowerCase();
+  
+  if (ext === 'js' || ext === 'jsx') return 'javascript';
+  if (ext === 'ts' || ext === 'tsx') return 'typescript';
+  if (ext === 'py') return 'python';
+  if (ext === 'html') return 'html';
+  if (ext === 'css') return 'css';
+  if (ext === 'json') return 'json';
+  if (ext === 'md') return 'markdown';
+  
+  return 'plaintext';
+};
+
 const MonacoCanvas = ({ value, setValue, taskId, executeTaskRef }: MonacoCanvasProps) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -164,9 +180,9 @@ const MonacoCanvas = ({ value, setValue, taskId, executeTaskRef }: MonacoCanvasP
   const statusColor = connected ? "#28a745" : "#dc3545";
   const statusText = connected ? "Connected" : "Disconnected";
 
-  // Always use 'plaintext' for the editor language with the extension logic removed
+  // Determine the appropriate language for syntax highlighting
   const selectedFileContent = selectedFile ? files.find(f => f.path === selectedFile)?.content || '' : value;
-  const editorLanguage = "plaintext";
+  const editorLanguage = selectedFile ? getLanguage(selectedFile) : 'plaintext';
 
   return (
     <div className="flex flex-col w-[30%] min-w-[260px] max-w-[600px] bg-gray-50 h-full">
@@ -206,7 +222,7 @@ const MonacoCanvas = ({ value, setValue, taskId, executeTaskRef }: MonacoCanvasP
         <div className="flex-1">
           <Editor
             height="100%"
-            defaultLanguage={editorLanguage}
+            language={editorLanguage}
             value={selectedFileContent}
             theme="vs-light"
             options={{
