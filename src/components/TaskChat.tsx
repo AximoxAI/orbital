@@ -44,6 +44,43 @@ const mockUsers: UserType[] = [
   { id: "15", name: "Raj Singh", avatar: "https://randomuser.me/api/portraits/men/95.jpg", isOnline: false },
 ];
 
+// Available bots for mention autocomplete with color configurations
+const availableBots = ["@orbital_cli", "@gemini_cli", "@claude_code"];
+
+// Bot color configurations
+const getBotStyles = (bot: string) => {
+  const styles = {
+    "@orbital_cli": {
+      bgColor: "bg-purple-100",
+      textColor: "text-purple-800",
+      selectedBg: "bg-purple-50",
+      selectedText: "text-purple-900",
+      iconColor: "text-purple-600"
+    },
+    "@gemini_cli": {
+      bgColor: "bg-blue-100",
+      textColor: "text-blue-800",
+      selectedBg: "bg-blue-50",
+      selectedText: "text-blue-900",
+      iconColor: "text-blue-600"
+    },
+    "@claude_code": {
+      bgColor: "bg-green-100",
+      textColor: "text-green-800",
+      selectedBg: "bg-green-50",
+      selectedText: "text-green-900",
+      iconColor: "text-green-600"
+    }
+  };
+  return styles[bot as keyof typeof styles] || {
+    bgColor: "bg-gray-100",
+    textColor: "text-gray-800",
+    selectedBg: "bg-gray-50",
+    selectedText: "text-gray-900",
+    iconColor: "text-gray-600"
+  };
+};
+
 // --- Helper: Format datetime to readable ---
 function formatDateTime(datetime: string) {
   if (!datetime) return "";
@@ -63,8 +100,15 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
   const [newMessage, setNewMessage] = useState('');
   const [editorValue, setEditorValue] = useState('// Type your code here...');
   const [loading, setLoading] = useState(false);
+  
+  // Bot mention autocomplete states
+  const [showBotSuggestions, setShowBotSuggestions] = useState(false);
+  const [filteredBots, setFilteredBots] = useState<string[]>([]);
+  const [selectedBotIndex, setSelectedBotIndex] = useState(0);
+  const [mentionStartPos, setMentionStartPos] = useState(0);
 
   const chatApi = new ChatApi(new Configuration({ basePath: "http://localhost:3000" }));
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { user } = useUser();
 
@@ -129,6 +173,90 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     fetchMessages();
     // eslint-disable-next-line
   }, [isOpen, taskId]);
+
+  // Handle bot mention detection and filtering
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    const cursorPos = e.target.selectionStart;
+    
+    setNewMessage(value);
+    
+    // Find the last @ symbol before cursor position
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtIndex !== -1) {
+      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+      
+      // Check if we're still typing a mention (no spaces after @)
+      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+        const filtered = availableBots.filter(bot => 
+          bot.toLowerCase().includes(textAfterAt.toLowerCase())
+        );
+        
+        if (filtered.length > 0) {
+          setFilteredBots(filtered);
+          setShowBotSuggestions(true);
+          setSelectedBotIndex(0);
+          setMentionStartPos(lastAtIndex);
+          return;
+        }
+      }
+    }
+    
+    setShowBotSuggestions(false);
+  };
+
+  // Handle bot selection from dropdown
+  const selectBot = (bot: string) => {
+    if (!textareaRef.current) return;
+    
+    const beforeMention = newMessage.substring(0, mentionStartPos);
+    const afterCursor = newMessage.substring(textareaRef.current.selectionStart);
+    const newValue = beforeMention + bot + ' ' + afterCursor;
+    
+    setNewMessage(newValue);
+    setShowBotSuggestions(false);
+    
+    // Focus back to textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newCursorPos = beforeMention.length + bot.length + 1;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
+      }
+    }, 0);
+  };
+
+  // Handle keyboard navigation for bot suggestions
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (showBotSuggestions) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedBotIndex((prev) => 
+          prev < filteredBots.length - 1 ? prev + 1 : 0
+        );
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedBotIndex((prev) => 
+          prev > 0 ? prev - 1 : filteredBots.length - 1
+        );
+      } else if (e.key === 'Tab' || e.key === 'Enter') {
+        if (!e.shiftKey) {
+          e.preventDefault();
+          selectBot(filteredBots[selectedBotIndex]);
+          return;
+        }
+      } else if (e.key === 'Escape') {
+        setShowBotSuggestions(false);
+      }
+    }
+    
+    if (e.key === 'Enter' && !e.shiftKey && !showBotSuggestions) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
 
   const sendMessageToApi = async (content: string) => {
     if (!taskId) return;
@@ -216,6 +344,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
       const shouldExecuteTask = trimmedMessage.startsWith("@orbital_cli") || trimmedMessage.startsWith("@gemini_cli") || trimmedMessage.startsWith("@claude_code");
       
       setNewMessage('');
+      setShowBotSuggestions(false);
       
       // Execute task after sending message if executeTaskRef is available and message starts with trigger words
       if (shouldExecuteTask && executeTaskRef.current) {
@@ -236,6 +365,27 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     return colors[author as keyof typeof colors] || 'bg-gray-500';
   };
 
+  // Function to render message content with styled bot mentions
+  const renderMessageContent = (content: string) => {
+    const botMentionRegex = /(@orbital_cli|@gemini_cli|@claude_code)/g;
+    const parts = content.split(botMentionRegex);
+    
+    return parts.map((part, index) => {
+      if (availableBots.includes(part)) {
+        const styles = getBotStyles(part);
+        return (
+          <span
+            key={index}
+            className={`inline-flex items-center px-2 py-1 rounded-md text-base font-semibold ${styles.bgColor} ${styles.textColor}`}
+          >
+            <Bot className={`w-4 h-4 mr-1 ${styles.iconColor}`} />
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
 
   if (!isOpen) return null;
 
@@ -313,7 +463,9 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
                         <pre className="whitespace-pre-wrap text-xs">{message.content}</pre>
                       </div>
                     ) : (
-                      message.content
+                      <div className="flex flex-wrap items-center gap-1">
+                        {renderMessageContent(message.content)}
+                      </div>
                     )}
                   </div>
                   {message.taskSuggestion && (
@@ -345,20 +497,37 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
           )}
         </div>
 
-        <div className={`p-4 border-t border-gray-200 ${isFullPage ? 'max-w-4xl mx-auto w-full' : ''}`}>
+        <div className={`p-4 border-t border-gray-200 relative ${isFullPage ? 'max-w-4xl mx-auto w-full' : ''}`}>
+          {/* Bot suggestions dropdown */}
+          {showBotSuggestions && (
+            <div className="absolute bottom-full left-4 right-4 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+              {filteredBots.map((bot, index) => {
+                const styles = getBotStyles(bot);
+                return (
+                  <div
+                    key={bot}
+                    className={`px-3 py-2 cursor-pointer text-base font-semibold flex items-center space-x-2 ${
+                      index === selectedBotIndex ? `${styles.selectedBg} ${styles.selectedText}` : `hover:${styles.bgColor} ${styles.textColor}`
+                    }`}
+                    onClick={() => selectBot(bot)}
+                  >
+                    <Bot className={`w-4 h-4 ${styles.iconColor}`} />
+                    <span>{bot}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
           <div className="flex space-x-2">
             <Textarea
+              ref={textareaRef}
               placeholder="Ask about the task or discuss implementation..."
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              className="flex-1"
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              className="flex-1 text-base"
               rows={2}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
-                }
-              }}
             />
             <Button 
               onClick={handleSendMessage} 
