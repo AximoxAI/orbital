@@ -29,6 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 const configuration = new Configuration({
   basePath: 'http://localhost:3000',
@@ -200,6 +201,7 @@ const ProjectBoard = () => {
 
   const { user } = useUser();
   const { signOut } = useClerk();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -265,14 +267,22 @@ const ProjectBoard = () => {
     setShowRequirementsModal(true);
   };
 
+  // Handler for maximizing chat (navigating to fullscreen)
+  const handleMaximizeChat = (taskId: string, taskTitle: string) => {
+    navigate(`/tasks/${taskId}`, { state: { taskName: taskTitle } });
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Side-panel TaskChat (not fullscreen, just a panel) */}
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         taskName={selectedTask?.title ?? ""}
         taskId={selectedTask?.id ?? ""}
         onCreateTask={handleCreateTask}
+        // You may want to pass handleMaximizeChat to TaskChat,
+        // or you can add maximize button logic inside TaskChat itself.
       />
 
       <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-y-scroll`}>
@@ -463,6 +473,9 @@ const ProjectBoard = () => {
           onTaskClick={(taskId: string, taskTitle: string) => {
             setSelectedTask({ id: taskId, title: taskTitle });
             setChatOpen(true);
+            // For maximizing to fullscreen, you could call handleMaximizeChat(taskId, taskTitle) here if desired
+            // Or provide a maximize button in TaskChat that calls
+            // navigate(`/tasks/${taskId}`, { state: { taskName: taskTitle } });
           }}
           avatarMap={avatarMap}
           onGenerateRequirements={handleShowRequirementsModal}

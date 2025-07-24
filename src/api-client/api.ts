@@ -161,6 +161,12 @@ export interface CreateProjectDto {
      */
     'description'?: string;
     /**
+     * The github URL of the project
+     * @type {string}
+     * @memberof CreateProjectDto
+     */
+    'repoUrl'?: string;
+    /**
      * Type of the project (e.g., web_development, conversational)
      * @type {string}
      * @memberof CreateProjectDto

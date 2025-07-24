@@ -6,10 +6,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import LeftPanel from "./LeftPanel";
 import MonacoCanvas from "./MonacoCanvas";
-import { useClerk, useUser } from "@clerk/clerk-react";
-import { useNavigate, useLocation } from "react-router-dom";
-
+import { useUser } from "@clerk/clerk-react";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChatApi, Configuration } from "@/api-client";
+import { io, Socket } from "socket.io-client";
 
 interface TaskChatProps {
   isOpen: boolean;
@@ -20,10 +20,10 @@ interface TaskChatProps {
 }
 
 interface UserType {
-  id: string
-  name: string
-  avatar: string
-  isOnline: boolean
+  id: string;
+  name: string;
+  avatar: string;
+  isOnline: boolean;
 }
 
 const mockUsers: UserType[] = [
@@ -44,10 +44,7 @@ const mockUsers: UserType[] = [
   { id: "15", name: "Raj Singh", avatar: "https://randomuser.me/api/portraits/men/95.jpg", isOnline: false },
 ];
 
-// Available bots for mention autocomplete with color configurations
 const availableBots = ["@orbital_cli", "@gemini_cli", "@claude_code"];
-
-// Bot color configurations
 const getBotStyles = (bot: string) => {
   const styles = {
     "@orbital_cli": {
@@ -81,7 +78,6 @@ const getBotStyles = (bot: string) => {
   };
 };
 
-// --- Helper: Format datetime to readable ---
 function formatDateTime(datetime: string) {
   if (!datetime) return "";
   const d = new Date(datetime);
@@ -95,19 +91,19 @@ function formatDateTime(datetime: string) {
   });
 }
 
-const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatProps) => {
+const SOCKET_URL = "http://localhost:3000/chat";
+
+const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTask }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [editorValue, setEditorValue] = useState('// Type your code here...');
   const [loading, setLoading] = useState(false);
-  
-  // Bot mention autocomplete states
+
   const [showBotSuggestions, setShowBotSuggestions] = useState(false);
   const [filteredBots, setFilteredBots] = useState<string[]>([]);
   const [selectedBotIndex, setSelectedBotIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(0);
 
-  // MonacoCanvas visibility states
   const [showMonacoCanvas, setShowMonacoCanvas] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
 
@@ -118,32 +114,71 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
 
   const navigate = useNavigate();
   const location = useLocation();
+  const { taskId: routeTaskId } = useParams<{ taskId?: string }>();
 
-  const [isFullPage, setIsFullPage] = useState(false);
-  const [prevPath, setPrevPath] = useState<string | null>(null);
+  // Fullscreen if in /tasks/:taskId route
+  const isFullPage = !!routeTaskId;
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (isFullPage) {
-      if (!prevPath) setPrevPath(location.pathname + location.search + location.hash);
-      if (location.pathname !== `/tasks/${taskId}`) {
-        navigate(`/tasks/${taskId}`, { replace: false });
-      }
+  // --- TASK NAME LOGIC: Take prop, and in fullscreen take state if present ---
+  let taskName = propTaskName;
+  if (isFullPage && location.state?.taskName) {
+    // Use the routed-in state for task name (from /tasks/:taskId navigation)
+    taskName = location.state.taskName;
+  }
+
+  // --- SOCKET.IO SETUP ---
+  const socketRef = useRef<Socket | null>(null);
+
+  const mapBackendMsg = (msg: any) => {
+    let type: "ai" | "human";
+    if (msg.sender_type) {
+      type = msg.sender_type === "human" ? "human" : "ai";
+    } else if (msg.type) {
+      type = msg.type === "human" ? "human" : (msg.type === "text" ? "human" : "ai");
     } else {
-      if (prevPath && location.pathname === `/tasks/${taskId}`) {
-        navigate(prevPath, { replace: false });
-        setPrevPath(null);
-      }
+      type = "ai";
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isFullPage, isOpen, taskId]);
+    let author = msg.sender_id === user?.username ? "You" : (msg.sender_id || "Bot");
+    if (type === "ai") author = "Bot";
+    return {
+      id: msg.id || String(Date.now()),
+      type,
+      sender_id: msg.sender_id,
+      author,
+      content: msg.content,
+      timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
+      isCode: !!msg.isCode,
+      taskSuggestion: msg.taskSuggestion || undefined,
+    };
+  };
 
   useEffect(() => {
-    if (isOpen && location.pathname === `/tasks/${taskId}`) {
-      setIsFullPage(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, location.pathname, taskId]);
+    if (!isOpen || !taskId) return;
+
+    const socket = io(SOCKET_URL, { transports: ['websocket'] });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setSocketConnected(true);
+      socket.emit("joinTaskRoom", { taskId });
+    });
+
+    socket.on("disconnect", () => {
+      setSocketConnected(false);
+    });
+
+    socket.on("newMessage", (msg: any) => {
+      setMessages(prev => [
+        ...prev,
+        mapBackendMsg(msg)
+      ]);
+    });
+
+    return () => {
+      socket.emit("leaveTaskRoom", { taskId });
+      socket.disconnect();
+    };
+  }, [isOpen, taskId, user?.username]);
 
   useEffect(() => {
     if (!isOpen || !taskId) return;
@@ -152,15 +187,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
       try {
         const response = await chatApi.chatControllerFindAll(taskId);
         const apiMessages = Array.isArray(response.data) ? response.data : [];
-        const mapped: any = apiMessages.map((msg: any) => ({
-          id: msg.id || String(Date.now()),
-          type: msg.type === "human" ? "human" : "ai",
-          author: user?.username ,
-          content: msg.content,
-          timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
-          isCode: !!msg.isCode,
-          taskSuggestion: msg.taskSuggestion || undefined,
-        }));
+        const mapped: any = apiMessages.map((msg: any) => mapBackendMsg(msg));
         setMessages(mapped);
       } catch (error) {
         setMessages([{
@@ -176,28 +203,24 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     };
     fetchMessages();
     // eslint-disable-next-line
-  }, [isOpen, taskId]);
+  }, [isOpen, taskId, user?.username]);
 
-  // Handle bot mention detection and filtering
+  // Bot mention detection and filtering (unchanged)
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
-    
+
     setNewMessage(value);
-    
-    // Find the last @ symbol before cursor position
+
     const textBeforeCursor = value.substring(0, cursorPos);
     const lastAtIndex = textBeforeCursor.lastIndexOf('@');
-    
+
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-      
-      // Check if we're still typing a mention (no spaces after @)
       if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
-        const filtered = availableBots.filter(bot => 
+        const filtered = availableBots.filter(bot =>
           bot.toLowerCase().includes(textAfterAt.toLowerCase())
         );
-        
         if (filtered.length > 0) {
           setFilteredBots(filtered);
           setShowBotSuggestions(true);
@@ -207,22 +230,19 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
         }
       }
     }
-    
     setShowBotSuggestions(false);
   };
 
-  // Handle bot selection from dropdown
   const selectBot = (bot: string) => {
     if (!textareaRef.current) return;
-    
+
     const beforeMention = newMessage.substring(0, mentionStartPos);
     const afterCursor = newMessage.substring(textareaRef.current.selectionStart);
     const newValue = beforeMention + bot + ' ' + afterCursor;
-    
+
     setNewMessage(newValue);
     setShowBotSuggestions(false);
-    
-    // Focus back to textarea
+
     setTimeout(() => {
       if (textareaRef.current) {
         const newCursorPos = beforeMention.length + bot.length + 1;
@@ -232,17 +252,16 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     }, 0);
   };
 
-  // Handle keyboard navigation for bot suggestions
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showBotSuggestions) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedBotIndex((prev) => 
+        setSelectedBotIndex((prev) =>
           prev < filteredBots.length - 1 ? prev + 1 : 0
         );
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setSelectedBotIndex((prev) => 
+        setSelectedBotIndex((prev) =>
           prev > 0 ? prev - 1 : filteredBots.length - 1
         );
       } else if (e.key === 'Tab' || e.key === 'Enter') {
@@ -255,112 +274,48 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
         setShowBotSuggestions(false);
       }
     }
-    
+
     if (e.key === 'Enter' && !e.shiftKey && !showBotSuggestions) {
       e.preventDefault();
       handleSendMessage();
     }
   };
 
-  const sendMessageToApi = async (content: string) => {
-    if (!taskId) return;
-    const tempId = `temp-${Date.now()}`;
-    const optimisticMessage = {
-      id: tempId,
-      type: "human",
-      author: user?.username,
-      sender_id: user?.username,
+  // Send message via WebSocket
+  const sendMessageViaSocket = (content: string) => {
+    if (!taskId || !socketRef.current) return;
+    const message = {
+      senderType: "human",
+      senderId: user?.username || "unknown_user",
       content,
-      timestamp: "Just now",
-      isCode: false,
-      pending: true,
+      timestamp: new Date().toISOString(),
+      taskId
     };
-    setMessages(prev => [...prev, optimisticMessage]);
-
-    try {
-      // Only include @CodeBot in mentions if "@codebot" is typed in the message (case-insensitive)
-      const mentions = /@codebot/i.test(content) ? ["@CodeBot"] : [];
-      const body = {
-        content,
-        type: "text",
-        mentions,
-      };
-      const response = await chatApi.chatControllerCreate(taskId, body);
-      let apiMessage = (response.data as any) || {};
-      if (apiMessage && apiMessage.id) {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === tempId
-              ? {
-                  id: apiMessage.id,
-                  type: apiMessage.type === "human" ? "human" : "ai",
-                  author: user?.username,
-                  content: apiMessage.content,
-                  timestamp: apiMessage.timestamp ? formatDateTime(apiMessage.timestamp) : "Just now",
-                  isCode: !!apiMessage.isCode,
-                  taskSuggestion: apiMessage.taskSuggestion || undefined,
-                  pending: false,
-                }
-              : msg
-          )
-        );
-      } else {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === tempId
-              ? {
-                  ...msg,
-                  type: "ai",
-                  author: "System",
-                  content: "No response from server.",
-                  pending: false
-                }
-              : msg
-          )
-        );
-      }
-    } catch (error) {
-      setMessages(prev =>
-        prev.map(msg =>
-          msg.id === tempId
-            ? {
-                ...msg,
-                type: "ai",
-                author: "System",
-                content: "Sorry, I couldn't send your message to the server.",
-                pending: false
-              }
-            : msg
-        )
-      );
-    }
+    socketRef.current.emit("sendMessage", message);
   };
 
-  // Reference to store the execute task function from MonacoCanvas
+  // Reference for MonacoCanvas execute
   const executeTaskRef = useRef<(() => void) | null>(null);
 
-  // Handle socket connection status from MonacoCanvas
   const handleSocketConnected = (connected: boolean) => {
     setSocketConnected(connected);
   };
 
+  // Use socket send only, no optimistic update
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      sendMessageToApi(newMessage);
-      
-      // Check if message starts with "@orbital_cli" or "@gemini_cli" to trigger task execution
+      sendMessageViaSocket(newMessage);
+
       const trimmedMessage = newMessage.trim();
       const shouldExecuteTask = trimmedMessage.startsWith("@orbital_cli") || trimmedMessage.startsWith("@gemini_cli") || trimmedMessage.startsWith("@claude_code");
-      
-      // Show MonacoCanvas when a bot is mentioned
+
       if (shouldExecuteTask) {
         setShowMonacoCanvas(true);
       }
-      
+
       setNewMessage('');
       setShowBotSuggestions(false);
-      
-      // Execute task after sending message if executeTaskRef is available and message starts with trigger words
+
       if (shouldExecuteTask && executeTaskRef.current) {
         executeTaskRef.current();
       }
@@ -379,11 +334,10 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     return colors[author as keyof typeof colors] || 'bg-gray-500';
   };
 
-  // Function to render message content with styled bot mentions
   const renderMessageContent = (content: string) => {
     const botMentionRegex = /(@orbital_cli|@gemini_cli|@claude_code)/g;
     const parts = content.split(botMentionRegex);
-    
+
     return parts.map((part, index) => {
       if (availableBots.includes(part)) {
         const styles = getBotStyles(part);
@@ -401,17 +355,29 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
     });
   };
 
+  // Maximize/minimize handlers
+  const handleMaximize = () => {
+    if (!isFullPage && taskId) {
+      // Pass the taskName into navigation state for fullscreen route
+      navigate(`/tasks/${taskId}`, { state: { taskName } });
+    }
+  };
+  const handleMinimize = () => {
+    if (isFullPage) {
+      navigate('/project-board');
+    }
+  };
+
   if (!isOpen) return null;
 
   const containerClasses = isFullPage
     ? "fixed inset-0 bg-white z-50 flex flex-row"
     : "fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-lg z-50 flex flex-col";
 
-  // Determine chat width based on MonacoCanvas visibility
-  const chatWidthClass = isFullPage && showMonacoCanvas 
-    ? "flex flex-col w-[70%] min-w-[384px] h-full bg-white border-r border-gray-100" 
-    : isFullPage 
-    ? "flex flex-col flex-1 h-full bg-white" 
+  const chatWidthClass = isFullPage && showMonacoCanvas
+    ? "flex flex-col w-[70%] min-w-[384px] h-full bg-white border-r border-gray-100"
+    : isFullPage
+    ? "flex flex-col flex-1 h-full bg-white"
     : "flex flex-col w-full h-full";
 
   return (
@@ -427,7 +393,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setIsFullPage(!isFullPage)}
+              onClick={isFullPage ? handleMinimize : handleMaximize}
             >
               {isFullPage ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </Button>
@@ -437,6 +403,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
           </div>
         </div>
 
+        {/* ...rest unchanged... */}
         <div className="w-full max-w-6xl mx-auto p-6">
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-start">
             {mockUsers.map((user) => (
@@ -456,14 +423,12 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
             ))}
           </div>
         </div>
-
-        {/* FULL WIDTH MESSAGES */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <div className="text-center text-gray-400">Loading messages...</div>
           ) : (
             messages.map((message) => (
-              <div key={message.id} className="flex space-x-3 opacity-100" style={message.pending ? { opacity: 0.6 } : {}}>
+              <div key={message.id} className="flex space-x-3 opacity-100">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
                     {message.type === 'ai' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
@@ -473,7 +438,6 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
                   <div className="flex items-center space-x-2 mb-1">
                     <span className="text-sm font-medium text-gray-900">{message.author}</span>
                     <span className="text-xs text-gray-500">{message.timestamp}</span>
-                    {message.pending && <span className="text-xs text-blue-400 animate-pulse ml-2">Sending...</span>}
                   </div>
                   <div className={`text-sm text-gray-700 ${message.isCode ? 'bg-gray-50 p-3 rounded-lg font-mono' : ''}`}>
                     {message.isCode ? (
@@ -518,10 +482,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
             ))
           )}
         </div>
-
-        {/* FULL WIDTH INPUT BOX */}
         <div className="p-4 border-t border-gray-200 relative">
-          {/* Bot suggestions dropdown */}
           {showBotSuggestions && (
             <div className="absolute bottom-full left-4 right-4 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
               {filteredBots.map((bot, index) => {
@@ -541,7 +502,7 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
               })}
             </div>
           )}
-          
+
           <div className="flex space-x-2">
             <Textarea
               ref={textareaRef}
@@ -552,8 +513,8 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
               className="flex-1 text-base"
               rows={2}
             />
-            <Button 
-              onClick={handleSendMessage} 
+            <Button
+              onClick={handleSendMessage}
               disabled={!newMessage.trim()}
             >
               <Send className="w-4 h-4" />
@@ -562,9 +523,9 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
         </div>
       </div>
       {isFullPage && (
-        <MonacoCanvas 
-          value={editorValue} 
-          taskId={taskId} 
+        <MonacoCanvas
+          value={editorValue}
+          taskId={taskId}
           setValue={setEditorValue}
           executeTaskRef={executeTaskRef}
           isVisible={showMonacoCanvas}
