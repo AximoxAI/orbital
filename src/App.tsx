@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams, useLocation } from "react-router-dom";
 import Index from "./pages/Index";
 import SoftwareEngineering from "./pages/SoftwareEngineering";
 import ProjectBoard from "./pages/ProjectBoard";
@@ -14,7 +14,9 @@ import TaskChat from "./components/TaskChat";
 
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
-  const taskName = taskId ? `Task #${taskId}` : "Task";
+  const location = useLocation();
+  // Use taskName from route state if available, else fallback to Task #id or "Task"
+  const taskName = location.state?.taskName || (taskId ? `Task #${taskId}` : "Task");
   return (
     <TaskChat
       isOpen={!!taskId}

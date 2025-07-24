@@ -27,7 +27,6 @@ interface UserType {
 }
 
 const mockUsers: UserType[] = [
-  // ... (same as before)
   { id: "1", name: "James Adams", avatar: "https://randomuser.me/api/portraits/men/11.jpg", isOnline: true },
   { id: "2", name: "Sam Acer", avatar: "https://randomuser.me/api/portraits/men/22.jpg", isOnline: true },
   { id: "3", name: "Erin Reyes", avatar: "https://randomuser.me/api/portraits/women/33.jpg", isOnline: true },
@@ -47,7 +46,6 @@ const mockUsers: UserType[] = [
 
 const availableBots = ["@orbital_cli", "@gemini_cli", "@claude_code"];
 const getBotStyles = (bot: string) => {
-  // ... (same as before)
   const styles = {
     "@orbital_cli": {
       bgColor: "bg-purple-100",
@@ -95,19 +93,17 @@ function formatDateTime(datetime: string) {
 
 const SOCKET_URL = "http://localhost:3000/chat";
 
-const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatProps) => {
+const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTask }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [editorValue, setEditorValue] = useState('// Type your code here...');
   const [loading, setLoading] = useState(false);
 
-  // Bot mention autocomplete states
   const [showBotSuggestions, setShowBotSuggestions] = useState(false);
   const [filteredBots, setFilteredBots] = useState<string[]>([]);
   const [selectedBotIndex, setSelectedBotIndex] = useState(0);
   const [mentionStartPos, setMentionStartPos] = useState(0);
 
-  // MonacoCanvas visibility states
   const [showMonacoCanvas, setShowMonacoCanvas] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
 
@@ -123,10 +119,16 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
   // Fullscreen if in /tasks/:taskId route
   const isFullPage = !!routeTaskId;
 
+  // --- TASK NAME LOGIC: Take prop, and in fullscreen take state if present ---
+  let taskName = propTaskName;
+  if (isFullPage && location.state?.taskName) {
+    // Use the routed-in state for task name (from /tasks/:taskId navigation)
+    taskName = location.state.taskName;
+  }
+
   // --- SOCKET.IO SETUP ---
   const socketRef = useRef<Socket | null>(null);
 
-  // Normalization of backend message for both REST and Socket
   const mapBackendMsg = (msg: any) => {
     let type: "ai" | "human";
     if (msg.sender_type) {
@@ -356,7 +358,8 @@ const TaskChat = ({ isOpen, onClose, taskName, taskId, onCreateTask }: TaskChatP
   // Maximize/minimize handlers
   const handleMaximize = () => {
     if (!isFullPage && taskId) {
-      navigate(`/tasks/${taskId}`);
+      // Pass the taskName into navigation state for fullscreen route
+      navigate(`/tasks/${taskId}`, { state: { taskName } });
     }
   };
   const handleMinimize = () => {
