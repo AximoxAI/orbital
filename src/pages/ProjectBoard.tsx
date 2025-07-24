@@ -29,6 +29,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 
 const configuration = new Configuration({
   basePath: 'http://localhost:3000',
@@ -200,6 +201,7 @@ const ProjectBoard = () => {
 
   const { user } = useUser();
   const { signOut } = useClerk();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -267,6 +269,7 @@ const ProjectBoard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Side-panel TaskChat (not fullscreen, just a panel) */}
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}

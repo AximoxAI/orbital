@@ -41,8 +41,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
 const App = () => (
   <ClerkProvider
     publishableKey={clerkPubKey}
-    // signInUrl="/sign-in"
-    // signUpUrl="/sign-up"
   >
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
