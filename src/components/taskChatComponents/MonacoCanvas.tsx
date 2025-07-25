@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import Editor from "@monaco-editor/react";
 import { io, Socket } from "socket.io-client";
 import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
@@ -11,14 +11,8 @@ interface MonacoCanvasProps {
   executeTaskRef?: React.MutableRefObject<(() => void) | null>;
   isVisible: boolean;
   onSocketConnected?: (connected: boolean) => void;
-  onLogMessage?: (msg: {
-    status: string;
-    message: string;
-    summary?: string;
-    timestamp?: string;
-    filePath?: string;
-  }) => void;
   filesFromApi?: { path: string; content: string; [key: string]: any }[];
+  onLogsUpdate?: (logs: string[]) => void; // NEW PROP
 }
 
 interface FileItem {
@@ -48,16 +42,16 @@ const getLanguage = (filePath: string) => {
   return 'plaintext';
 };
 
-const MonacoCanvas = ({
+const MonacoCanvas = forwardRef(({
   value,
   setValue,
   taskId,
   executeTaskRef,
   isVisible,
   onSocketConnected,
-  onLogMessage,
   filesFromApi = [],
-}: MonacoCanvasProps) => {
+  onLogsUpdate,
+}: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
   const [agentId] = useState(DEFAULT_AGENT_ID);
@@ -72,16 +66,15 @@ const MonacoCanvas = ({
   const [previewContent, setPreviewContent] = useState('');
   const resizeRef = useRef<HTMLDivElement>(null);
 
-  // Helper for sending logs to TaskChat - memoized to prevent infinite loops
-  const addCanvasLog = useCallback((step: {
-    status: string;
-    message: string;
-    summary?: string;
-    timestamp?: string;
-    filePath?: string;
-  }) => {
-    if (onLogMessage) onLogMessage(step);
-  }, [onLogMessage]);
+  // Log state
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+
+  // Send logs to parent if handler is provided
+  useEffect(() => {
+    if (onLogsUpdate) {
+      onLogsUpdate(consoleLogs);
+    }
+  }, [consoleLogs, onLogsUpdate]);
 
   // Handle files from API (generated files) - separate from WebSocket files
   useEffect(() => {
@@ -94,28 +87,22 @@ const MonacoCanvas = ({
       setFiles(mapped);
       setSelectedFile(mapped[0]?.path || null);
       setShowPreview(false);
-      // Don't disable socket execution when showing API files - they're separate
-      addCanvasLog({
-        status: "info",
-        message: `📁 Loaded ${mapped.length} generated files from API`
-      });
     }
   }, [filesFromApi]);
 
   // Socket.io connection and listeners
   useEffect(() => {
     if (!isVisible) {
-      // Clean up socket when not visible
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
         setConnected(false);
         onSocketConnected?.(false);
       }
+      setConsoleLogs([]); // clear logs on hide
       return;
     }
 
-    // Don't create new socket if one already exists and is connected
     if (socketRef.current && socketRef.current.connected) {
       return;
     }
@@ -129,49 +116,28 @@ const MonacoCanvas = ({
     socket.on("connect", () => {
       setConnected(true);
       onSocketConnected?.(true);
-      addCanvasLog({
-        status: "connection",
-        message: "✅ Connected to task execution gateway"
-      });
     });
 
     socket.on("disconnect", () => {
       setConnected(false);
       onSocketConnected?.(false);
-      addCanvasLog({
-        status: "connection",
-        message: "❌ Disconnected from server"
-      });
     });
 
-    socket.on("connect_error", (error: any) => {
+    socket.on("connect_error", () => {
       setConnected(false);
       onSocketConnected?.(false);
-      addCanvasLog({
-        status: "error",
-        message: `❌ Connection error: ${error.message}`
-      });
     });
 
     socket.on('execution_result', (data) => {
-      console.log('Received execution_result:', data); // Debug log
-      
-      const { taskId: resultTaskId, status, message, summary, timestamp } = data;
-      
-      // Log every execution result
-      addCanvasLog({
-        status,
-        message: typeof message === "object" && message?.path
-          ? `📄 File received: ${message.path}`
-          : typeof message === "string"
-            ? message
-            : `Status: ${status}`,
-        summary,
-        timestamp,
-        filePath: typeof message === "object" && message?.path ? message.path : undefined
-      });
+      // LOGIC for capturing logs
+      if (data && (data.type === "agent" || data.type === "sandbox")) {
+        if (typeof data.content === "string") {
+          setConsoleLogs(prev => [...prev, data.content]);
+        }
+      }
 
-      // Handle in-progress updates to main editor
+      const { taskId: resultTaskId, status, message, summary, timestamp } = data;
+
       if (
         resultTaskId === taskId &&
         status === "in_progress" &&
@@ -182,7 +148,6 @@ const MonacoCanvas = ({
         }
       }
 
-      // Handle file generation - this is the key fix
       if (
         resultTaskId === taskId &&
         status === "file" &&
@@ -197,50 +162,27 @@ const MonacoCanvas = ({
           timestamp: timestamp || new Date().toISOString()
         };
 
-        console.log('Adding new file:', newFile); // Debug log
-
         setFiles(prevFiles => {
           const existingIndex = prevFiles.findIndex(f => f.path === message.path);
           if (existingIndex >= 0) {
-            // Update existing file
             const updated = [...prevFiles];
             updated[existingIndex] = newFile;
             return updated;
           }
-          // Add new file
           return [...prevFiles, newFile];
         });
 
-        // Auto-select the first file if none selected
         setSelectedFile(prev => prev || message.path);
-      }
-
-      // Handle completion status
-      if (resultTaskId === taskId && status === "completed") {
-        addCanvasLog({
-          status: "success",
-          message: "✅ Task execution completed successfully"
-        });
-      }
-
-      // Handle error status
-      if (resultTaskId === taskId && status === "error") {
-        addCanvasLog({
-          status: "error",
-          message: `❌ Task execution failed: ${typeof message === "string" ? message : "Unknown error"}`
-        });
       }
     });
 
-    // Cleanup function
     return () => {
       if (socket && socket.connected) {
         socket.disconnect();
       }
     };
-  }, [isVisible, taskId]); // Removed problematic dependencies
+  }, [isVisible, taskId, setValue]);
 
-  // Handle file selection
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
     const file = files.find(f => f.path === filePath);
@@ -249,44 +191,33 @@ const MonacoCanvas = ({
     }
   };
 
-  // Execute task function - fixed to work properly
   const handleExecuteTask = useCallback(() => {
     if (!taskId || !agentId) {
-      addCanvasLog({ status: "error", message: "❌ Please provide both Task ID and Agent ID" });
       return;
     }
 
-    // Clear previous files when starting new execution (but keep API files)
     if (filesFromApi.length === 0) {
       setFiles([]);
       setSelectedFile(null);
     }
-    
+
     setHasTriggeredExecution(true);
+    setConsoleLogs([]); // clear logs on each execution
 
     const executeAfterConnection = () => {
       if (!socketRef.current || !socketRef.current.connected) {
-        addCanvasLog({ status: "waiting", message: "⏳ Waiting for socket connection..." });
         setTimeout(executeAfterConnection, 500);
         return;
       }
-      
-      addCanvasLog({
-        status: "execution",
-        message: `🚀 Executing task "${taskId}" with agent "${agentId}"...`
-      });
-      
+
       try {
         socketRef.current.emit("execute", { taskId, agentId });
-      } catch (error: any) {
-        addCanvasLog({ status: "error", message: `❌ Failed to send request: ${error.message}` });
-      }
+      } catch {}
     };
 
     if (socketRef.current?.connected) {
       executeAfterConnection();
     } else {
-      // Wait a bit longer for connection if not immediately available
       setTimeout(executeAfterConnection, 1000);
     }
   }, [taskId, agentId, filesFromApi.length]);
@@ -297,7 +228,6 @@ const MonacoCanvas = ({
     }
   }, [handleExecuteTask, executeTaskRef]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (socketRef.current) {
@@ -308,7 +238,6 @@ const MonacoCanvas = ({
     };
   }, []);
 
-  // Resize functionality
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -342,7 +271,6 @@ const MonacoCanvas = ({
     };
   }, [isResizing]);
 
-  // Preview functionality
   const isHtmlFile = (filePath: string) => {
     return filePath && (filePath.endsWith('.html') || filePath.endsWith('.htm'));
   };
@@ -352,7 +280,6 @@ const MonacoCanvas = ({
     : value;
   const currentFileName = selectedFile || (files[0]?.path ?? "current-file");
 
-  // Determine the appropriate language for syntax highlighting
   const editorLanguage = selectedFile ? getLanguage(selectedFile) : getLanguage(currentFileName);
 
   const handleTogglePreview = () => {
@@ -362,7 +289,6 @@ const MonacoCanvas = ({
     setShowPreview(!showPreview);
   };
 
-  // Update preview content when file content changes
   useEffect(() => {
     if (showPreview) {
       setPreviewContent(currentFileContent);
@@ -378,7 +304,6 @@ const MonacoCanvas = ({
 
   return (
     <>
-      {/* Resize handle */}
       <div
         ref={resizeRef}
         className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize transition-colors duration-150 relative group"
@@ -392,12 +317,10 @@ const MonacoCanvas = ({
         </div>
       </div>
 
-      {/* Monaco Canvas */}
       <div
         className="flex flex-col bg-gray-50 h-full"
         style={{ width: `${width}%`, minWidth: '260px', maxWidth: '80%' }}
       >
-        {/* Header with status and preview button */}
         <div className="font-semibold text-gray-700 p-2 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div
@@ -423,9 +346,7 @@ const MonacoCanvas = ({
           )}
         </div>
 
-        {/* Main content area */}
         <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
-          {/* File List Sidebar */}
           {files.length > 0 && !showPreview && (
             <div className="w-48 bg-gray-50 border-r border-gray-200 flex flex-col">
               <div className="text-xs text-gray-600 font-medium p-2 border-b border-gray-200 bg-white">
@@ -450,7 +371,6 @@ const MonacoCanvas = ({
             </div>
           )}
 
-          {/* Editor or Preview */}
           <div className="flex-1">
             {showPreview ? (
               <div className="h-full flex flex-col">
@@ -488,6 +408,6 @@ const MonacoCanvas = ({
       </div>
     </>
   );
-};
+});
 
 export default MonacoCanvas;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   X, Send, User, Bot, Code, Maximize2, Minimize2, Plus
 } from "lucide-react";
@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import LeftPanel from "./LeftPanel";
 import MonacoCanvas from "./MonacoCanvas";
-import SystemLogsCard from "./SystemLogs";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChatApi, Configuration } from "@/api-client";
@@ -97,15 +96,6 @@ function formatDateTime(datetime: string) {
 
 const SOCKET_URL = "http://localhost:3000/chat";
 
-type CanvasLogMsg = {
-  id: string;
-  status: string;
-  message: string;
-  summary?: string;
-  timestamp?: string;
-  filePath?: string;
-};
-
 const TaskChat = ({
   isOpen,
   onClose,
@@ -114,8 +104,6 @@ const TaskChat = ({
   onCreateTask
 }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([]);
-  const [canvasLogMessages, setCanvasLogMessages] = useState<CanvasLogMsg[]>([]);
-  const [systemLogs, setSystemLogs] = useState<CanvasLogMsg[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [editorValue, setEditorValue] = useState("// Type your code here...");
   const [loading, setLoading] = useState(false);
@@ -129,6 +117,10 @@ const TaskChat = ({
   const [socketConnected, setSocketConnected] = useState(false);
 
   const [generatedFiles, setGeneratedFiles] = useState<any[]>([]);
+
+  // NEW: logs state and open/close
+  const [logs, setLogs] = useState<string[]>([]);
+  const [logsOpen, setLogsOpen] = useState(true);
 
   const chatApi = new ChatApi(new Configuration({ basePath: "http://localhost:3000" }));
   const tasksApi = new TasksApi(new Configuration({ basePath: "http://localhost:3000" }));
@@ -176,26 +168,6 @@ const TaskChat = ({
     };
   };
 
-  // Only collect system logs for SystemLogsCard (not for chat)
-  const collectSystemLogs = (msgs: any[], canvasLogs: CanvasLogMsg[]) => {
-    return [
-      ...msgs.filter(msg => msg.status || msg.type === "system")
-        .map(msg => ({
-          id: msg.id || String(Date.now()),
-          status: msg.status || "info",
-          message: msg.content || "",
-          summary: msg.summary,
-          timestamp: msg.timestamp,
-          filePath: msg.filePath
-        })),
-      ...canvasLogs
-    ].sort((a, b) => {
-      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : Number(a.id.split(".")[0]);
-      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : Number(b.id.split(".")[0]);
-      return timeA - timeB;
-    });
-  };
-
   useEffect(() => {
     if (!isOpen || !taskId) return;
 
@@ -213,20 +185,6 @@ const TaskChat = ({
 
     socket.on("newMessage", (msg: any) => {
       setMessages(prev => [...prev, mapBackendMsg(msg)]);
-      // If system log, update systemLogs too
-      if (msg.status || msg.type === "system") {
-        setSystemLogs(prev => [
-          ...prev,
-          {
-            id: msg.id || String(Date.now()),
-            status: msg.status || "info",
-            message: msg.content || "",
-            summary: msg.summary,
-            timestamp: msg.timestamp,
-            filePath: msg.filePath
-          }
-        ]);
-      }
     });
 
     return () => {
@@ -245,7 +203,6 @@ const TaskChat = ({
         const apiMessages = Array.isArray(response.data) ? response.data : [];
         const mapped: any = apiMessages.map((msg: any) => mapBackendMsg(msg));
         setMessages(mapped);
-        setSystemLogs(collectSystemLogs(apiMessages, canvasLogMessages));
       } catch (error) {
         setMessages([{
           id: "error",
@@ -254,12 +211,6 @@ const TaskChat = ({
           content: "Failed to load messages from the server.",
           timestamp: "Now"
         }]);
-        setSystemLogs([{
-          id: "error",
-          status: "error",
-          message: "Failed to load logs from the server.",
-          timestamp: new Date().toISOString()
-        }]);
       } finally {
         setLoading(false);
       }
@@ -267,13 +218,6 @@ const TaskChat = ({
     fetchMessages();
     // eslint-disable-next-line
   }, [isOpen, taskId, user?.username]);
-
-  // Handler for logs from MonacoCanvas
-  const handleCanvasLog = (log: Omit<CanvasLogMsg, "id">) => {
-    const logEntry = { ...log, id: String(Date.now()) + Math.random() };
-    setCanvasLogMessages(prev => [...prev, logEntry]);
-    setSystemLogs(prev => [...prev, logEntry]);
-  };
 
   // Handler for loading generated files and showing them in MonacoCanvas
   const handleShowGeneratedFiles = async (messageId: string) => {
@@ -284,15 +228,7 @@ const TaskChat = ({
         setShowMonacoCanvas(true);
       }
     } catch (error) {
-      setSystemLogs(prev => [
-        ...prev,
-        {
-          id: "genfile_error_" + messageId,
-          status: "error",
-          message: "Failed to load generated files for message: " + messageId,
-          timestamp: new Date().toISOString()
-        }
-      ]);
+      // Optionally, show an error somewhere in the UI
     }
   };
 
@@ -461,6 +397,12 @@ const TaskChat = ({
     }
   };
 
+  // Handler for logs from MonacoCanvas
+  const handleLogsUpdate = useCallback((newLogs: string[]) => {
+    setLogs(newLogs);
+    if (newLogs.length > 0) setLogsOpen(true);
+  }, []);
+
   if (!isOpen) return null;
 
   const containerClasses = isFullPage
@@ -533,12 +475,51 @@ const TaskChat = ({
           </div>
         </div>
 
-        {/* System Logs Card */}
-        <div className="px-6 pb-2">
-          <SystemLogsCard logs={systemLogs} taskId={taskId} taskName={taskName} />
-        </div>
-
-        {/* Chat messages (no system logs) */}
+                {/* --- LOGS PANEL, new addition --- */}
+                {showMonacoCanvas && logs.length > 0 && (
+          <div className="mx-6 mt-4 mb-2 ">
+            <div className="bg-gray-100 border border-gray-200 rounded-2xl shadow relative overflow-hidden">
+              <div
+                className="flex items-center justify-between px-4 py-2 cursor-pointer"
+                onClick={() => setLogsOpen(o => !o)}
+                style={{ userSelect: 'none' }}
+              >
+                <span className="uppercase tracking-widest text-xs font-bold text-gray-600">
+                  Logs
+                </span>
+                <button className="focus:outline-none text-gray-400 hover:text-gray-700">
+                  {logsOpen ? (
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6 10L10 14L14 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 6L14 10L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  )}
+                </button>
+              </div>
+              {logsOpen && (
+                <div className="px-6 pb-4 pt-2 h-[250px] overflow-y-scroll">
+                  <ol className="relative border-l border-gray-300 ml-2">
+                    {logs.map((line, idx) => (
+                      <li key={idx} className="mb-5 ml-4">
+                        <div className="absolute w-3 h-3 bg-gray-200 border-2 border-white rounded-full left-[-8px] top-1.5" />
+                        <div className="flex items-center space-x-2">
+                          <span className="text-gray-400 text-base">
+                            {/* Use a step icon or emoji if you like */}
+                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                              <rect x="5" y="5" width="10" height="10" rx="2" fill="#e5e7eb" />
+                              <path d="M7 10h6" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          </span>
+                          <span className="font-medium text-gray-800">{line}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* --- END LOGS PANEL --- */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <div className="text-center text-gray-400">Loading messages...</div>
@@ -659,8 +640,8 @@ const TaskChat = ({
           executeTaskRef={executeTaskRef}
           isVisible={showMonacoCanvas}
           onSocketConnected={handleSocketConnected}
-          onLogMessage={handleCanvasLog}
           filesFromApi={generatedFiles}
+          onLogsUpdate={handleLogsUpdate}
         />
       )}
     </div>
