@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
-import { X, Send, User, Bot, Code, Maximize2, Minimize2, Plus } from "lucide-react";
+import {
+  X, Send, User, Bot, Code, Maximize2, Minimize2, Plus
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import LeftPanel from "./LeftPanel";
 import MonacoCanvas from "./MonacoCanvas";
+import SystemLogsCard from "./SystemLogs";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChatApi, Configuration } from "@/api-client";
@@ -83,20 +86,37 @@ function formatDateTime(datetime: string) {
   const d = new Date(datetime);
   if (isNaN(d.getTime())) return datetime;
   return d.toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
   });
 }
 
 const SOCKET_URL = "http://localhost:3000/chat";
 
-const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTask }: TaskChatProps) => {
+type CanvasLogMsg = {
+  id: string;
+  status: string;
+  message: string;
+  summary?: string;
+  timestamp?: string;
+  filePath?: string;
+};
+
+const TaskChat = ({
+  isOpen,
+  onClose,
+  taskName: propTaskName,
+  taskId,
+  onCreateTask
+}: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [editorValue, setEditorValue] = useState('// Type your code here...');
+  const [canvasLogMessages, setCanvasLogMessages] = useState<CanvasLogMsg[]>([]);
+  const [systemLogs, setSystemLogs] = useState<CanvasLogMsg[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const [editorValue, setEditorValue] = useState("// Type your code here...");
   const [loading, setLoading] = useState(false);
 
   const [showBotSuggestions, setShowBotSuggestions] = useState(false);
@@ -122,7 +142,6 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   // --- TASK NAME LOGIC: Take prop, and in fullscreen take state if present ---
   let taskName = propTaskName;
   if (isFullPage && location.state?.taskName) {
-    // Use the routed-in state for task name (from /tasks/:taskId navigation)
     taskName = location.state.taskName;
   }
 
@@ -149,13 +168,37 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
       isCode: !!msg.isCode,
       taskSuggestion: msg.taskSuggestion || undefined,
+      // Don't carry system log fields into chat messages anymore
+      // status: msg.status,
+      // summary: msg.summary,
+      // filePath: msg.filePath
     };
+  };
+
+  // Only collect system logs for SystemLogsCard (not for chat)
+  const collectSystemLogs = (msgs: any[], canvasLogs: CanvasLogMsg[]) => {
+    return [
+      ...msgs.filter(msg => msg.status || msg.type === "system")
+        .map(msg => ({
+          id: msg.id || String(Date.now()),
+          status: msg.status || "info",
+          message: msg.content || "",
+          summary: msg.summary,
+          timestamp: msg.timestamp,
+          filePath: msg.filePath
+        })),
+      ...canvasLogs
+    ].sort((a, b) => {
+      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : Number(a.id.split(".")[0]);
+      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : Number(b.id.split(".")[0]);
+      return timeA - timeB;
+    });
   };
 
   useEffect(() => {
     if (!isOpen || !taskId) return;
 
-    const socket = io(SOCKET_URL, { transports: ['websocket'] });
+    const socket = io(SOCKET_URL, { transports: ["websocket"] });
     socketRef.current = socket;
 
     socket.on("connect", () => {
@@ -168,16 +211,28 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     });
 
     socket.on("newMessage", (msg: any) => {
-      setMessages(prev => [
-        ...prev,
-        mapBackendMsg(msg)
-      ]);
+      setMessages(prev => [...prev, mapBackendMsg(msg)]);
+      // If system log, update systemLogs too
+      if (msg.status || msg.type === "system") {
+        setSystemLogs(prev => [
+          ...prev,
+          {
+            id: msg.id || String(Date.now()),
+            status: msg.status || "info",
+            message: msg.content || "",
+            summary: msg.summary,
+            timestamp: msg.timestamp,
+            filePath: msg.filePath
+          }
+        ]);
+      }
     });
 
     return () => {
       socket.emit("leaveTaskRoom", { taskId });
       socket.disconnect();
     };
+    // eslint-disable-next-line
   }, [isOpen, taskId, user?.username]);
 
   useEffect(() => {
@@ -189,6 +244,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
         const apiMessages = Array.isArray(response.data) ? response.data : [];
         const mapped: any = apiMessages.map((msg: any) => mapBackendMsg(msg));
         setMessages(mapped);
+        setSystemLogs(collectSystemLogs(apiMessages, canvasLogMessages));
       } catch (error) {
         setMessages([{
           id: "error",
@@ -196,6 +252,12 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           author: "System",
           content: "Failed to load messages from the server.",
           timestamp: "Now"
+        }]);
+        setSystemLogs([{
+          id: "error",
+          status: "error",
+          message: "Failed to load logs from the server.",
+          timestamp: new Date().toISOString()
         }]);
       } finally {
         setLoading(false);
@@ -205,7 +267,14 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     // eslint-disable-next-line
   }, [isOpen, taskId, user?.username]);
 
-  // Bot mention detection and filtering (unchanged)
+  // Handler for logs from MonacoCanvas
+  const handleCanvasLog = (log: Omit<CanvasLogMsg, "id">) => {
+    const logEntry = { ...log, id: String(Date.now()) + Math.random() };
+    setCanvasLogMessages(prev => [...prev, logEntry]);
+    setSystemLogs(prev => [...prev, logEntry]);
+  };
+
+  // Bot mention detection and filtering
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
@@ -213,11 +282,11 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     setNewMessage(value);
 
     const textBeforeCursor = value.substring(0, cursorPos);
-    const lastAtIndex = textBeforeCursor.lastIndexOf('@');
+    const lastAtIndex = textBeforeCursor.lastIndexOf("@");
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
-      if (!textAfterAt.includes(' ') && !textAfterAt.includes('\n')) {
+      if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         const filtered = availableBots.filter(bot =>
           bot.toLowerCase().includes(textAfterAt.toLowerCase())
         );
@@ -238,7 +307,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
     const beforeMention = newMessage.substring(0, mentionStartPos);
     const afterCursor = newMessage.substring(textareaRef.current.selectionStart);
-    const newValue = beforeMention + bot + ' ' + afterCursor;
+    const newValue = beforeMention + bot + " " + afterCursor;
 
     setNewMessage(newValue);
     setShowBotSuggestions(false);
@@ -254,28 +323,28 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showBotSuggestions) {
-      if (e.key === 'ArrowDown') {
+      if (e.key === "ArrowDown") {
         e.preventDefault();
         setSelectedBotIndex((prev) =>
           prev < filteredBots.length - 1 ? prev + 1 : 0
         );
-      } else if (e.key === 'ArrowUp') {
+      } else if (e.key === "ArrowUp") {
         e.preventDefault();
         setSelectedBotIndex((prev) =>
           prev > 0 ? prev - 1 : filteredBots.length - 1
         );
-      } else if (e.key === 'Tab' || e.key === 'Enter') {
+      } else if (e.key === "Tab" || e.key === "Enter") {
         if (!e.shiftKey) {
           e.preventDefault();
           selectBot(filteredBots[selectedBotIndex]);
           return;
         }
-      } else if (e.key === 'Escape') {
+      } else if (e.key === "Escape") {
         setShowBotSuggestions(false);
       }
     }
 
-    if (e.key === 'Enter' && !e.shiftKey && !showBotSuggestions) {
+    if (e.key === "Enter" && !e.shiftKey && !showBotSuggestions) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -307,13 +376,16 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       sendMessageViaSocket(newMessage);
 
       const trimmedMessage = newMessage.trim();
-      const shouldExecuteTask = trimmedMessage.startsWith("@orbital_cli") || trimmedMessage.startsWith("@gemini_cli") || trimmedMessage.startsWith("@claude_code");
+      const shouldExecuteTask =
+        trimmedMessage.startsWith("@orbital_cli") ||
+        trimmedMessage.startsWith("@gemini_cli") ||
+        trimmedMessage.startsWith("@claude_code");
 
       if (shouldExecuteTask) {
         setShowMonacoCanvas(true);
       }
 
-      setNewMessage('');
+      setNewMessage("");
       setShowBotSuggestions(false);
 
       if (shouldExecuteTask && executeTaskRef.current) {
@@ -324,14 +396,14 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
   const getAuthorColor = (author: string) => {
     const colors = {
-      'MainBot': 'bg-indigo-500',
-      'CodeBot': 'bg-blue-500',
-      'ArchitectBot': 'bg-purple-500',
-      'TestBot': 'bg-green-500',
-      'ReviewBot': 'bg-orange-500',
-      'You': 'bg-gray-600'
+      MainBot: "bg-indigo-500",
+      CodeBot: "bg-blue-500",
+      ArchitectBot: "bg-purple-500",
+      TestBot: "bg-green-500",
+      ReviewBot: "bg-orange-500",
+      You: "bg-gray-600"
     };
-    return colors[author as keyof typeof colors] || 'bg-gray-500';
+    return colors[author as keyof typeof colors] || "bg-gray-500";
   };
 
   const renderMessageContent = (content: string) => {
@@ -364,7 +436,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   };
   const handleMinimize = () => {
     if (isFullPage) {
-      navigate('/project-board');
+      navigate("/project-board");
     }
   };
 
@@ -379,6 +451,19 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     : isFullPage
     ? "flex flex-col flex-1 h-full bg-white"
     : "flex flex-col w-full h-full";
+
+  // Only chat messages: do NOT include system logs in chat rendering
+  const allMessages = messages.filter(msg => !msg.status && msg.type !== "system").sort((a, b) => {
+    const timeA =
+      a.timestamp && a.timestamp !== "Just now"
+        ? new Date(a.timestamp).getTime()
+        : Number(a.id.split(".")[0]);
+    const timeB =
+      b.timestamp && b.timestamp !== "Just now"
+        ? new Date(b.timestamp).getTime()
+        : Number(b.id.split(".")[0]);
+    return timeA - timeB;
+  });
 
   return (
     <div className={containerClasses}>
@@ -395,7 +480,11 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
               size="sm"
               onClick={isFullPage ? handleMinimize : handleMaximize}
             >
-              {isFullPage ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              {isFullPage ? (
+                <Minimize2 className="w-4 h-4" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
             </Button>
             <Button variant="ghost" size="sm" onClick={onClose}>
               <X className="w-4 h-4" />
@@ -403,11 +492,11 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           </div>
         </div>
 
-        {/* ...rest unchanged... */}
+        {/* User List */}
         <div className="w-full max-w-6xl mx-auto p-6">
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-start">
             {mockUsers.map((user) => (
-              <div key={user.id} className="flex flex-col items-center justify-evenly  min-w-[80px] cursor-pointer group">
+              <div key={user.id} className="flex flex-col items-center justify-evenly min-w-[80px] cursor-pointer group">
                 <div className="relative mb-2">
                   <img
                     src={user.avatar || "/placeholder.svg"}
@@ -423,15 +512,26 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
             ))}
           </div>
         </div>
+
+        {/* System Logs Card */}
+        <div className="px-6 pb-2">
+          <SystemLogsCard logs={systemLogs} taskId={taskId} taskName={taskName} />
+        </div>
+
+        {/* Chat messages (no system logs) */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {loading ? (
             <div className="text-center text-gray-400">Loading messages...</div>
           ) : (
-            messages.map((message) => (
+            allMessages.map((message) => (
               <div key={message.id} className="flex space-x-3 opacity-100">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
-                    {message.type === 'ai' ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                    {message.type === "ai" ? (
+                      <Bot className="w-4 h-4" />
+                    ) : (
+                      <User className="w-4 h-4" />
+                    )}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
@@ -439,7 +539,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                     <span className="text-sm font-medium text-gray-900">{message.author}</span>
                     <span className="text-xs text-gray-500">{message.timestamp}</span>
                   </div>
-                  <div className={`text-sm text-gray-700 ${message.isCode ? 'bg-gray-50 p-3 rounded-lg font-mono' : ''}`}>
+                  <div
+                    className={`text-sm text-gray-700 ${message.isCode ? "bg-gray-50 p-3 rounded-lg font-mono" : ""}`}
+                  >
                     {message.isCode ? (
                       <div>
                         <div className="flex items-center space-x-2 mb-2">
@@ -467,10 +569,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                             <span className="text-xs text-blue-600">{message.taskSuggestion.project}</span>
                           </div>
                         </div>
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                           <Plus className="w-4 h-4 mr-1" />
                           Create
                         </Button>
@@ -482,6 +581,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
             ))
           )}
         </div>
+        {/* Chat Input Bar */}
         <div className="p-4 border-t border-gray-200 relative">
           {showBotSuggestions && (
             <div className="absolute bottom-full left-4 right-4 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
@@ -491,7 +591,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                   <div
                     key={bot}
                     className={`px-3 py-2 cursor-pointer text-base font-semibold flex items-center space-x-2 ${
-                      index === selectedBotIndex ? `${styles.selectedBg} ${styles.selectedText}` : `hover:${styles.bgColor} ${styles.textColor}`
+                      index === selectedBotIndex
+                        ? `${styles.selectedBg} ${styles.selectedText}`
+                        : `hover:${styles.bgColor} ${styles.textColor}`
                     }`}
                     onClick={() => selectBot(bot)}
                   >
@@ -513,10 +615,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
               className="flex-1 text-base"
               rows={2}
             />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-            >
+            <Button onClick={handleSendMessage} disabled={!newMessage.trim()}>
               <Send className="w-4 h-4" />
             </Button>
           </div>
@@ -530,6 +629,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           executeTaskRef={executeTaskRef}
           isVisible={showMonacoCanvas}
           onSocketConnected={handleSocketConnected}
+          onLogMessage={handleCanvasLog}
         />
       )}
     </div>
