@@ -17,7 +17,7 @@ import {
   EllipsisVertical,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import TaskChat from "@/components/TaskChat";
+import TaskChat from "@/components/taskChatComponents/TaskChat";
 import { useClerk, useUser } from "@clerk/clerk-react";
 import { Configuration, ProjectsApi } from "@/api-client";
 import CreateProject from "@/components/apiComponents/CreateProject";

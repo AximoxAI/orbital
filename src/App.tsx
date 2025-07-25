@@ -10,7 +10,7 @@ import ProjectBoard from "./pages/ProjectBoard";
 import NotFound from "./pages/NotFound";
 import SignUpPage from "./pages/SignUp";
 import SignInPage from "./pages/SignIn";
-import TaskChat from "./components/TaskChat";
+import TaskChat from "./components/taskChatComponents/TaskChat";
 
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
