@@ -12,6 +12,7 @@ import SystemLogsCard from "./SystemLogs";
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChatApi, Configuration } from "@/api-client";
+import { TasksApi } from "@/api-client";
 import { io, Socket } from "socket.io-client";
 
 interface TaskChatProps {
@@ -127,7 +128,11 @@ const TaskChat = ({
   const [showMonacoCanvas, setShowMonacoCanvas] = useState(false);
   const [socketConnected, setSocketConnected] = useState(false);
 
+  const [generatedFiles, setGeneratedFiles] = useState<any[]>([]);
+
   const chatApi = new ChatApi(new Configuration({ basePath: "http://localhost:3000" }));
+  const tasksApi = new TasksApi(new Configuration({ basePath: "http://localhost:3000" }));
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { user } = useUser();
@@ -168,10 +173,6 @@ const TaskChat = ({
       timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
       isCode: !!msg.isCode,
       taskSuggestion: msg.taskSuggestion || undefined,
-      // Don't carry system log fields into chat messages anymore
-      // status: msg.status,
-      // summary: msg.summary,
-      // filePath: msg.filePath
     };
   };
 
@@ -274,11 +275,31 @@ const TaskChat = ({
     setSystemLogs(prev => [...prev, logEntry]);
   };
 
+  // Handler for loading generated files and showing them in MonacoCanvas
+  const handleShowGeneratedFiles = async (messageId: string) => {
+    try {
+      const response = await tasksApi.tasksControllerGetGeneratedFiles(messageId);
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        setGeneratedFiles(response.data);
+        setShowMonacoCanvas(true);
+      }
+    } catch (error) {
+      setSystemLogs(prev => [
+        ...prev,
+        {
+          id: "genfile_error_" + messageId,
+          status: "error",
+          message: "Failed to load generated files for message: " + messageId,
+          timestamp: new Date().toISOString()
+        }
+      ]);
+    }
+  };
+
   // Bot mention detection and filtering
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     const cursorPos = e.target.selectionStart;
-
     setNewMessage(value);
 
     const textBeforeCursor = value.substring(0, cursorPos);
@@ -383,6 +404,7 @@ const TaskChat = ({
 
       if (shouldExecuteTask) {
         setShowMonacoCanvas(true);
+        setGeneratedFiles([]); // clear any loaded files if executing new task
       }
 
       setNewMessage("");
@@ -430,7 +452,6 @@ const TaskChat = ({
   // Maximize/minimize handlers
   const handleMaximize = () => {
     if (!isFullPage && taskId) {
-      // Pass the taskName into navigation state for fullscreen route
       navigate(`/tasks/${taskId}`, { state: { taskName } });
     }
   };
@@ -452,7 +473,6 @@ const TaskChat = ({
     ? "flex flex-col flex-1 h-full bg-white"
     : "flex flex-col w-full h-full";
 
-  // Only chat messages: do NOT include system logs in chat rendering
   const allMessages = messages.filter(msg => !msg.status && msg.type !== "system").sort((a, b) => {
     const timeA =
       a.timestamp && a.timestamp !== "Just now"
@@ -552,7 +572,17 @@ const TaskChat = ({
                       </div>
                     ) : (
                       <div className="flex flex-wrap items-center gap-1">
-                        {renderMessageContent(message.content)}
+                        {message.type === "ai" && message.content === "Generating Project" ? (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleShowGeneratedFiles(message.id)}
+                          >
+                            Retrieve Project
+                          </Button>
+                        ) : (
+                          renderMessageContent(message.content)
+                        )}
                       </div>
                     )}
                   </div>
@@ -630,6 +660,7 @@ const TaskChat = ({
           isVisible={showMonacoCanvas}
           onSocketConnected={handleSocketConnected}
           onLogMessage={handleCanvasLog}
+          filesFromApi={generatedFiles}
         />
       )}
     </div>

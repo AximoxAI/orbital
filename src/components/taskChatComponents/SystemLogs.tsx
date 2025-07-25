@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Info, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, Clock, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
 
 interface LogEntry {
   id: string;
@@ -18,14 +18,6 @@ interface SystemLogsCardProps {
 
 const SystemLogsCard = ({ logs, taskId, taskName }: SystemLogsCardProps) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Filter logs based on search query
-  const filteredLogs = logs.filter(log =>
-    log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    log.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (log.filePath && log.filePath.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
 
   // Get status icon and color
   const getStatusIcon = (status: string) => {
@@ -69,7 +61,7 @@ const SystemLogsCard = ({ logs, taskId, taskName }: SystemLogsCardProps) => {
   if (logs.length === 0) return null;
 
   return (
-    <div className="mb-2 "> {/* Shrunk width */}
+    <div className="mb-2 ">
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         {/* Header */}
         <div
@@ -82,7 +74,6 @@ const SystemLogsCard = ({ logs, taskId, taskName }: SystemLogsCardProps) => {
                 <ChevronDown className="w-3 h-3 text-gray-500" /> :
                 <ChevronRight className="w-3 h-3 text-gray-500" />
               }
-              <Search className="w-4 h-4 text-blue-500" />
             </div>
             <div>
               <h3 className="font-semibold text-gray-900 text-sm">System Logs</h3>
@@ -99,29 +90,15 @@ const SystemLogsCard = ({ logs, taskId, taskName }: SystemLogsCardProps) => {
         {/* Expandable Content */}
         {isExpanded && (
           <div className="border-t border-gray-200">
-            {/* Search Bar */}
-            <div className="p-2 border-b border-gray-100 bg-gray-50">
-              <div className="relative">
-                <Search className="w-3 h-3 absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search logs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-7 pr-3 py-1 text-xs border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-
             {/* Log Entries */}
-            <div className="max-h-48 overflow-y-auto">
-              {filteredLogs.length === 0 ? (
+            <div className="max-h-[150px] overflow-y-auto">
+              {logs.length === 0 ? (
                 <div className="p-2 text-center text-gray-500 text-xs">
                   No logs found
                 </div>
               ) : (
                 <div className="space-y-1 p-2">
-                  {filteredLogs.map((log) => (
+                  {logs.map((log) => (
                     <div
                       key={log.id}
                       className={`p-2 rounded border ${getStatusColor(log.status)} transition-all hover:shadow-sm`}
@@ -170,7 +147,7 @@ const SystemLogsCard = ({ logs, taskId, taskName }: SystemLogsCardProps) => {
             <div className="border-t border-gray-100 px-2 py-2 bg-gray-50">
               <div className="flex items-center justify-between text-[10px] text-gray-500">
                 <span>
-                  Showing {filteredLogs.length} / {logs.length}
+                  Showing {logs.length} / {logs.length}
                 </span>
                 <div className="flex items-center space-x-2">
                   {['connection', 'execution', 'file', 'error'].map(status => {

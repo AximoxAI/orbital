@@ -18,6 +18,7 @@ interface MonacoCanvasProps {
     timestamp?: string;
     filePath?: string;
   }) => void;
+  filesFromApi?: { path: string; content: string; [key: string]: any }[];
 }
 
 interface FileItem {
@@ -55,6 +56,7 @@ const MonacoCanvas = ({
   isVisible,
   onSocketConnected,
   onLogMessage,
+  filesFromApi = [],
 }: MonacoCanvasProps) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -70,20 +72,40 @@ const MonacoCanvas = ({
   const [previewContent, setPreviewContent] = useState('');
   const resizeRef = useRef<HTMLDivElement>(null);
 
-  // Helper for sending logs to TaskChat
-  function addCanvasLog(step: {
+  // Helper for sending logs to TaskChat - memoized to prevent infinite loops
+  const addCanvasLog = useCallback((step: {
     status: string;
     message: string;
     summary?: string;
     timestamp?: string;
     filePath?: string;
-  }) {
+  }) => {
     if (onLogMessage) onLogMessage(step);
-  }
+  }, [onLogMessage]);
+
+  // Handle files from API (generated files) - separate from WebSocket files
+  useEffect(() => {
+    if (filesFromApi && filesFromApi.length > 0) {
+      const mapped: FileItem[] = filesFromApi.map((f) => ({
+        path: f.path,
+        content: f.content,
+        timestamp: f.created_at || new Date().toISOString(),
+      }));
+      setFiles(mapped);
+      setSelectedFile(mapped[0]?.path || null);
+      setShowPreview(false);
+      // Don't disable socket execution when showing API files - they're separate
+      addCanvasLog({
+        status: "info",
+        message: `📁 Loaded ${mapped.length} generated files from API`
+      });
+    }
+  }, [filesFromApi]);
 
   // Socket.io connection and listeners
   useEffect(() => {
-    if (!isVisible || !hasTriggeredExecution) {
+    if (!isVisible) {
+      // Clean up socket when not visible
       if (socketRef.current) {
         socketRef.current.disconnect();
         socketRef.current = null;
@@ -93,6 +115,7 @@ const MonacoCanvas = ({
       return;
     }
 
+    // Don't create new socket if one already exists and is connected
     if (socketRef.current && socketRef.current.connected) {
       return;
     }
@@ -131,20 +154,24 @@ const MonacoCanvas = ({
     });
 
     socket.on('execution_result', (data) => {
+      console.log('Received execution_result:', data); // Debug log
+      
       const { taskId: resultTaskId, status, message, summary, timestamp } = data;
-      // Log step for every status
+      
+      // Log every execution result
       addCanvasLog({
         status,
         message: typeof message === "object" && message?.path
-          ? `📄 File content received: ${message.path}`
+          ? `📄 File received: ${message.path}`
           : typeof message === "string"
             ? message
-            : "",
+            : `Status: ${status}`,
         summary,
         timestamp,
         filePath: typeof message === "object" && message?.path ? message.path : undefined
       });
 
+      // Handle in-progress updates to main editor
       if (
         resultTaskId === taskId &&
         status === "in_progress" &&
@@ -155,6 +182,7 @@ const MonacoCanvas = ({
         }
       }
 
+      // Handle file generation - this is the key fix
       if (
         resultTaskId === taskId &&
         status === "file" &&
@@ -169,26 +197,48 @@ const MonacoCanvas = ({
           timestamp: timestamp || new Date().toISOString()
         };
 
+        console.log('Adding new file:', newFile); // Debug log
+
         setFiles(prevFiles => {
           const existingIndex = prevFiles.findIndex(f => f.path === message.path);
           if (existingIndex >= 0) {
+            // Update existing file
             const updated = [...prevFiles];
             updated[existingIndex] = newFile;
             return updated;
           }
+          // Add new file
           return [...prevFiles, newFile];
         });
 
+        // Auto-select the first file if none selected
         setSelectedFile(prev => prev || message.path);
+      }
+
+      // Handle completion status
+      if (resultTaskId === taskId && status === "completed") {
+        addCanvasLog({
+          status: "success",
+          message: "✅ Task execution completed successfully"
+        });
+      }
+
+      // Handle error status
+      if (resultTaskId === taskId && status === "error") {
+        addCanvasLog({
+          status: "error",
+          message: `❌ Task execution failed: ${typeof message === "string" ? message : "Unknown error"}`
+        });
       }
     });
 
+    // Cleanup function
     return () => {
       if (socket && socket.connected) {
         socket.disconnect();
       }
     };
-  }, [isVisible, hasTriggeredExecution]);
+  }, [isVisible, taskId]); // Removed problematic dependencies
 
   // Handle file selection
   const handleFileSelect = (filePath: string) => {
@@ -199,13 +249,19 @@ const MonacoCanvas = ({
     }
   };
 
-  // Execute task function
+  // Execute task function - fixed to work properly
   const handleExecuteTask = useCallback(() => {
     if (!taskId || !agentId) {
-      addCanvasLog({ status: "error", message: "Please provide both Task ID and Agent ID" });
+      addCanvasLog({ status: "error", message: "❌ Please provide both Task ID and Agent ID" });
       return;
     }
 
+    // Clear previous files when starting new execution (but keep API files)
+    if (filesFromApi.length === 0) {
+      setFiles([]);
+      setSelectedFile(null);
+    }
+    
     setHasTriggeredExecution(true);
 
     const executeAfterConnection = () => {
@@ -214,10 +270,12 @@ const MonacoCanvas = ({
         setTimeout(executeAfterConnection, 500);
         return;
       }
+      
       addCanvasLog({
         status: "execution",
-        message: `🚀 Sending execution request for task "${taskId}" with agent "${agentId}"...`
+        message: `🚀 Executing task "${taskId}" with agent "${agentId}"...`
       });
+      
       try {
         socketRef.current.emit("execute", { taskId, agentId });
       } catch (error: any) {
@@ -228,15 +286,16 @@ const MonacoCanvas = ({
     if (socketRef.current?.connected) {
       executeAfterConnection();
     } else {
+      // Wait a bit longer for connection if not immediately available
       setTimeout(executeAfterConnection, 1000);
     }
-  }, [taskId, agentId]);
+  }, [taskId, agentId, filesFromApi.length]);
 
   useEffect(() => {
     if (executeTaskRef) {
       executeTaskRef.current = handleExecuteTask;
     }
-  }, [handleExecuteTask]);
+  }, [handleExecuteTask, executeTaskRef]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -288,8 +347,10 @@ const MonacoCanvas = ({
     return filePath && (filePath.endsWith('.html') || filePath.endsWith('.htm'));
   };
 
-  const currentFileContent = selectedFile ? files.find(f => f.path === selectedFile)?.content || '' : value;
-  const currentFileName = selectedFile || 'current-file';
+  const currentFileContent = selectedFile
+    ? files.find((f) => f.path === selectedFile)?.content || ""
+    : value;
+  const currentFileName = selectedFile || (files[0]?.path ?? "current-file");
 
   // Determine the appropriate language for syntax highlighting
   const editorLanguage = selectedFile ? getLanguage(selectedFile) : getLanguage(currentFileName);
@@ -344,6 +405,9 @@ const MonacoCanvas = ({
               style={{ backgroundColor: statusColor }}
             ></div>
             <span className="text-sm">{statusText}</span>
+            {files.length > 0 && (
+              <span className="text-xs text-gray-500">({files.length} files)</span>
+            )}
           </div>
 
           {(isHtmlFile(currentFileName) || currentFileContent.includes('<html') || currentFileContent.includes('<!DOCTYPE')) && (
