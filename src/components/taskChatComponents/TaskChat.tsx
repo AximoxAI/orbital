@@ -13,6 +13,7 @@ import { useNavigate, useLocation, useParams } from "react-router-dom";
 import { ChatApi, Configuration } from "@/api-client";
 import { TasksApi } from "@/api-client";
 import { io, Socket } from "socket.io-client";
+import LogsPanel from "./LogsPanel";
 
 interface TaskChatProps {
   isOpen: boolean;
@@ -476,48 +477,13 @@ const TaskChat = ({
         </div>
 
                 {/* --- LOGS PANEL, new addition --- */}
-                {showMonacoCanvas && logs.length > 0 && (
-          <div className="mx-6 mt-4 mb-2 ">
-            <div className="bg-gray-100 border border-gray-200 rounded-2xl shadow relative overflow-hidden">
-              <div
-                className="flex items-center justify-between px-4 py-2 cursor-pointer"
-                onClick={() => setLogsOpen(o => !o)}
-                style={{ userSelect: 'none' }}
-              >
-                <span className="uppercase tracking-widest text-xs font-bold text-gray-600">
-                  Logs
-                </span>
-                <button className="focus:outline-none text-gray-400 hover:text-gray-700">
-                  {logsOpen ? (
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M6 10L10 14L14 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M10 6L14 10L10 14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  )}
-                </button>
-              </div>
-              {logsOpen && (
-                <div className="px-6 pb-4 pt-2 h-[250px] overflow-y-scroll">
-                  <ol className="relative border-l border-gray-300 ml-2">
-                    {logs.map((line, idx) => (
-                      <li key={idx} className="mb-5 ml-4">
-                        <div className="absolute w-3 h-3 bg-gray-200 border-2 border-white rounded-full left-[-8px] top-1.5" />
-                        <div className="flex items-center space-x-2">
-                          <span className="text-gray-400 text-base">
-                            {/* Use a step icon or emoji if you like */}
-                            <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                              <rect x="5" y="5" width="10" height="10" rx="2" fill="#e5e7eb" />
-                              <path d="M7 10h6" stroke="#6b7280" strokeWidth="1.5" strokeLinecap="round"/>
-                            </svg>
-                          </span>
-                          <span className="font-medium text-gray-800">{line}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-                </div>
-              )}
-            </div>
-          </div>
+          {showMonacoCanvas && logs.length > 0 && (
+          <LogsPanel
+          logs={logs}
+          logsOpen={logsOpen}
+          setLogsOpen={setLogsOpen}
+          showMonacoCanvas={showMonacoCanvas}
+        />
         )}
         {/* --- END LOGS PANEL --- */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
