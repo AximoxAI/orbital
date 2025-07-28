@@ -272,6 +272,13 @@ const ProjectBoard = () => {
     navigate(`/tasks/${taskId}`, { state: { taskName: taskTitle } });
   };
 
+  // Callback for successfully creating a project
+  const handleProjectCreated = () => {
+    setShowCreateProjectModal(false);
+    // Reload handled in CreateProject, but you could also reload here if needed
+    // window.location.reload();
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Side-panel TaskChat (not fullscreen, just a panel) */}
@@ -490,7 +497,7 @@ const ProjectBoard = () => {
               >
                 ×
               </button>
-              <CreateProject/>
+              <CreateProject onSuccess={handleProjectCreated}/>
             </div>
           </div>
         )}
