@@ -117,7 +117,10 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
   const [logs, setLogs] = useState<string[]>([])
   const [logsOpen, setLogsOpen] = useState(true)
-  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(false);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true);
+  const handleCloseMonacoCanvas = useCallback(() => {
+    setShowMonacoCanvas(false)
+  }, [])
 
 
   const [summary, setSummary] = useState<string>("")
@@ -436,30 +439,32 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
    )}
       <div className={chatWidthClass}>
         {/* Header */}
-        <div className="px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex items-center justify-between">
-          <div className="flex-1">
-            <h3 className="font-bold text-lg text-gray-900 mb-1">Task Discussion</h3>
-            <p className="text-sm text-gray-600 truncate font-medium">{taskName}</p>
-          </div>
-          <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={isFullPage ? handleMinimize : handleMaximize}
-              className="hover:bg-gray-100 transition-colors duration-200"
-            >
-              {isFullPage ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="hover:bg-gray-100 transition-colors duration-200"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <div className="px-4 py-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex flex-wrap items-center gap-y-2 gap-x-4">
+  <div className="flex-1 min-w-0">
+    <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">Task Discussion</h3>
+    <p className="text-xs sm:text-sm text-gray-600 truncate font-medium">{taskName}</p>
+  </div>
+  <div className="flex items-center space-x-2 flex-shrink-0">
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={isFullPage ? handleMinimize : handleMaximize}
+      className="hover:bg-gray-100 transition-colors duration-200"
+      aria-label={isFullPage ? "Minimize" : "Maximize"}
+    >
+      {isFullPage ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+    </Button>
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClose}
+      className="hover:bg-gray-100 transition-colors duration-200"
+      aria-label="Close"
+    >
+      <X className="w-4 h-4" />
+    </Button>
+  </div>
+</div>
 
         {/* User Avatars Section */}
         <div className="w-full max-w-6xl  px-8 py-2 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 ">
@@ -473,10 +478,10 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                   <img
                     src={user.avatar || "/placeholder.svg"}
                     alt={user.name}
-                    className="w-12 h-12 rounded-full object-cover border-3 border-white shadow-lg group-hover:shadow-xl transition-all duration-200"
+                    className="w-10 h-10 rounded-full object-cover border-3 border-white shadow-lg group-hover:shadow-xl transition-all duration-200"
                   />
                   {user.isOnline && (
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-3 border-white rounded-full shadow-sm "></div>
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-3 border-white rounded-full shadow-sm "></div>
                   )}
                 </div>
                 <span className="text-sm text-gray-700 text-center max-w-[90px] truncate font-medium group-hover:text-gray-900 transition-colors duration-200">
@@ -797,6 +802,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           filesFromApi={generatedFiles}
           onLogsUpdate={handleLogsUpdate}
           onSummaryUpdate={handleSummaryUpdate}
+          onClose={handleCloseMonacoCanvas} 
         />
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import Editor from "@monaco-editor/react";
 import { io, Socket } from "socket.io-client";
-import { Eye, EyeOff, ChevronLeft, ChevronRight } from "lucide-react";
+import { Eye, EyeOff, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface MonacoCanvasProps {
@@ -14,6 +14,7 @@ interface MonacoCanvasProps {
   filesFromApi?: { path: string; content: string; [key: string]: any }[];
   onLogsUpdate?: (logs: string[]) => void;
   onSummaryUpdate?: (summary: string) => void; // NEW PROP
+  onClose?: () => void; // CLOSE PROP ADDED
 }
 
 interface FileItem {
@@ -52,6 +53,7 @@ const MonacoCanvas = forwardRef(({
   filesFromApi = [],
   onLogsUpdate,
   onSummaryUpdate, // NEW PROP
+  onClose, // NEW PROP
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -329,6 +331,7 @@ const MonacoCanvas = forwardRef(({
         className="flex flex-col bg-gray-50 h-full"
         style={{ width: `${width}%`, minWidth: '260px', maxWidth: '80%' }}
       >
+        {/* Header with close button */}
         <div className="font-semibold text-gray-700 p-2 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div
@@ -341,15 +344,28 @@ const MonacoCanvas = forwardRef(({
             )}
           </div>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleTogglePreview}
-            className="flex items-center space-x-1"
-          >
-            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-            <span className="text-xs">{showPreview ? 'Hide' : 'Preview'}</span>
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleTogglePreview}
+              className="flex items-center space-x-1"
+            >
+              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="text-xs">{showPreview ? 'Hide' : 'Preview'}</span>
+            </Button>
+            {onClose && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="flex items-center space-x-1"
+                aria-label="Close MonacoCanvas"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
@@ -417,3 +433,20 @@ const MonacoCanvas = forwardRef(({
 });
 
 export default MonacoCanvas;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
