@@ -1,9 +1,10 @@
-import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { ClerkProvider, SignedIn, SignedOut, RedirectToSignIn, useAuth } from "@clerk/clerk-react";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useParams, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useParams, useLocation, useNavigate } from "react-router-dom";
 import Index from "./pages/Index";
 import SoftwareEngineering from "./pages/SoftwareEngineering";
 import ProjectBoard from "./pages/ProjectBoard";
@@ -31,6 +32,20 @@ const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const queryClient = new QueryClient();
 
+// Redirect to /project-board if already logged in and on /
+const HomeRedirectIfSignedIn = () => {
+  const { isSignedIn } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isSignedIn) {
+      navigate("/project-board", { replace: true });
+    }
+  }, [isSignedIn, navigate]);
+
+  return <Index />;
+};
+
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => (
   <>
     <SignedIn>{children}</SignedIn>
@@ -50,7 +65,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<HomeRedirectIfSignedIn />} />
             <Route
               path="/software-engineering"
               element={

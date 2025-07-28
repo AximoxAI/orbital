@@ -138,10 +138,10 @@ function ProjectsList({
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center space-x-2 mb-4 overflow-x-auto pb-2">
-                  <Badge variant="secondary" className="text-xs">DESIGN</Badge>
-                  <Badge variant="secondary" className="text-xs">IN REVIEW</Badge>
-                  <Badge variant="secondary" className="text-xs">TO-DO</Badge>
-                  <Badge variant="secondary" className="text-xs">COMPLETED</Badge>
+                  <Badge variant="secondary" className="text-xs cursor-pointer">DESIGN</Badge>
+                  <Badge variant="secondary" className="text-xs cursor-pointer">IN REVIEW</Badge>
+                  <Badge variant="secondary" className="text-xs cursor-pointer">TO-DO</Badge>
+                  <Badge variant="secondary" className="text-xs cursor-pointer">COMPLETED</Badge>
                   <Button variant="ghost" size="sm" className="flex-shrink-0">
                     <Filter className="w-4 h-4" />
                   </Button>
