@@ -339,17 +339,17 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     }
   }
 
-  const getAuthorColor = (author: string) => {
-    const colors = {
-      MainBot: "bg-gradient-to-br from-indigo-500 to-indigo-600",
-      CodeBot: "bg-gradient-to-br from-blue-500 to-blue-600",
-      ArchitectBot: "bg-gradient-to-br from-purple-500 to-purple-600",
-      TestBot: "bg-gradient-to-br from-green-500 to-green-600",
-      ReviewBot: "bg-gradient-to-br from-orange-500 to-orange-600",
-      You: "bg-gradient-to-br from-gray-600 to-gray-700",
-    }
-    return colors[author as keyof typeof colors] || "bg-gradient-to-br from-gray-500 to-gray-600"
-  }
+  // const getAuthorColor = (author: string) => {
+  //   const colors = {
+  //     MainBot: "bg-gradient-to-br from-indigo-500 to-indigo-600",
+  //     CodeBot: "bg-gradient-to-br from-blue-500 to-blue-600",
+  //     ArchitectBot: "bg-gradient-to-br from-purple-500 to-purple-600",
+  //     TestBot: "bg-gradient-to-br from-green-500 to-green-600",
+  //     ReviewBot: "bg-gradient-to-br from-orange-500 to-orange-600",
+  //     You: "bg-gradient-to-br from-gray-600 to-gray-700",
+  //   }
+  //   return colors[author as keyof typeof colors] || "bg-gradient-to-br from-gray-500 to-gray-600"
+  // }
 
   const renderMessageContent = (content: string) => {
     const botMentionRegex = /(@orbital_cli|@goose|@gemini_cli|@claude_code)/g
@@ -503,9 +503,17 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                       <div className="flex space-x-4">
                         <Avatar className="w-10 h-10 shadow-md">
                           <AvatarFallback
-                            className={`${getAuthorColor(message.author)} text-white text-sm shadow-inner`}
+                            className={`text-white text-sm shadow-inner`}
                           >
-                            {message.type === "ai" ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
+                            {message.type === "ai" ? <img
+      src={   "https://cdn-icons-png.flaticon.com/128/9860/9860155.png"}
+      alt="Bot"
+      className="w-10 h-10 rounded-full object-cover"
+    />: <img
+    src={   "https://randomuser.me/api/portraits/men/40.jpg"}
+    alt="Bot"
+    className="w-10 h-10 rounded-full object-cover"/>
+    }
                           </AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -620,11 +628,21 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                 <React.Fragment key={message.id}>
                   <div className="flex flex-col space-y-2 opacity-100 animate-fadeIn">
                     <div className="flex space-x-3">
-                      <Avatar className="w-9 h-9 shadow-md">
-                        <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs shadow-inner`}>
-                          {message.type === "ai" ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
-                        </AvatarFallback>
-                      </Avatar>
+                    <Avatar className="w-10 h-10 shadow-md">
+                          <AvatarFallback
+                            className={`text-white text-sm shadow-inner`}
+                          >
+                            {message.type === "ai" ? <img
+      src={   "https://cdn-icons-png.flaticon.com/128/9860/9860155.png"}
+      alt="Bot"
+      className="w-10 h-10 rounded-full object-cover"
+    />: <img
+    src={   "https://randomuser.me/api/portraits/men/40.jpg"}
+    alt="Bot"
+    className="w-10 h-10 rounded-full object-cover"/>
+    }
+                          </AvatarFallback>
+                        </Avatar>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-2">
                           <span className="text-sm font-bold text-gray-900">{message.author}</span>
