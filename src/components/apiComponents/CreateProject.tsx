@@ -18,7 +18,7 @@ const config = new Configuration({
 
 const api = new ProjectsApi(config);
 
-const CreateProject = () => {
+const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [form, setForm] = useState({
     name: '',
     description: '',
@@ -28,6 +28,7 @@ const CreateProject = () => {
 
   const [response, setResponse] = useState(null);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -36,11 +37,21 @@ const CreateProject = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
     try {
       const result = await api.projectsControllerCreate(form);
       setResponse(result.data);
+      setLoading(false);
+      if (onSuccess) {
+        onSuccess();
+      }
+      // Optionally: Wait for a short moment before reload for UX
+      setTimeout(() => {
+        window.location.reload();
+      }, 400);
     } catch {
       setError('Error creating project');
+      setLoading(false);
     }
   };
 
@@ -79,7 +90,9 @@ const CreateProject = () => {
             value={form.repoUrl}
             onChange={handleChange}
           />
-          <Button type="submit">Create Project</Button>
+          <Button type="submit" >
+             "Create Project
+          </Button>
         </form>
         {error && (
           <div className="text-red-600 mt-2">
