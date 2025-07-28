@@ -462,7 +462,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
         </div>
 
         {/* User Avatars Section */}
-        <div className="w-full max-w-6xl mx-auto px-8 py-2 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 flex">
+        <div className="w-full max-w-6xl  px-8 py-2 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 ">
           <div className="flex gap-8 overflow-x-auto pb-2 scrollbar-hide justify-start">
             {mockUsers.map((user) => (
               <div
