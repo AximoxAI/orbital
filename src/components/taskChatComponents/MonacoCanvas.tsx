@@ -12,7 +12,8 @@ interface MonacoCanvasProps {
   isVisible: boolean;
   onSocketConnected?: (connected: boolean) => void;
   filesFromApi?: { path: string; content: string; [key: string]: any }[];
-  onLogsUpdate?: (logs: string[]) => void; // NEW PROP
+  onLogsUpdate?: (logs: string[]) => void;
+  onSummaryUpdate?: (summary: string) => void; // NEW PROP
 }
 
 interface FileItem {
@@ -24,7 +25,6 @@ interface FileItem {
 const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
 const DEFAULT_AGENT_ID = "codebot";
 
-// Simple function to get language from file extension
 const getLanguage = (filePath: string) => {
   if (!filePath) return "plaintext";
   const ext = filePath.split('.').pop()?.toLowerCase();
@@ -51,6 +51,7 @@ const MonacoCanvas = forwardRef(({
   onSocketConnected,
   filesFromApi = [],
   onLogsUpdate,
+  onSummaryUpdate, // NEW PROP
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -59,24 +60,27 @@ const MonacoCanvas = forwardRef(({
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [hasTriggeredExecution, setHasTriggeredExecution] = useState(false);
 
-  // New states for resizing and preview
-  const [width, setWidth] = useState(30); // Width as percentage
+  const [width, setWidth] = useState(30);
   const [isResizing, setIsResizing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
   const resizeRef = useRef<HTMLDivElement>(null);
 
-  // Log state
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [summary, setSummary] = useState<string>(""); // NEW
 
-  // Send logs to parent if handler is provided
   useEffect(() => {
     if (onLogsUpdate) {
       onLogsUpdate(consoleLogs);
     }
   }, [consoleLogs, onLogsUpdate]);
 
-  // Handle files from API (generated files) - separate from WebSocket files
+  useEffect(() => {
+    if (onSummaryUpdate) {
+      onSummaryUpdate(summary);
+    }
+  }, [summary, onSummaryUpdate]);
+
   useEffect(() => {
     if (filesFromApi && filesFromApi.length > 0) {
       const mapped: FileItem[] = filesFromApi.map((f) => ({
@@ -90,7 +94,6 @@ const MonacoCanvas = forwardRef(({
     }
   }, [filesFromApi]);
 
-  // Socket.io connection and listeners
   useEffect(() => {
     if (!isVisible) {
       if (socketRef.current) {
@@ -99,7 +102,8 @@ const MonacoCanvas = forwardRef(({
         setConnected(false);
         onSocketConnected?.(false);
       }
-      setConsoleLogs([]); // clear logs on hide
+      setConsoleLogs([]);
+      // setSummary(""); // clear summary on hide
       return;
     }
 
@@ -129,14 +133,17 @@ const MonacoCanvas = forwardRef(({
     });
 
     socket.on('execution_result', (data) => {
-      // LOGIC for capturing logs
       if (data && (data.type === "agent" || data.type === "sandbox")) {
         if (typeof data.content === "string") {
           setConsoleLogs(prev => [...prev, data.content]);
         }
       }
+      if (data && (data.type === "summary")) {
+        setSummary(data.content || "");
+        console.log(data.content)
+      }
 
-      const { taskId: resultTaskId, status, message, summary, timestamp } = data;
+      const { taskId: resultTaskId, status, message, summary: unusedSummary, timestamp } = data;
 
       if (
         resultTaskId === taskId &&
@@ -202,7 +209,8 @@ const MonacoCanvas = forwardRef(({
     }
 
     setHasTriggeredExecution(true);
-    setConsoleLogs([]); // clear logs on each execution
+    setConsoleLogs([]);
+    setSummary(""); // clear summary on each execution
 
     const executeAfterConnection = () => {
       if (!socketRef.current || !socketRef.current.connected) {
@@ -333,7 +341,6 @@ const MonacoCanvas = forwardRef(({
             )}
           </div>
 
-          {/* Show Preview button always */}
           <Button
             variant="ghost"
             size="sm"
