@@ -91,7 +91,7 @@ const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
             onChange={handleChange}
           />
           <Button type="submit" >
-             "Create Project
+             Create Project
           </Button>
         </form>
         {error && (
