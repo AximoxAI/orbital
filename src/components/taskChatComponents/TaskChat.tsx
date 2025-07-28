@@ -511,7 +511,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                             className={`text-white text-sm shadow-inner`}
                           >
                             {message.type === "ai" ? <img
-      src={   "https://cdn-icons-png.flaticon.com/128/9860/9860155.png"}
+      src={   "https://cdn-icons-png.flaticon.com/128/14223/14223927.png"}
       alt="Bot"
       className="w-10 h-10 rounded-full object-cover"
     />: <img
@@ -595,27 +595,29 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                       </div>
                     </div>
                     {latestHumanIdx !== undefined &&
-                    followingBotIdx !== -1 &&
-                    idx === latestHumanIdx &&
-                    logs.length > 0 && (
-                        <div className="space-y-4">
-                          <LogsPanel
-                            logs={logs}
-                            logsOpen={logsOpen}
-                            setLogsOpen={setLogsOpen}
-                            showMonacoCanvas={showMonacoCanvas}
-                          />
-                          <div className="w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 shadow-sm">
-                            <div className="flex items-center mb-2">
-                              <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
-                              <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">
-                                Summary
-                              </strong>
-                            </div>
-                            <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
-                          </div>
-                        </div>
-                      )}
+followingBotIdx !== -1 &&
+idx === latestHumanIdx &&
+logs.length > 0 && (
+    <div className="space-y-4">
+      <LogsPanel
+        logs={logs}
+        logsOpen={logsOpen}
+        setLogsOpen={setLogsOpen}
+        showMonacoCanvas={showMonacoCanvas}
+      />
+      {summary && summary.trim() && (
+        <div className="w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center mb-2">
+            <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
+            <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">
+              Summary
+            </strong>
+          </div>
+          <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
+        </div>
+      )}
+    </div>
+  )}
                   </React.Fragment>
                 ))
               )}
@@ -638,7 +640,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                             className={`text-white text-sm shadow-inner`}
                           >
                             {message.type === "ai" ? <img
-      src={   "https://cdn-icons-png.flaticon.com/128/9860/9860155.png"}
+      src={   "https://cdn-icons-png.flaticon.com/128/14223/14223927.png"}
       alt="Bot"
       className="w-10 h-10 rounded-full object-cover"
     />: <img
@@ -720,27 +722,29 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
                     </div>
                   </div>
                   {latestHumanIdx !== undefined &&
-                    followingBotIdx !== -1 &&
-                    idx === latestHumanIdx &&
-                    logs.length > 0 && (
-                      <div className="space-y-3">
-                        <LogsPanel
-                          logs={logs}
-                          logsOpen={logsOpen}
-                          setLogsOpen={setLogsOpen}
-                          showMonacoCanvas={showMonacoCanvas}
-                        />
-                        <div className="w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-3 shadow-sm">
-                          <div className="flex items-center mb-2">
-                            <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></div>
-                            <strong className="text-amber-800 font-bold text-xs uppercase tracking-wide">
-                              Summary
-                            </strong>
-                          </div>
-                          <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
-                        </div>
-                      </div>
-                    )}
+  followingBotIdx !== -1 &&
+  idx === latestHumanIdx &&
+  logs.length > 0 && (
+    <div className="space-y-3">
+      <LogsPanel
+        logs={logs}
+        logsOpen={logsOpen}
+        setLogsOpen={setLogsOpen}
+        showMonacoCanvas={showMonacoCanvas}
+      />
+      {summary && summary.trim() && (
+        <div className="w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-3 shadow-sm">
+          <div className="flex items-center mb-2">
+            <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2"></div>
+            <strong className="text-amber-800 font-bold text-xs uppercase tracking-wide">
+              Summary
+            </strong>
+          </div>
+          <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
+        </div>
+      )}
+    </div>
+  )}
                 </React.Fragment>
               ))
             )}

@@ -62,7 +62,7 @@ const MonacoCanvas = forwardRef(({
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [hasTriggeredExecution, setHasTriggeredExecution] = useState(false);
 
-  const [width, setWidth] = useState(30);
+  const [width, setWidth] = useState(50);
   const [isResizing, setIsResizing] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [previewContent, setPreviewContent] = useState('');
