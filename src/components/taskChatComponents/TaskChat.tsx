@@ -1,3 +1,4 @@
+import React from 'react'
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   X, Send, User, Bot, Code, Maximize2, Minimize2, Plus
@@ -35,22 +36,19 @@ const mockUsers: UserType[] = [
   { id: "2", name: "Sam Acer", avatar: "https://randomuser.me/api/portraits/men/22.jpg", isOnline: true },
   { id: "3", name: "Erin Reyes", avatar: "https://randomuser.me/api/portraits/women/33.jpg", isOnline: true },
   { id: "4", name: "Holt Andrey", avatar: "https://randomuser.me/api/portraits/men/44.jpg", isOnline: true },
-  { id: "5", name: "Simon Steel", avatar: "https://randomuser.me/api/portraits/men/55.jpg", isOnline: true },
-  { id: "6", name: "Regina Nov", avatar: "https://randomuser.me/api/portraits/women/66.jpg", isOnline: true },
-  { id: "7", name: "Ethan Annie", avatar: "https://randomuser.me/api/portraits/men/77.jpg", isOnline: true },
-  { id: "8", name: "Maria Garcia", avatar: "https://randomuser.me/api/portraits/women/88.jpg", isOnline: false },
-  { id: "9", name: "David Chen", avatar: "https://randomuser.me/api/portraits/men/99.jpg", isOnline: true },
-  { id: "10", name: "Lisa Turner", avatar: "https://randomuser.me/api/portraits/women/90.jpg", isOnline: false },
-  { id: "11", name: "Michael Brown", avatar: "https://randomuser.me/api/portraits/men/91.jpg", isOnline: true },
-  { id: "12", name: "Angela White", avatar: "https://randomuser.me/api/portraits/women/92.jpg", isOnline: true },
-  { id: "13", name: "Chris Green", avatar: "https://randomuser.me/api/portraits/men/93.jpg", isOnline: false },
-  { id: "14", name: "Nina Patel", avatar: "https://randomuser.me/api/portraits/women/94.jpg", isOnline: true },
-  { id: "15", name: "Raj Singh", avatar: "https://randomuser.me/api/portraits/men/95.jpg", isOnline: false },
+
 ];
 
-const availableBots = ["@orbital_cli", "@gemini_cli", "@claude_code"];
+const availableBots = ["@goose","@orbital_cli", "@gemini_cli", "@claude_code"];
 const getBotStyles = (bot: string) => {
   const styles = {
+    "@goose": {
+      bgColor: "bg-pink-100",
+      textColor: "text-pink-800",
+      selectedBg: "bg-pink-50",
+      selectedText: "text-pink-900",
+      iconColor: "text-pink-600"
+    },
     "@orbital_cli": {
       bgColor: "bg-purple-100",
       textColor: "text-purple-800",
@@ -335,6 +333,7 @@ const TaskChat = ({
 
       const trimmedMessage = newMessage.trim();
       const shouldExecuteTask =
+        trimmedMessage.startsWith("@goose") ||
         trimmedMessage.startsWith("@orbital_cli") ||
         trimmedMessage.startsWith("@gemini_cli") ||
         trimmedMessage.startsWith("@claude_code");
@@ -366,7 +365,7 @@ const TaskChat = ({
   };
 
   const renderMessageContent = (content: string) => {
-    const botMentionRegex = /(@orbital_cli|@gemini_cli|@claude_code)/g;
+    const botMentionRegex = /(@orbital_cli|@goose|@gemini_cli|@claude_code)/g;
     const parts = content.split(botMentionRegex);
 
     return parts.map((part, index) => {
@@ -428,6 +427,16 @@ const TaskChat = ({
     return timeA - timeB;
   });
 
+  // --- Find the latest human message and the following bot message index ---
+  const latestHumanIdx = allMessages
+    .map((msg, idx) => msg.type === "human" ? idx : -1)
+    .filter(idx => idx !== -1)
+    .pop();
+
+  const followingBotIdx = allMessages.findIndex(
+    (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai"
+  );
+
   return (
     <div className={containerClasses}>
       {isFullPage && <LeftPanel />}
@@ -457,7 +466,7 @@ const TaskChat = ({
 
         {/* User List */}
         <div className="w-full max-w-6xl mx-auto p-6">
-          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-start">
+          <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide justify-center">
             {mockUsers.map((user) => (
               <div key={user.id} className="flex flex-col items-center justify-evenly min-w-[80px] cursor-pointer group">
                 <div className="relative mb-2">
@@ -476,88 +485,189 @@ const TaskChat = ({
           </div>
         </div>
 
-                {/* --- LOGS PANEL, new addition --- */}
-          {showMonacoCanvas && logs.length > 0 && (
-          <LogsPanel
-          logs={logs}
-          logsOpen={logsOpen}
-          setLogsOpen={setLogsOpen}
-          showMonacoCanvas={showMonacoCanvas}
-        />
-        )}
-        {/* --- END LOGS PANEL --- */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {loading ? (
-            <div className="text-center text-gray-400">Loading messages...</div>
-          ) : (
-            allMessages.map((message) => (
-              <div key={message.id} className="flex space-x-3 opacity-100">
-                <Avatar className="w-8 h-8">
-                  <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
-                    {message.type === "ai" ? (
-                      <Bot className="w-4 h-4" />
-                    ) : (
-                      <User className="w-4 h-4" />
-                    )}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-sm font-medium text-gray-900">{message.author}</span>
-                    <span className="text-xs text-gray-500">{message.timestamp}</span>
-                  </div>
-                  <div
-                    className={`text-sm text-gray-700 ${message.isCode ? "bg-gray-50 p-3 rounded-lg font-mono" : ""}`}
-                  >
-                    {message.isCode ? (
-                      <div>
-                        <div className="flex items-center space-x-2 mb-2">
-                          <Code className="w-4 h-4 text-gray-500" />
-                          <span className="text-xs text-gray-500">Code suggestion</span>
-                        </div>
-                        <pre className="whitespace-pre-wrap text-xs">{message.content}</pre>
-                      </div>
-                    ) : (
-                      <div className="flex flex-wrap items-center gap-1">
-                        {message.type === "ai" && message.content === "Generating Project" ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleShowGeneratedFiles(message.id)}
-                          >
-                            Retrieve Project
-                          </Button>
-                        ) : (
-                          renderMessageContent(message.content)
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {message.taskSuggestion && (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className="text-sm font-medium text-blue-900">Task Suggestion</h4>
-                          <p className="text-sm text-blue-700">{message.taskSuggestion.name}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {message.taskSuggestion.priority} priority
-                            </Badge>
-                            <span className="text-xs text-blue-600">{message.taskSuggestion.project}</span>
+        {/* --- Messages and LogsPanel --- */}
+        {isFullPage ? (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col justify-center items-center">
+            <div className="flex-1 w-[60%] overflow-y-auto p-4 space-y-4">
+              {loading ? (
+                <div className="text-center text-gray-400">Loading messages...</div>
+              ) : (
+                allMessages.map((message, idx) => (
+                  <React.Fragment key={message.id}>
+                    <div className="flex flex-col space-y-1 opacity-100">
+                      <div className="flex space-x-3">
+                        <Avatar className="w-8 h-8">
+                          <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
+                            {message.type === "ai" ? (
+                              <Bot className="w-4 h-4" />
+                            ) : (
+                              <User className="w-4 h-4" />
+                            )}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <span className="text-sm font-medium text-gray-900">{message.author}</span>
+                            <span className="text-xs text-gray-500">{message.timestamp}</span>
                           </div>
+                          <div
+                            className={`text-sm text-gray-700 ${message.isCode ? "bg-gray-50 p-3 rounded-lg font-mono" : "font-semibold text-[15px]"}`}
+                          >
+                            {message.isCode ? (
+                              <div>
+                                <div className="flex items-center space-x-2 mb-2">
+                                  <Code className="w-4 h-4 text-gray-500" />
+                                  <span className="text-xs text-gray-500">Code suggestion</span>
+                                </div>
+                                <pre className="whitespace-pre-wrap text-xs">{message.content}</pre>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-1">
+                                {message.type === "ai" && message.content === "Generating Project" ? (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleShowGeneratedFiles(message.id)}
+                                  >
+                                    Retrieve Project
+                                  </Button>
+                                ) : (
+                                  renderMessageContent(message.content)
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          {message.taskSuggestion && (
+                            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <h4 className="text-sm font-medium text-blue-900">Task Suggestion</h4>
+                                  <p className="text-sm text-blue-700">{message.taskSuggestion.name}</p>
+                                  <div className="flex items-center space-x-2 mt-1">
+                                    <Badge variant="outline" className="text-xs">
+                                      {message.taskSuggestion.priority} priority
+                                    </Badge>
+                                    <span className="text-xs text-blue-600">{message.taskSuggestion.project}</span>
+                                  </div>
+                                </div>
+                                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                  <Plus className="w-4 h-4 mr-1" />
+                                  Create
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                          <Plus className="w-4 h-4 mr-1" />
-                          Create
-                        </Button>
                       </div>
                     </div>
+                    {/* Insert LogsPanel between latest human and following bot */}
+                    {latestHumanIdx !== undefined &&
+                      followingBotIdx !== -1 &&
+                      idx === latestHumanIdx &&
+                      logs.length > 0 && (
+                        <LogsPanel
+                          logs={logs}
+                          logsOpen={logsOpen}
+                          setLogsOpen={setLogsOpen}
+                          showMonacoCanvas={showMonacoCanvas}
+                        />
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {loading ? (
+              <div className="text-center text-gray-400">Loading messages...</div>
+            ) : (
+              allMessages.map((message, idx) => (
+                <React.Fragment key={message.id}>
+                  <div className="flex flex-col space-y-1 opacity-100">
+                    <div className="flex space-x-3">
+                      <Avatar className="w-8 h-8">
+                        <AvatarFallback className={`${getAuthorColor(message.author)} text-white text-xs`}>
+                          {message.type === "ai" ? (
+                            <Bot className="w-4 h-4" />
+                          ) : (
+                            <User className="w-4 h-4" />
+                          )}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <span className="text-sm font-medium text-gray-900">{message.author}</span>
+                          <span className="text-xs text-gray-500">{message.timestamp}</span>
+                        </div>
+                        <div
+                          className={`text-sm text-gray-700 ${message.isCode ? "bg-gray-50 p-3 rounded-lg font-mono" : "font-semibold text-[15px]"}`}
+                        >
+                          {message.isCode ? (
+                            <div>
+                              <div className="flex items-center space-x-2 mb-2">
+                                <Code className="w-4 h-4 text-gray-500" />
+                                <span className="text-xs text-gray-500">Code suggestion</span>
+                              </div>
+                              <pre className="whitespace-pre-wrap text-xs">{message.content}</pre>
+                            </div>
+                          ) : (
+                            <div className="flex flex-wrap items-center gap-1">
+                              {message.type === "ai" && message.content === "Generating Project" ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleShowGeneratedFiles(message.id)}
+                                >
+                                  Retrieve Project
+                                </Button>
+                              ) : (
+                                renderMessageContent(message.content)
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {message.taskSuggestion && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h4 className="text-sm font-medium text-blue-900">Task Suggestion</h4>
+                                <p className="text-sm text-blue-700">{message.taskSuggestion.name}</p>
+                                <div className="flex items-center space-x-2 mt-1">
+                                  <Badge variant="outline" className="text-xs">
+                                    {message.taskSuggestion.priority} priority
+                                  </Badge>
+                                  <span className="text-xs text-blue-600">{message.taskSuggestion.project}</span>
+                                </div>
+                              </div>
+                              <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                                <Plus className="w-4 h-4 mr-1" />
+                                Create
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {/* Insert LogsPanel between latest human and following bot */}
+                  {latestHumanIdx !== undefined &&
+                    followingBotIdx !== -1 &&
+                    idx === latestHumanIdx &&
+                    logs.length > 0 && (
+                      <LogsPanel
+                        logs={logs}
+                        logsOpen={logsOpen}
+                        setLogsOpen={setLogsOpen}
+                        showMonacoCanvas={showMonacoCanvas}
+                      />
                   )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                </React.Fragment>
+              ))
+            )}
+          </div>
+        )}
+
         {/* Chat Input Bar */}
         <div className="p-4 border-t border-gray-200 relative">
           {showBotSuggestions && (

@@ -333,17 +333,16 @@ const MonacoCanvas = forwardRef(({
             )}
           </div>
 
-          {(isHtmlFile(currentFileName) || currentFileContent.includes('<html') || currentFileContent.includes('<!DOCTYPE')) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleTogglePreview}
-              className="flex items-center space-x-1"
-            >
-              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span className="text-xs">{showPreview ? 'Hide' : 'Preview'}</span>
-            </Button>
-          )}
+          {/* Show Preview button always */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleTogglePreview}
+            className="flex items-center space-x-1"
+          >
+            {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            <span className="text-xs">{showPreview ? 'Hide' : 'Preview'}</span>
+          </Button>
         </div>
 
         <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
