@@ -23,7 +23,7 @@ const CreateProject = () => {
     name: '',
     description: '',
     type: '',
-    repo_url: '',
+    repoUrl: '',
   });
 
   const [response, setResponse] = useState(null);
@@ -74,9 +74,9 @@ const CreateProject = () => {
             required
           />
           <Input
-            name="repo_url"
+            name="repoUrl"
             placeholder="Repository URL"
-            value={form.repo_url}
+            value={form.repoUrl}
             onChange={handleChange}
           />
           <Button type="submit">Create Project</Button>
