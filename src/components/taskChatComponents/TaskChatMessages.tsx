@@ -63,7 +63,7 @@ interface MessagesListProps {
   showMonacoCanvas: boolean
   summary: string
   onShowGeneratedFiles: (messageId: string) => void
-  executionLogs?: any[]
+  executionLogs?: TaskExecutionLog[]
   executionLogsOpen?: boolean
   setExecutionLogsOpen?: (open: boolean) => void
   executionLogsMessageId?: string
