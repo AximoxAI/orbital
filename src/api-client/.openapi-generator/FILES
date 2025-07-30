@@ -16,6 +16,7 @@ docs/CreateTaskDto.md
 docs/HealthApi.md
 docs/ProjectAnalysisDto.md
 docs/ProjectsApi.md
+docs/TaskExecutionLog.md
 docs/TaskGeneratedFile.md
 docs/TaskResponseDto.md
 docs/TasksApi.md

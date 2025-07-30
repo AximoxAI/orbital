@@ -9,7 +9,7 @@ export class TaskChatAPI {
   private socket: Socket | null = null
 
   constructor() {
-    const config = new Configuration({ basePath: "http://localhost:3000" })
+    const config = new Configuration({ basePath: import.meta.env.VITE_BACKEND_API_KEY })
     this.chatApi = new ChatApi(config)
     this.tasksApi = new TasksApi(config)
   }
@@ -28,6 +28,16 @@ export class TaskChatAPI {
       const response = await this.tasksApi.tasksControllerGetGeneratedFiles(messageId)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
+      throw error
+    }
+  }
+
+  async getExecutionLogs(messageId: string) {
+    try {
+      const response = await this.tasksApi.tasksControllerGetExecutionLogs(messageId)
+      return Array.isArray(response.data) ? response.data : []
+    } catch (error) {
+      console.error("Error fetching execution logs:", error)
       throw error
     }
   }

@@ -56,6 +56,11 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const [logsOpen, setLogsOpen] = useState(true)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
   const [summary, setSummary] = useState<string>("")
+  
+  // Add execution logs state
+  const [executionLogs, setExecutionLogs] = useState<any[]>([])
+  const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
+  const [executionLogsMessageId, setExecutionLogsMessageId] = useState<string | undefined>()
 
   const { user } = useUser()
   const navigate = useNavigate()
@@ -143,13 +148,24 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
-      const files = await taskChatAPI.getGeneratedFiles(messageId)
+      // Fetch both generated files and execution logs when "Retrieve Project" is clicked
+      const [files, logs] = await Promise.all([
+        taskChatAPI.getGeneratedFiles(messageId),
+        taskChatAPI.getExecutionLogs(messageId).catch(() => []) // Don't fail if execution logs aren't available
+      ])
+      
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
       }
+      
+      if (logs.length > 0) {
+        setExecutionLogs(logs)
+        setExecutionLogsOpen(true)
+        setExecutionLogsMessageId(messageId) // Track which message these logs belong to
+      }
     } catch (error) {
-      // Optionally, show an error somewhere in the UI
+      console.error("Failed to fetch generated files:", error)
     }
   }
 
@@ -175,6 +191,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       if (shouldExecuteTask) {
         setShowMonacoCanvas(true)
         setGeneratedFiles([])
+        // Reset execution logs when starting a new task
+        setExecutionLogs([])
+        setExecutionLogsMessageId(undefined)
       }
 
       setNewMessage("")
@@ -248,6 +267,10 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           showMonacoCanvas={showMonacoCanvas}
           summary={summary}
           onShowGeneratedFiles={handleShowGeneratedFiles}
+          executionLogs={executionLogs}
+          executionLogsOpen={executionLogsOpen}
+          setExecutionLogsOpen={setExecutionLogsOpen}
+          executionLogsMessageId={executionLogsMessageId}
         />
 
         <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} />
