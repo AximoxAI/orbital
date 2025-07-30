@@ -58,7 +58,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const [summary, setSummary] = useState<string>("")
   
   // Add execution logs state
-  const [executionLogs, setExecutionLogs] = useState<any[]>([])
+  const [executionLogs, setExecutionLogs] = useState<TaskExecutionLog[]>([])
   const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
   const [executionLogsMessageId, setExecutionLogsMessageId] = useState<string | undefined>()
 
