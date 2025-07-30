@@ -32,7 +32,7 @@ import {
 import { useNavigate } from "react-router-dom";
 
 const configuration = new Configuration({
-  basePath: 'http://localhost:3000',
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
 });
 
 const projectsApi = new ProjectsApi(configuration);

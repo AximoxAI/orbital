@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { Search, ChevronDown, MoreHorizontal, Book, ChevronLeft, ChevronRight, Github } from "lucide-react"
+import { Search, ChevronDown, MoreHorizontal, Book, ChevronLeft, ChevronRight, Github, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
@@ -80,16 +80,27 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            className={`w-full flex items-center gap-2 text-indigo-600 border-gray-200 hover:bg-indigo-50 ${
-              collapsed ? "px-0 justify-center" : "justify-center"
-            }`}
-          >
-            <Book className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span>Docs</span>}
-          </Button>
+        <div className="p-4 border-t border-gray-200 ">
+          <div className={`flex flex-col gap-2`}>
+            <Button
+              variant="outline"
+              className={`flex items-center gap-2 text-indigo-600 border-gray-200 hover:bg-indigo-50 ${
+                collapsed ? "px-0 justify-center" : "flex-1 justify-center"
+              }`}
+            >
+              <Book className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span>Docs</span>}
+            </Button>
+            <Button
+              variant="outline"
+              className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${
+                collapsed ? "px-0 justify-center" : "flex-1 justify-center"
+              }`}
+            >
+              <Settings className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span>Settings</span>}
+            </Button>
+          </div>
         </div>
       </div>
 

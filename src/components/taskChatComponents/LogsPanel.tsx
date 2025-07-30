@@ -12,6 +12,7 @@ interface LogsPanelProps {
   logsOpen: boolean
   setLogsOpen: React.Dispatch<React.SetStateAction<boolean>>
   showMonacoCanvas: boolean
+  title?: string
 }
 
 const TypewriterText: React.FC<{ text: string; delay: number; shouldAnimate: boolean }> = ({ text, delay, shouldAnimate }) => {
@@ -63,7 +64,7 @@ const TypewriterText: React.FC<{ text: string; delay: number; shouldAnimate: boo
   )
 }
 
-const LogsPanel: React.FC<LogsPanelProps> = ({ logs, logsOpen, setLogsOpen, showMonacoCanvas }) => {
+const LogsPanel: React.FC<LogsPanelProps> = ({ logs, logsOpen, setLogsOpen, showMonacoCanvas, title = "Execution Logs" }) => {
   const [animatedLogs, setAnimatedLogs] = React.useState<Set<string>>(new Set())
 
   React.useEffect(() => {
@@ -87,7 +88,7 @@ const LogsPanel: React.FC<LogsPanelProps> = ({ logs, logsOpen, setLogsOpen, show
                   <Terminal className="h-4 w-4 text-muted-foreground" />
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-semibold tracking-wide uppercase text-muted-foreground">
-                      Execution Logs
+                      {title}
                     </h3>
                     <Badge variant="secondary" className="text-xs">{logs.length}</Badge>
                   </div>

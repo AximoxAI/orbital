@@ -238,6 +238,55 @@ export interface ProjectAnalysisDto {
 /**
  * 
  * @export
+ * @interface TaskExecutionLog
+ */
+export interface TaskExecutionLog {
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'message_id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'task_id': string;
+    /**
+     * Log status like completed, stdout, stderr, file, command, processing
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'status': string;
+    /**
+     * Type of log, e.g., agent, sandbox, summary
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'type'?: string;
+    /**
+     * Human-readable log content to show on frontend
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'content'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskExecutionLog
+     */
+    'timestamp': string;
+}
+/**
+ * 
+ * @export
  * @interface TaskGeneratedFile
  */
 export interface TaskGeneratedFile {
@@ -1707,6 +1756,40 @@ export const TasksApiAxiosParamCreator = function (configuration?: Configuration
         },
         /**
          * 
+         * @summary Get all execution logs for a task message
+         * @param {string} messageId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        tasksControllerGetExecutionLogs: async (messageId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'messageId' is not null or undefined
+            assertParamExists('tasksControllerGetExecutionLogs', 'messageId', messageId)
+            const localVarPath = `/api/v1/tasks/execution-logs/{messageId}`
+                .replace(`{${"messageId"}}`, encodeURIComponent(String(messageId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
          * @summary Get all generated files for a task message
          * @param {string} messageId 
          * @param {*} [options] Override http request option.
@@ -1880,6 +1963,19 @@ export const TasksApiFp = function(configuration?: Configuration) {
         },
         /**
          * 
+         * @summary Get all execution logs for a task message
+         * @param {string} messageId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async tasksControllerGetExecutionLogs(messageId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<TaskExecutionLog>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.tasksControllerGetExecutionLogs(messageId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TasksApi.tasksControllerGetExecutionLogs']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
          * @summary Get all generated files for a task message
          * @param {string} messageId 
          * @param {*} [options] Override http request option.
@@ -1973,6 +2069,16 @@ export const TasksApiFactory = function (configuration?: Configuration, basePath
         },
         /**
          * 
+         * @summary Get all execution logs for a task message
+         * @param {string} messageId 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        tasksControllerGetExecutionLogs(messageId: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<TaskExecutionLog>> {
+            return localVarFp.tasksControllerGetExecutionLogs(messageId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
          * @summary Get all generated files for a task message
          * @param {string} messageId 
          * @param {*} [options] Override http request option.
@@ -2061,6 +2167,18 @@ export class TasksApi extends BaseAPI {
      */
     public tasksControllerFindOne(id: string, options?: RawAxiosRequestConfig) {
         return TasksApiFp(this.configuration).tasksControllerFindOne(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get all execution logs for a task message
+     * @param {string} messageId 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TasksApi
+     */
+    public tasksControllerGetExecutionLogs(messageId: string, options?: RawAxiosRequestConfig) {
+        return TasksApiFp(this.configuration).tasksControllerGetExecutionLogs(messageId, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**

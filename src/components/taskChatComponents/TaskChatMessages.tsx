@@ -1,7 +1,5 @@
-"use client"
-
 import React from "react"
-import { Bot, Code, Plus } from "lucide-react"
+import { Bot, Code, Plus, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -65,6 +63,10 @@ interface MessagesListProps {
   showMonacoCanvas: boolean
   summary: string
   onShowGeneratedFiles: (messageId: string) => void
+  executionLogs?: TaskExecutionLog[]
+  executionLogsOpen?: boolean
+  setExecutionLogsOpen?: (open: boolean) => void
+  executionLogsMessageId?: string
 }
 
 const MessagesList = ({
@@ -77,7 +79,22 @@ const MessagesList = ({
   showMonacoCanvas,
   summary,
   onShowGeneratedFiles,
+  executionLogs = [],
+  executionLogsOpen = false,
+  setExecutionLogsOpen,
+  executionLogsMessageId,
 }: MessagesListProps) => {
+  // Extract summary from execution logs
+  const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
+    const summaryLog = logs.find(log => log.type === "summary" && log.status === "completed")
+    return summaryLog ? summaryLog.content : ""
+  }
+
+  // Filter execution logs to exclude summary entries
+  const filterExecutionLogsWithoutSummary = (logs: TaskExecutionLog[]) => {
+    return logs.filter(log => !(log.type === "summary"))
+  }
+
   const renderMessageContent = (content: string) => {
     const botMentionRegex = /(@orbital_cli|@goose|@gemini_cli|@claude_code)/g
     const parts = content.split(botMentionRegex)
@@ -168,14 +185,18 @@ const MessagesList = ({
       <div className={`text-sm text-gray-800 font-medium text-${isFullPage ? "base" : "sm"} leading-relaxed`}>
         <div className="flex flex-wrap items-center gap-2">
           {message.type === "ai" && message.content === "Generating Project" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onShowGeneratedFiles(message.id)}
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 text-blue-800 hover:from-blue-100 hover:to-indigo-100 transition-all duration-200 shadow-sm"
-            >
-              Retrieve Project
-            </Button>
+            <div className="w-full flex items-center px-6 py-3  rounded-lg bg-slate-50 hover:shadow-lg transition-all duration-300 cursor-pointer group border"
+                 onClick={() => onShowGeneratedFiles(message.id)}>
+              <div className="flex items-center space-x-3 flex-1">
+                <div className="w-6 h-6 bg-white rounded border flex items-center justify-center shadow-inner">
+                  <FileText className="w-4 h-4 text-black" />
+                </div>
+                <span className="text-base font-medium text-black">Retrieve Project</span>
+              </div>
+              <div className="ml-4 px-3 py-1.5 bg-white rounded text-sm font-mono text-black border shadow-sm">
+                Code
+              </div>
+            </div>
           ) : (
             renderMessageContent(message.content)
           )}
@@ -206,71 +227,122 @@ const MessagesList = ({
   const shouldShowLogsAndSummary = (idx: number) =>
     latestHumanIdx !== undefined && followingBotIdx !== -1 && idx === latestHumanIdx && logs.length > 0
 
-  const renderMessage = (message: any, idx: number) => (
-    <React.Fragment key={message.id}>
-      <div className="flex flex-col space-y-2 opacity-100 animate-fadeIn">
-        <div className={`flex space-x-${isFullPage ? "4" : "3"}`}>
-          <MessageAvatar type={message.type} />
-          <div className="flex-1 min-w-0">
-            <div className={`flex items-center space-x-${isFullPage ? "3" : "2"} mb-2`}>
-              <span className="text-sm font-bold text-gray-900">{message.author}</span>
-              <span className={`text-xs text-gray-500 px-2 py-${isFullPage ? "1" : "0.5"} rounded-full`}>
-                {message.timestamp}
-              </span>
+  // Updated logic to show execution logs after the specific message that triggered them
+  const shouldShowExecutionLogs = (message: any, idx: number) => {
+    return message.id === executionLogsMessageId && 
+           executionLogs.length > 0 && 
+           setExecutionLogsOpen
+  }
+
+  const renderMessage = (message: any, idx: number) => {
+    // Extract summary and filtered logs for this specific message
+    const executionSummary = message.id === executionLogsMessageId ? extractSummaryFromExecutionLogs(executionLogs) : ""
+    const filteredExecutionLogs = message.id === executionLogsMessageId ? filterExecutionLogsWithoutSummary(executionLogs) : []
+
+    return (
+      <React.Fragment key={message.id}>
+        <div className="flex flex-col space-y-2 opacity-100 animate-fadeIn">
+          <div className={`flex space-x-${isFullPage ? "4" : "3"}`}>
+            <MessageAvatar type={message.type} />
+            <div className="flex-1 min-w-0">
+              <div className={`flex items-center space-x-${isFullPage ? "3" : "2"} mb-2`}>
+                <span className="text-sm font-bold text-gray-900">{message.author}</span>
+                <span className={`text-xs text-gray-500 px-2 py-${isFullPage ? "1" : "0.5"} rounded-full`}>
+                  {message.timestamp}
+                </span>
+              </div>
+              <MessageContent 
+                message={message} 
+                isFullPage={isFullPage} 
+                onShowGeneratedFiles={onShowGeneratedFiles}
+              />
+              {message.taskSuggestion && (
+                <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
+              )}
             </div>
-            <MessageContent message={message} isFullPage={isFullPage} onShowGeneratedFiles={onShowGeneratedFiles} />
-            {message.taskSuggestion && (
-              <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
-            )}
           </div>
         </div>
-      </div>
-      {shouldShowLogsAndSummary(idx) && (
-        <div className={`space-y-${isFullPage ? "4" : "3"}`}>
-          <LogsPanel logs={logs} logsOpen={logsOpen} setLogsOpen={setLogsOpen} showMonacoCanvas={showMonacoCanvas} />
-          {summary && summary.trim() && (
-            <div
-              className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
-            >
-              <div className="flex items-center mb-2">
-                <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
-                <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Summary</strong>
+        {shouldShowLogsAndSummary(idx) && (
+          <div className={`space-y-${isFullPage ? "4" : "3"}`}>
+            <LogsPanel 
+              logs={logs} 
+              logsOpen={logsOpen} 
+              setLogsOpen={setLogsOpen} 
+              showMonacoCanvas={showMonacoCanvas}
+              title="Console Logs"
+            />
+            {summary && summary.trim() && (
+              <div
+                className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
+              >
+                <div className="flex items-center mb-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
+                  <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Summary</strong>
+                </div>
+                <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
               </div>
-              <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
-            </div>
-          )}
-        </div>
-      )}
-    </React.Fragment>
-  )
+            )}
+          </div>
+        )}
+        {shouldShowExecutionLogs(message, idx) && setExecutionLogsOpen && (
+          <div className={`space-y-${isFullPage ? "4" : "3"}`}>
+            {/* Execution Logs Panel (without summary entries) */}
+            <LogsPanel 
+              logs={filteredExecutionLogs.map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`)} 
+              logsOpen={executionLogsOpen} 
+              setLogsOpen={setExecutionLogsOpen} 
+              showMonacoCanvas={showMonacoCanvas}
+              title="Execution Logs"
+            />
+            {/* Execution Summary Component */}
+            {executionSummary && executionSummary.trim() && (
+               <div
+               className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
+             >
+                <div className="flex items-center mb-2">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
+                  <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Task Summary</strong>
+                </div>
+                <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{executionSummary}</div>
+              </div>
+            )}
+          </div>
+        )}
+      </React.Fragment>
+    )
+  }
 
   if (isFullPage) {
     return (
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white flex flex-col justify-center items-center">
-        <div className="flex-1 w-[65%] max-w-4xl overflow-y-auto px-6 py-8 space-y-6">
-          {loading ? (
-            <div className="text-center text-gray-500 py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-              Loading messages...
-            </div>
-          ) : (
-            allMessages.map(renderMessage)
-          )}
+      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+        <div className="flex justify-center w-full h-full">
+          <div className="w-[65%] max-w-4xl px-6 py-8 space-y-6">
+            {loading ? (
+              <div className="text-center text-gray-500 py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                Loading messages...
+              </div>
+            ) : (
+              allMessages.map(renderMessage)
+            )}
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6 bg-gradient-to-b from-gray-50 to-white">
-      {loading ? (
-        <div className="text-center text-gray-500 py-8">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-3"></div>
-          Loading messages...
-        </div>
-      ) : (
-        allMessages.map(renderMessage)
-      )}
+    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
+      <div className="px-4 py-6 space-y-6">
+        {loading ? (
+          <div className="text-center text-gray-500 py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-3"></div>
+            Loading messages...
+          </div>
+        ) : (
+          allMessages.map(renderMessage)
+        )}
+      </div>
     </div>
   )
 }
