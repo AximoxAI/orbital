@@ -252,4 +252,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**Built with ❤️ by the Orbital team** - Inspired by modern SaaS dashboards and collaborative engineering tools.
+**Built with ❤️ by the Aximox team**
