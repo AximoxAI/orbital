@@ -296,12 +296,12 @@ const MessagesList = ({
             />
             {/* Execution Summary Component */}
             {executionSummary && executionSummary.trim() && (
-              <div
-                className={`w-full bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
-              >
+               <div
+               className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
+             >
                 <div className="flex items-center mb-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                  <strong className="text-green-800 font-bold text-sm uppercase tracking-wide">Task Summary</strong>
+                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
+                  <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Task Summary</strong>
                 </div>
                 <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{executionSummary}</div>
               </div>
