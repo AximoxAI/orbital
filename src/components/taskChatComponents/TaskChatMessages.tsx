@@ -85,13 +85,13 @@ const MessagesList = ({
   executionLogsMessageId,
 }: MessagesListProps) => {
   // Extract summary from execution logs
-  const extractSummaryFromExecutionLogs = (logs: any[]) => {
+  const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
     const summaryLog = logs.find(log => log.type === "summary" && log.status === "completed")
     return summaryLog ? summaryLog.content : ""
   }
 
   // Filter execution logs to exclude summary entries
-  const filterExecutionLogsWithoutSummary = (logs: any[]) => {
+  const filterExecutionLogsWithoutSummary = (logs: TaskExecutionLog[]) => {
     return logs.filter(log => !(log.type === "summary"))
   }
 
