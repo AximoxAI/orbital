@@ -8,13 +8,14 @@ interface MonacoCanvasProps {
   value: string;
   setValue: (val: string) => void;
   taskId?: string;
-  executeTaskRef?: React.MutableRefObject<(() => void) | null>;
+  executeTaskRef?: React.MutableRefObject<((message?: string) => void) | null>; // Updated type
   isVisible: boolean;
   onSocketConnected?: (connected: boolean) => void;
   filesFromApi?: { path: string; content: string; [key: string]: any }[];
   onLogsUpdate?: (logs: string[]) => void;
-  onSummaryUpdate?: (summary: string) => void; // NEW PROP
-  onClose?: () => void; // CLOSE PROP ADDED
+  onSummaryUpdate?: (summary: string) => void;
+  onClose?: () => void;
+  inputMessage?: string;
 }
 
 interface FileItem {
@@ -52,8 +53,9 @@ const MonacoCanvas = forwardRef(({
   onSocketConnected,
   filesFromApi = [],
   onLogsUpdate,
-  onSummaryUpdate, // NEW PROP
-  onClose, // NEW PROP
+  onSummaryUpdate,
+  onClose,
+  inputMessage
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -69,7 +71,7 @@ const MonacoCanvas = forwardRef(({
   const resizeRef = useRef<HTMLDivElement>(null);
 
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
-  const [summary, setSummary] = useState<string>(""); // NEW
+  const [summary, setSummary] = useState<string>("");
 
   useEffect(() => {
     if (onLogsUpdate) {
@@ -105,7 +107,6 @@ const MonacoCanvas = forwardRef(({
         onSocketConnected?.(false);
       }
       setConsoleLogs([]);
-      // setSummary(""); // clear summary on hide
       return;
     }
 
@@ -135,6 +136,7 @@ const MonacoCanvas = forwardRef(({
     });
 
     socket.on('execution_result', (data) => {
+      console.log(data)
       if (data && (data.type === "agent" || data.type === "sandbox")) {
         if (typeof data.content === "string") {
           setConsoleLogs(prev => [...prev, data.content]);
@@ -142,7 +144,7 @@ const MonacoCanvas = forwardRef(({
       }
       if (data && (data.type === "summary")) {
         setSummary(data.content || "");
-        console.log(data.content)
+        console.log("Summary received:", data.content);
       }
 
       const { taskId: resultTaskId, status, message, summary: unusedSummary, timestamp } = data;
@@ -200,7 +202,8 @@ const MonacoCanvas = forwardRef(({
     }
   };
 
-  const handleExecuteTask = useCallback(() => {
+  // FIXED: Accept messageOverride parameter and use it properly
+  const handleExecuteTask = useCallback((messageOverride?: string) => {
     if (!taskId || !agentId) {
       return;
     }
@@ -212,7 +215,7 @@ const MonacoCanvas = forwardRef(({
 
     setHasTriggeredExecution(true);
     setConsoleLogs([]);
-    setSummary(""); // clear summary on each execution
+    setSummary("");
 
     const executeAfterConnection = () => {
       if (!socketRef.current || !socketRef.current.connected) {
@@ -221,8 +224,19 @@ const MonacoCanvas = forwardRef(({
       }
 
       try {
-        socketRef.current.emit("execute", { taskId, agentId });
-      } catch {}
+        // Use messageOverride if provided, otherwise fall back to inputMessage
+        const messageToSend = messageOverride || inputMessage;
+        console.log(messageToSend);
+        
+        // FIXED: Use correct property name 'inputMessage' instead of 'messageOverride'
+        socketRef.current.emit("execute", { 
+          taskId, 
+          agentId, 
+          message: messageToSend 
+        });
+      } catch (error) {
+        console.error("Error executing task:", error);
+      }
     };
 
     if (socketRef.current?.connected) {
@@ -230,7 +244,7 @@ const MonacoCanvas = forwardRef(({
     } else {
       setTimeout(executeAfterConnection, 1000);
     }
-  }, [taskId, agentId, filesFromApi.length]);
+  }, [taskId, agentId, filesFromApi.length, inputMessage]);
 
   useEffect(() => {
     if (executeTaskRef) {
@@ -433,20 +447,3 @@ const MonacoCanvas = forwardRef(({
 });
 
 export default MonacoCanvas;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
