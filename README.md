@@ -8,6 +8,8 @@ A modern, AI-powered collaboration platform built with React, Vite, TypeScript, 
 
 ### AI-Powered Collaboration
 - **Multi-Agent Support**: Integrate with @goose, @orbital_cli, @gemini_cli, @claude_code AI agents
+- **Compare and Contrast**: Generate code or fix issues and apply the best 
+- **Automatic Github Sync**: Sync Code or Issues from Github
 - **Real-time Task Chat**: Live collaboration with AI assistants and team members
 - **Code Generation**: AI-assisted code writing, refactoring, and debugging
 - **Requirements Generation**: Automatically generate project requirements from descriptions
