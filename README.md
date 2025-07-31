@@ -16,6 +16,7 @@ A modern, AI-powered collaboration platform built with React, Vite, TypeScript, 
 - **Automatic Github Sync**: Sync Code or Issues from Github
 - **Real-time Task Chat**: Live collaboration with AI assistants and team members
 - **Code Generation**: AI-assisted code writing, refactoring, and debugging
+- **Secure Sandbox**: Use secure sandboxes for running agentic tools and code.
 - **Requirements Generation**: Automatically generate project requirements from descriptions
 
 ### Project Management
