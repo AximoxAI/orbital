@@ -202,16 +202,23 @@ const MonacoCanvas = forwardRef(({
     }
   };
 
+  // Clear canvas state when starting new task execution
+  const clearCanvasState = useCallback(() => {
+    setFiles([]);
+    setSelectedFile(null);
+    setShowPreview(false);
+    setPreviewContent('');
+    setValue("// Type your code here...");
+  }, [setValue]);
+
   // FIXED: Accept messageOverride parameter and use it properly
   const handleExecuteTask = useCallback((messageOverride?: string) => {
     if (!taskId || !agentId) {
       return;
     }
 
-    if (filesFromApi.length === 0) {
-      setFiles([]);
-      setSelectedFile(null);
-    }
+    // Clear canvas state at the start of every new task execution
+    clearCanvasState();
 
     setHasTriggeredExecution(true);
     setConsoleLogs([]);
@@ -244,7 +251,7 @@ const MonacoCanvas = forwardRef(({
     } else {
       setTimeout(executeAfterConnection, 1000);
     }
-  }, [taskId, agentId, filesFromApi.length, inputMessage]);
+  }, [taskId, agentId, inputMessage, clearCanvasState]);
 
   useEffect(() => {
     if (executeTaskRef) {

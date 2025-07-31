@@ -227,11 +227,30 @@ const MessagesList = ({
   const shouldShowLogsAndSummary = (idx: number) =>
     latestHumanIdx !== undefined && followingBotIdx !== -1 && idx === latestHumanIdx && logs.length > 0
 
+  // Check if current message is the latest interaction (either latest human or bot message after latest human)
+  const isLatestInteraction = (idx: number) => {
+    if (latestHumanIdx === undefined) return false
+    
+    // If this is the latest human message and there's a bot message following it
+    if (idx === latestHumanIdx && followingBotIdx !== -1) return true
+    
+    // If this is the bot message immediately following the latest human message
+    if (idx === followingBotIdx) return true
+    
+    return false
+  }
+
   // Updated logic to show execution logs after the specific message that triggered them
+  // But prevent showing if console logs are already being shown for the latest interaction
   const shouldShowExecutionLogs = (message: any, idx: number) => {
-    return message.id === executionLogsMessageId && 
-           executionLogs.length > 0 && 
-           setExecutionLogsOpen
+    const isTargetMessage = message.id === executionLogsMessageId && 
+                           executionLogs.length > 0 && 
+                           setExecutionLogsOpen
+    
+    // Don't show execution logs if this is part of the latest interaction and console logs are available
+    const isLatestWithConsoleLogs = isLatestInteraction(idx) && logs.length > 0
+    
+    return isTargetMessage && !isLatestWithConsoleLogs
   }
 
   const renderMessage = (message: any, idx: number) => {
@@ -316,7 +335,7 @@ const MessagesList = ({
     return (
       <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
         <div className="flex justify-center w-full h-full">
-          <div className="w-[65%] max-w-4xl px-6 py-8 space-y-6">
+          <div className="w-[65%] max-w-4xl px-6 py-8 pb-16 space-y-6">
             {loading ? (
               <div className="text-center text-gray-500 py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -333,7 +352,7 @@ const MessagesList = ({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
-      <div className="px-4 py-6 space-y-6">
+      <div className="px-4 py-6 pb-12 space-y-6">
         {loading ? (
           <div className="text-center text-gray-500 py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-3"></div>
