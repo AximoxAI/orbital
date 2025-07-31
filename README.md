@@ -4,6 +4,10 @@
 
 A modern, AI-powered collaboration platform built with React, Vite, TypeScript, and [shadcn/ui](https://ui.shadcn.com/). Orbital provides a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management, real-time task collaboration, and productivity tools.
 
+![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/collab.png)
+
+
+
 ## 🚀 Key Features
 
 ### AI-Powered Collaboration
