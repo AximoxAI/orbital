@@ -112,20 +112,15 @@ const MessagesList = ({
         elements.push(
           <span
             key={index}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
+            className={`inline-flex  items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
           >
-            <Bot className={`w-4 h-4 mr-1.5 ${styles.iconColor}`} />
+            <Bot className={`w-4 h-4 mr-2   ${styles.iconColor}`} />
             {part}
           </span>
         )
-        // Add line break after bot mention
-        if (index < parts.length - 1 && parts[index + 1].trim()) {
-          elements.push(<br key={`br-${index}`} />)
-          elements.push(<br key={`br2-${index}`} />)
-        }
       } else if (part.trim()) {
         elements.push(
-          <span key={index} className="text-sm text-slate-900 font-inter font-normal">
+          <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
             {part}
           </span>
         )
@@ -264,57 +259,57 @@ const MessagesList = ({
     }
 
     return (
-      <div className={`border border-slate-200 rounded-xl p-4 shadow-sm w-fit max-w-[75%] ${
-        isRetrieveProjectBlock ? "bg-slate-100" : "bg-white"
-      }`}>
-        <div className="leading-relaxed">
-          {isRetrieveProjectBlock ? (
-            <div>
-              <div className="flex items-center gap-2 cursor-pointer mb-3"
-                   onClick={() => onShowGeneratedFiles(message.id)}>
-                <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
-                <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium">
-                  Code
-                </span>
-              </div>
-              
-              {/* Console Logs for latest interaction */}
-              {hasConsoleLogs && (
-                <LogsPanel 
-                  logs={logs} 
-                  logsOpen={logsOpen} 
-                  setLogsOpen={setLogsOpen}
-                  title="EXECUTION LOGS"
-                />
-              )}
-              
-              {/* Execution Logs for specific message */}
-              {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
-                <LogsPanel 
-                  logs={filteredExecutionLogs.map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`)} 
-                  logsOpen={executionLogsOpen} 
-                  setLogsOpen={setExecutionLogsOpen}
-                  title="EXECUTION LOGS"
-                />
-              )}
-              
-              {/* Task Summary */}
-              {(hasConsoleLogs && summary && summary.trim()) && (
-                <TaskSummaryPanel summary={summary} />
-              )}
-              
-              {/* Execution Summary */}
-              {(hasExecutionLogsForThisMessage && !hasConsoleLogs && executionSummary && executionSummary.trim()) && (
-                <TaskSummaryPanel summary={executionSummary} />
-              )}
-            </div>
-          ) : (
-            <div className="text-slate-900 font-normal font-inter">
-              {renderMessageContent(message.content)}
-            </div>
-          )}
-        </div>
+<div
+  className={`border border-slate-200 rounded-xl w-fit
+    ${isRetrieveProjectBlock ? "bg-slate-100 shadow-lg p-4" : "bg-white p-2 flex items-center h-auto"}
+  `}
+>
+  {isRetrieveProjectBlock ? (
+    <div>
+      <div
+        className="flex items-center gap-2 cursor-pointer "
+        onClick={() => onShowGeneratedFiles(message.id)}
+      >
+        <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
+        <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium">
+          Code
+        </span>
       </div>
+      {hasConsoleLogs && (
+        <LogsPanel
+          logs={logs}
+          logsOpen={logsOpen}
+          setLogsOpen={setLogsOpen}
+          title="EXECUTION LOGS"
+        />
+      )}
+      {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
+        <LogsPanel
+          logs={filteredExecutionLogs.map(
+            (log) =>
+              `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`
+          )}
+          logsOpen={executionLogsOpen}
+          setLogsOpen={setExecutionLogsOpen}
+          title="EXECUTION LOGS"
+        />
+      )}
+      {(hasConsoleLogs && summary && summary.trim()) && (
+        <TaskSummaryPanel summary={summary} />
+      )}
+      {(hasExecutionLogsForThisMessage &&
+        !hasConsoleLogs &&
+        executionSummary &&
+        executionSummary.trim()) && (
+        <TaskSummaryPanel summary={executionSummary} />
+      )}
+    </div>
+  ) : (
+    <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+      {renderMessageContent(message.content)}
+    </div>
+  )}
+</div>
     )
   }
 
@@ -340,26 +335,28 @@ const MessagesList = ({
   const renderMessage = (message: any, idx: number) => {
     return (
       <React.Fragment key={message.id}>
-        <div className="flex gap-3 animate-slide-in">
-          <MessageAvatar type={message.type} />
-          <div className="flex-1 min-w-0 max-w-[75%]">
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="text-sm font-semibold text-slate-900 font-inter">
-                {message.type === "human" ? "You" : "Bot"}
-              </span>
-              <span className="text-xs text-slate-400 font-medium font-inter">
-                {message.timestamp}
-              </span>
+        <div className="flex justify-center w-full animate-slide-in">
+          <div className="flex gap-3 w-full max-w-4xl">
+            <MessageAvatar type={message.type} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-sm font-semibold text-slate-900 font-inter">
+                  {message.type === "human" ? "You" : "Bot"}
+                </span>
+                <span className="text-xs text-slate-400 font-medium font-inter">
+                  {message.timestamp}
+                </span>
+              </div>
+              <MessageContent 
+                message={message} 
+                isFullPage={isFullPage} 
+                onShowGeneratedFiles={onShowGeneratedFiles}
+                messageIndex={idx}
+              />
+              {message.taskSuggestion && (
+                <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
+              )}
             </div>
-            <MessageContent 
-              message={message} 
-              isFullPage={isFullPage} 
-              onShowGeneratedFiles={onShowGeneratedFiles}
-              messageIndex={idx}
-            />
-            {message.taskSuggestion && (
-              <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
-            )}
           </div>
         </div>
       </React.Fragment>
@@ -369,8 +366,8 @@ const MessagesList = ({
   if (isFullPage) {
     return (
       <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
-        <div className="flex justify-center w-full h-full">
-          <div className="w-[80%] max-w-6xl px-6 py-5 space-y-4">
+        <div className="flex flex-col items-center w-full h-full">
+          <div className="w-full max-w-4xl px-6 py-5 space-y-4">
             {loading ? (
               <div className="text-center text-slate-500 py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -387,15 +384,17 @@ const MessagesList = ({
 
   return (
     <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
-      <div className="px-6 py-5 space-y-4">
-        {loading ? (
-          <div className="text-center text-slate-500 py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-3"></div>
-            <span className="font-medium font-inter">Loading messages...</span>
-          </div>
-        ) : (
-          allMessages.map(renderMessage)
-        )}
+      <div className="flex flex-col items-center w-full">
+        <div className="w-full max-w-4xl px-6 py-5 space-y-4">
+          {loading ? (
+            <div className="text-center text-slate-500 py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+              <span className="font-medium font-inter">Loading messages...</span>
+            </div>
+          ) : (
+            allMessages.map(renderMessage)
+          )}
+        </div>
       </div>
     </div>
   )

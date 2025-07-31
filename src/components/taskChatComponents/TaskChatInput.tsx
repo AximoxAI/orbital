@@ -85,10 +85,10 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
     const cursorPos = e.target.selectionStart
     setNewMessage(value)
 
-    // Auto-resize textarea
+    // Auto-resize textarea with a higher maximum height for multiline
     const textarea = e.target
     textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
 
     const textBeforeCursor = value.substring(0, cursorPos)
     const lastAtIndex = textBeforeCursor.lastIndexOf("@")
@@ -161,7 +161,8 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
       }
     }
 
-    if (e.key === "Enter" && !e.shiftKey && !showSuggestions) {
+    // Allow Enter for new lines, require Ctrl+Enter or Cmd+Enter to send
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !showSuggestions) {
       e.preventDefault()
       onSendMessage()
     }
@@ -178,7 +179,7 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
   }
 
   return (
-    <div className={`${isFullPage ? 'flex justify-center w-full' : ''} border-t border-gray-200 bg-white relative`}>
+    <div className={`fixed bottom-0 left-0 right-0 ${isFullPage ? 'flex justify-center' : ''} border-t border-gray-200 bg-white relative z-20`}>
       {showSuggestions && (
         <div className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}>
           {filteredSuggestions.map((suggestion, index) => {
@@ -201,22 +202,23 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
         </div>
       )}
 
-      <div className={`${isFullPage ? 'w-[80%] max-w-6xl' : 'w-full'} p-4`}>
-        <div className="flex items-end gap-3 bg-white border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
+      <div className={`${isFullPage ? 'w-[60%]' : 'w-full'} p-4`}>
+        <div className="flex items-end  gap-3  border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
           <textarea
             ref={textareaRef}
-            placeholder="Ask about the task or discuss implementation..."
+            placeholder="Ask about the task or discuss implementation... (Ctrl+Enter to send)"
             value={newMessage}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
-            className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[20px] max-h-[120px]"
-            rows={1}
+            className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
+            rows={3}
             style={{ lineHeight: '1.5' }}
           />
           <button
             onClick={onSendMessage}
             disabled={!newMessage.trim()}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0 self-end"
+            title="Send message (Ctrl+Enter)"
           >
             <Send className="w-4 h-4" />
           </button>
