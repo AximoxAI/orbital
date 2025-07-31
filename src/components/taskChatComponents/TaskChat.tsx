@@ -273,7 +273,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           executionLogsMessageId={executionLogsMessageId}
         />
 
-        <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} />
+        <div className="pt-4">
+          <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />
+        </div>
       </div>
 
       {isFullPage && (
