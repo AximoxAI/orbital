@@ -298,7 +298,7 @@ const MessagesList = ({
                   <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
                   <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Summary</strong>
                 </div>
-                <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
+                <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{summary}</div>
               </div>
             )}
           </div>
