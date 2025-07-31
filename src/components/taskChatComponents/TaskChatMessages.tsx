@@ -335,7 +335,7 @@ const MessagesList = ({
     return (
       <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
         <div className="flex justify-center w-full h-full">
-          <div className="w-[65%] max-w-4xl px-6 py-8 pb-16 space-y-6">
+          <div className="w-[65%] max-w-4xl px-6 py-8 space-y-6">
             {loading ? (
               <div className="text-center text-gray-500 py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -352,7 +352,7 @@ const MessagesList = ({
 
   return (
     <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
-      <div className="px-4 py-6 pb-12 space-y-6">
+      <div className="px-4 py-6 space-y-6">
         {loading ? (
           <div className="text-center text-gray-500 py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-3"></div>
