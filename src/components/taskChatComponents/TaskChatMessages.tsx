@@ -1,9 +1,8 @@
 import React from "react"
-import { Bot, Code, Plus, FileText } from "lucide-react"
+import { Bot, Code, Plus, FileText, Check, ChevronDown, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import LogsPanel from "./LogsPanel"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -53,6 +52,14 @@ const DEFAULT_BOT_STYLE = {
 
 const getBotStyles = (bot: string) => BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
 
+interface TaskExecutionLog {
+  id: string
+  timestamp: string
+  type: string
+  status: string
+  content: string
+}
+
 interface MessagesListProps {
   messages: any[]
   loading: boolean
@@ -84,13 +91,12 @@ const MessagesList = ({
   setExecutionLogsOpen,
   executionLogsMessageId,
 }: MessagesListProps) => {
-  // Extract summary from execution logs
+  
   const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
     const summaryLog = logs.find(log => log.type === "summary" && log.status === "completed")
     return summaryLog ? summaryLog.content : ""
   }
 
-  // Filter execution logs to exclude summary entries
   const filterExecutionLogsWithoutSummary = (logs: TaskExecutionLog[]) => {
     return logs.filter(log => !(log.type === "summary"))
   }
@@ -98,58 +104,68 @@ const MessagesList = ({
   const renderMessageContent = (content: string) => {
     const botMentionRegex = /(@orbital_cli|@goose|@gemini_cli|@claude_code)/g
     const parts = content.split(botMentionRegex)
+    const elements: React.ReactNode[] = []
 
-    return parts.map((part, index) => {
+    parts.forEach((part, index) => {
       if (availableBots.includes(part)) {
         const styles = getBotStyles(part)
-        return (
+        elements.push(
           <span
             key={index}
-            className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-semibold ${styles.bgColor} ${styles.textColor} border ${styles.borderColor} shadow-sm`}
+            className={`inline-flex  items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
           >
-            <Bot className={`w-4 h-4 mr-1.5 ${styles.iconColor}`} />
+            <Bot className={`w-4 h-4 mr-2   ${styles.iconColor}`} />
+            {part}
+          </span>
+        )
+      } else if (part.trim()) {
+        elements.push(
+          <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
             {part}
           </span>
         )
       }
-      return part
     })
+
+    return <>{elements}</>
   }
 
-  const MessageAvatar = ({ type }: { type: "ai" | "human" }) => (
-    <Avatar className="w-10 h-10 shadow-md">
-      <AvatarFallback className="text-white text-sm shadow-inner">
-        <img
-          src={
-            type === "ai"
-              ? "https://cdn-icons-png.flaticon.com/128/14223/14223927.png"
-              : "https://randomuser.me/api/portraits/men/40.jpg"
-          }
-          alt={type === "ai" ? "Bot" : "User"}
-          className="w-10 h-10 rounded-full object-cover"
-        />
-      </AvatarFallback>
-    </Avatar>
-  )
+  const MessageAvatar = ({ type }: { type: "ai" | "human" }) => {
+    if (type === "human") {
+      return (
+        <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0">
+          <img 
+            src="https://randomuser.me/api/portraits/men/40.jpg" 
+            alt="User Avatar"
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )
+    }
+    
+    return (
+      <div className="w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0 font-inter bg-gradient-to-br from-slate-600 to-slate-700 text-white font-semibold">
+        🤖
+      </div>
+    )
+  }
 
   const TaskSuggestion = ({ taskSuggestion, isFullPage }: { taskSuggestion: any; isFullPage: boolean }) => (
-    <div
-      className={`mt-${isFullPage ? "4" : "3"} p-${isFullPage ? "4" : "3"} bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-${isFullPage ? "xl" : "lg"} shadow-sm`}
-    >
+    <div className="mt-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <h4 className="text-sm font-bold text-blue-900 mb-1">Task Suggestion</h4>
-          <p className="text-sm text-blue-800 font-medium mb-2">{taskSuggestion.name}</p>
-          <div className={`flex items-center space-x-${isFullPage ? "3" : "2"}`}>
-            <Badge variant="outline" className="text-xs bg-white border-blue-300 text-blue-700">
+          <h4 className="text-sm font-semibold text-blue-900 mb-1 font-inter">Task Suggestion</h4>
+          <p className="text-sm text-blue-800 font-medium mb-2 font-inter">{taskSuggestion.name}</p>
+          <div className="flex items-center space-x-3">
+            <Badge variant="outline" className="text-xs bg-white border-blue-300 text-blue-700 font-medium font-inter">
               {taskSuggestion.priority} priority
             </Badge>
-            <span className="text-xs text-blue-600 font-medium">{taskSuggestion.project}</span>
+            <span className="text-xs text-blue-600 font-medium font-inter">{taskSuggestion.project}</span>
           </div>
         </div>
         <Button
           size="sm"
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md transition-all duration-200"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 shadow-md transition-all duration-200 font-medium font-inter"
         >
           <Plus className="w-4 h-4 mr-1" />
           Create
@@ -158,50 +174,142 @@ const MessagesList = ({
     </div>
   )
 
+  const LogsPanel = ({ logs, logsOpen, setLogsOpen, title }: { 
+    logs: string[], 
+    logsOpen: boolean, 
+    setLogsOpen: (open: boolean) => void,
+    title: string 
+  }) => (
+    <div className="bg-slate-100 border border-slate-200 rounded-lg overflow-hidden mt-3">
+      <div 
+        className="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-white transition-colors border-b border-slate-200 bg-white"
+        onClick={() => setLogsOpen(!logsOpen)}
+      >
+        <div className="flex items-center space-x-2 ">
+          <span className="text-slate-600">▶</span>
+          <span className="font-semibold text-slate-600 text-xs uppercase tracking-wide font-inter">{title}</span>
+          <span className="bg-slate-400 text-white px-1.5 py-0.5 rounded text-xs font-jetbrains font-medium">
+            {logs.length}
+          </span>
+        </div>
+      </div>
+      {logsOpen && (
+        <div className="p-3">
+          <div className="bg-slate-100 rounded border border-slate-100 p-3 font-jetbrains text-xs text-slate-700 leading-relaxed max-h-48 overflow-y-auto scrollbar-thin font-normal">
+            {logs.map((log, index) => (
+              <div key={index} className="mb-1 flex items-start gap-2">
+                <span className="text-slate-500 flex-shrink-0 font-medium font-jetbrains">
+                  {log.match(/\[([^\]]+)\]/) ? log.match(/\[([^\]]+)\]/)?.[1] : `[${index + 1}]`}
+                </span>
+                <span className="flex-1 font-normal font-jetbrains">
+                  {log.replace(/\[([^\]]+)\]\s*/, '')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const TaskSummaryPanel = ({ summary }: { summary: string }) => (
+    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
+      <div className="flex items-center space-x-2 mb-2">
+        <span className="text-green-600">✅</span>
+        <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
+      </div>
+      <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
+        {summary || "Task completed successfully!"}
+      </div>
+    </div>
+  )
+
   const MessageContent = ({
     message,
     isFullPage,
     onShowGeneratedFiles,
+    messageIndex,
   }: {
     message: any
     isFullPage: boolean
     onShowGeneratedFiles: (id: string) => void
+    messageIndex: number
   }) => {
+    const isLatestHumanMessage = latestHumanIdx === messageIndex
+    const isFollowingBotMessage = followingBotIdx === messageIndex
+    const hasConsoleLogs = isLatestHumanMessage && logs.length > 0
+    const hasExecutionLogsForThisMessage = message.id === executionLogsMessageId && executionLogs.length > 0 && setExecutionLogsOpen
+    
+    const executionSummary = hasExecutionLogsForThisMessage ? extractSummaryFromExecutionLogs(executionLogs) : ""
+    const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummary(executionLogs) : []
+
+    // Check if this is a "Retrieve Project" block
+    const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
+
     if (message.isCode) {
       return (
-        <div
-          className={`bg-gradient-to-r from-gray-50 to-gray-100 p-${isFullPage ? "4" : "3"} rounded-${isFullPage ? "xl" : "lg"} font-mono border border-gray-200 shadow-sm`}
-        >
-          <div className="flex items-center space-x-2 mb-${isFullPage ? '3' : '2'} pb-2 border-b border-gray-200">
-            <Code className="w-4 h-4 text-gray-600" />
-            <span className="text-xs text-gray-600 font-semibold uppercase tracking-wide">Code suggestion</span>
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
+            <Code className="w-4 h-4 text-slate-600" />
+            <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">Code suggestion</span>
           </div>
-          <pre className={`whitespace-pre-wrap text-${isFullPage ? "sm" : "xs"} text-gray-800`}>{message.content}</pre>
+          <pre className="whitespace-pre-wrap text-sm text-slate-800 font-normal font-jetbrains">{message.content}</pre>
         </div>
       )
     }
 
     return (
-      <div className={`text-sm text-gray-800 font-medium text-${isFullPage ? "base" : "sm"} leading-relaxed`}>
-        <div className="flex flex-wrap items-center gap-2">
-          {message.type === "ai" && message.content === "Generating Project" ? (
-            <div className="w-full flex items-center px-6 py-3  rounded-lg bg-slate-50 hover:shadow-lg transition-all duration-300 cursor-pointer group border"
-                 onClick={() => onShowGeneratedFiles(message.id)}>
-              <div className="flex items-center space-x-3 flex-1">
-                <div className="w-6 h-6 bg-white rounded border flex items-center justify-center shadow-inner">
-                  <FileText className="w-4 h-4 text-black" />
-                </div>
-                <span className="text-base font-medium text-black">Retrieve Project</span>
-              </div>
-              <div className="ml-4 px-3 py-1.5 bg-white rounded text-sm font-mono text-black border shadow-sm">
-                Code
-              </div>
-            </div>
-          ) : (
-            renderMessageContent(message.content)
-          )}
-        </div>
+<div
+  className={`border border-slate-200 rounded-xl w-fit
+    ${isRetrieveProjectBlock ? "bg-slate-100 shadow-lg p-4" : "bg-white p-2 flex items-center h-auto"}
+  `}
+>
+  {isRetrieveProjectBlock ? (
+    <div>
+      <div
+        className="flex items-center gap-2 cursor-pointer "
+        onClick={() => onShowGeneratedFiles(message.id)}
+      >
+        <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
+        <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium">
+          Code
+        </span>
       </div>
+      {hasConsoleLogs && (
+        <LogsPanel
+          logs={logs}
+          logsOpen={logsOpen}
+          setLogsOpen={setLogsOpen}
+          title="EXECUTION LOGS"
+        />
+      )}
+      {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
+        <LogsPanel
+          logs={filteredExecutionLogs.map(
+            (log) =>
+              `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`
+          )}
+          logsOpen={executionLogsOpen}
+          setLogsOpen={setExecutionLogsOpen}
+          title="EXECUTION LOGS"
+        />
+      )}
+      {(hasConsoleLogs && summary && summary.trim()) && (
+        <TaskSummaryPanel summary={summary} />
+      )}
+      {(hasExecutionLogsForThisMessage &&
+        !hasConsoleLogs &&
+        executionSummary &&
+        executionSummary.trim()) && (
+        <TaskSummaryPanel summary={executionSummary} />
+      )}
+    </div>
+  ) : (
+    <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+      {renderMessageContent(message.content)}
+    </div>
+  )}
+</div>
     )
   }
 
@@ -224,49 +332,18 @@ const MessagesList = ({
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
 
-  const shouldShowLogsAndSummary = (idx: number) =>
-    latestHumanIdx !== undefined && followingBotIdx !== -1 && idx === latestHumanIdx && logs.length > 0
-
-  // Check if current message is the latest interaction (either latest human or bot message after latest human)
-  const isLatestInteraction = (idx: number) => {
-    if (latestHumanIdx === undefined) return false
-    
-    // If this is the latest human message and there's a bot message following it
-    if (idx === latestHumanIdx && followingBotIdx !== -1) return true
-    
-    // If this is the bot message immediately following the latest human message
-    if (idx === followingBotIdx) return true
-    
-    return false
-  }
-
-  // Updated logic to show execution logs after the specific message that triggered them
-  // But prevent showing if console logs are already being shown for the latest interaction
-  const shouldShowExecutionLogs = (message: any, idx: number) => {
-    const isTargetMessage = message.id === executionLogsMessageId && 
-                           executionLogs.length > 0 && 
-                           setExecutionLogsOpen
-    
-    // Don't show execution logs if this is part of the latest interaction and console logs are available
-    const isLatestWithConsoleLogs = isLatestInteraction(idx) && logs.length > 0
-    
-    return isTargetMessage && !isLatestWithConsoleLogs
-  }
-
   const renderMessage = (message: any, idx: number) => {
-    // Extract summary and filtered logs for this specific message
-    const executionSummary = message.id === executionLogsMessageId ? extractSummaryFromExecutionLogs(executionLogs) : ""
-    const filteredExecutionLogs = message.id === executionLogsMessageId ? filterExecutionLogsWithoutSummary(executionLogs) : []
-
     return (
       <React.Fragment key={message.id}>
-        <div className="flex flex-col space-y-2 opacity-100 animate-fadeIn">
-          <div className={`flex space-x-${isFullPage ? "4" : "3"}`}>
+        <div className="flex justify-center w-full animate-slide-in">
+          <div className="flex gap-3 w-full max-w-4xl">
             <MessageAvatar type={message.type} />
             <div className="flex-1 min-w-0">
-              <div className={`flex items-center space-x-${isFullPage ? "3" : "2"} mb-2`}>
-                <span className="text-sm font-bold text-gray-900">{message.author}</span>
-                <span className={`text-xs text-gray-500 px-2 py-${isFullPage ? "1" : "0.5"} rounded-full`}>
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-sm font-semibold text-slate-900 font-inter">
+                  {message.type === "human" ? "You" : "Bot"}
+                </span>
+                <span className="text-xs text-slate-400 font-medium font-inter">
                   {message.timestamp}
                 </span>
               </div>
@@ -274,6 +351,7 @@ const MessagesList = ({
                 message={message} 
                 isFullPage={isFullPage} 
                 onShowGeneratedFiles={onShowGeneratedFiles}
+                messageIndex={idx}
               />
               {message.taskSuggestion && (
                 <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -281,65 +359,19 @@ const MessagesList = ({
             </div>
           </div>
         </div>
-        {shouldShowLogsAndSummary(idx) && (
-          <div className={`space-y-${isFullPage ? "4" : "3"}`}>
-            <LogsPanel 
-              logs={logs} 
-              logsOpen={logsOpen} 
-              setLogsOpen={setLogsOpen} 
-              showMonacoCanvas={showMonacoCanvas}
-              title="Console Logs"
-            />
-            {summary && summary.trim() && (
-              <div
-                className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
-              >
-                <div className="flex items-center mb-2">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
-                  <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Summary</strong>
-                </div>
-                <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{summary}</div>
-              </div>
-            )}
-          </div>
-        )}
-        {shouldShowExecutionLogs(message, idx) && setExecutionLogsOpen && (
-          <div className={`space-y-${isFullPage ? "4" : "3"}`}>
-            {/* Execution Logs Panel (without summary entries) */}
-            <LogsPanel 
-              logs={filteredExecutionLogs.map(log => `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`)} 
-              logsOpen={executionLogsOpen} 
-              setLogsOpen={setExecutionLogsOpen} 
-              showMonacoCanvas={showMonacoCanvas}
-              title="Execution Logs"
-            />
-            {/* Execution Summary Component */}
-            {executionSummary && executionSummary.trim() && (
-               <div
-               className={`w-full bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-${isFullPage ? "xl" : "lg"} p-${isFullPage ? "4" : "3"} shadow-sm`}
-             >
-                <div className="flex items-center mb-2">
-                  <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
-                  <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Task Summary</strong>
-                </div>
-                <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{executionSummary}</div>
-              </div>
-            )}
-          </div>
-        )}
       </React.Fragment>
     )
   }
 
   if (isFullPage) {
     return (
-      <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
-        <div className="flex justify-center w-full h-full">
-          <div className="w-[65%] max-w-4xl px-6 py-8 space-y-6">
+      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
+        <div className="flex flex-col items-center w-full h-full">
+          <div className="w-full max-w-4xl px-6 py-5 space-y-4">
             {loading ? (
-              <div className="text-center text-gray-500 py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                Loading messages...
+              <div className="text-center text-slate-500 py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <span className="font-medium font-inter">Loading messages...</span>
               </div>
             ) : (
               allMessages.map(renderMessage)
@@ -351,16 +383,18 @@ const MessagesList = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-gradient-to-b from-gray-50 to-white">
-      <div className="px-4 py-6 space-y-6">
-        {loading ? (
-          <div className="text-center text-gray-500 py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-900 mx-auto mb-3"></div>
-            Loading messages...
-          </div>
-        ) : (
-          allMessages.map(renderMessage)
-        )}
+    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
+      <div className="flex flex-col items-center w-full">
+        <div className="w-full max-w-4xl px-6 py-5 space-y-4">
+          {loading ? (
+            <div className="text-center text-slate-500 py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+              <span className="font-medium font-inter">Loading messages...</span>
+            </div>
+          ) : (
+            allMessages.map(renderMessage)
+          )}
+        </div>
       </div>
     </div>
   )
