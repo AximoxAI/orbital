@@ -227,11 +227,30 @@ const MessagesList = ({
   const shouldShowLogsAndSummary = (idx: number) =>
     latestHumanIdx !== undefined && followingBotIdx !== -1 && idx === latestHumanIdx && logs.length > 0
 
+  // Check if current message is the latest interaction (either latest human or bot message after latest human)
+  const isLatestInteraction = (idx: number) => {
+    if (latestHumanIdx === undefined) return false
+    
+    // If this is the latest human message and there's a bot message following it
+    if (idx === latestHumanIdx && followingBotIdx !== -1) return true
+    
+    // If this is the bot message immediately following the latest human message
+    if (idx === followingBotIdx) return true
+    
+    return false
+  }
+
   // Updated logic to show execution logs after the specific message that triggered them
+  // But prevent showing if console logs are already being shown for the latest interaction
   const shouldShowExecutionLogs = (message: any, idx: number) => {
-    return message.id === executionLogsMessageId && 
-           executionLogs.length > 0 && 
-           setExecutionLogsOpen
+    const isTargetMessage = message.id === executionLogsMessageId && 
+                           executionLogs.length > 0 && 
+                           setExecutionLogsOpen
+    
+    // Don't show execution logs if this is part of the latest interaction and console logs are available
+    const isLatestWithConsoleLogs = isLatestInteraction(idx) && logs.length > 0
+    
+    return isTargetMessage && !isLatestWithConsoleLogs
   }
 
   const renderMessage = (message: any, idx: number) => {
@@ -279,7 +298,7 @@ const MessagesList = ({
                   <div className="w-2 h-2 bg-amber-500 rounded-full mr-2"></div>
                   <strong className="text-amber-800 font-bold text-sm uppercase tracking-wide">Summary</strong>
                 </div>
-                <div className="text-gray-800 font-mono text-sm leading-relaxed">{summary}</div>
+                <div className="text-gray-800 font-mono text-sm leading-relaxed whitespace-pre-wrap">{summary}</div>
               </div>
             )}
           </div>

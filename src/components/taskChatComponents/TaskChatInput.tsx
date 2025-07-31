@@ -58,9 +58,10 @@ interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
   onSendMessage: () => void
+  isFullPage?: boolean
 }
 
-const ChatInput = ({ newMessage, setNewMessage, onSendMessage }: ChatInputProps) => {
+const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = false }: ChatInputProps) => {
   const [showBotSuggestions, setShowBotSuggestions] = useState(false)
   const [filteredBots, setFilteredBots] = useState<string[]>([])
   const [selectedBotIndex, setSelectedBotIndex] = useState(0)
@@ -136,10 +137,13 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage }: ChatInputProps)
     }
   }
 
+  // Dynamic positioning for bot suggestions based on view mode
+  const suggestionsLeftClass = isFullPage ? "left-1/2 transform -translate-x-1/2 w-[65%] max-w-4xl" : "left-6 right-6"
+
   return (
-    <div className="px-6 py-5 border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 relative">
+    <div className={`${isFullPage ? 'flex justify-center w-full' : ''} mt-4 border-t border-gray-200 bg-gradient-to-r from-white to-gray-50 relative`}>
       {showBotSuggestions && (
-        <div className="absolute bottom-full left-6 right-6 mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden">
+        <div className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}>
           {filteredBots.map((bot, index) => {
             const styles = getBotStyles(bot)
             return (
@@ -160,23 +164,25 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage }: ChatInputProps)
         </div>
       )}
 
-      <div className="flex space-x-4 items-center">
-        <Textarea
-          ref={textareaRef}
-          placeholder="Ask about the task or discuss implementation..."
-          value={newMessage}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          className="flex-1 text-base resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm transition-all duration-200"
-          rows={2}
-        />
-        <Button
-          onClick={onSendMessage}
-          disabled={!newMessage.trim()}
-          className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 shadow-md transition-all duration-200 px-6"
-        >
-          <Send className="w-4 h-4" />
-        </Button>
+      <div className={`${isFullPage ? 'w-[65%] max-w-4xl' : 'w-full'} px-6 py-4`}>
+        <div className="flex space-x-4 items-center">
+          <Textarea
+            ref={textareaRef}
+            placeholder="Ask about the task or discuss implementation..."
+            value={newMessage}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            className="flex-1 text-base resize-none border-gray-300 focus:border-blue-500 focus:ring-blue-500 rounded-xl shadow-sm transition-all duration-200"
+            rows={2}
+          />
+          <Button
+            onClick={onSendMessage}
+            disabled={!newMessage.trim()}
+            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 shadow-md transition-all duration-200 px-6"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
     </div>
   )
