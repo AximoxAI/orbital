@@ -162,9 +162,20 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
     }
 
     // Allow Enter for new lines, require Ctrl+Enter or Cmd+Enter to send
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !showSuggestions) {
-      e.preventDefault()
-      onSendMessage()
+    // Modified: Also send on plain Enter if no suggestions are showing and textarea is not multiline
+    if (e.key === "Enter" && !showSuggestions) {
+      if ((e.ctrlKey || e.metaKey) || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
+        // If it's a regular Enter (not Shift/Alt/Ctrl/Cmd), send if not multiline
+        // If textarea contains newlines, let Enter do a new line unless Ctrl/Cmd
+        if (
+          (!e.ctrlKey && !e.metaKey && (newMessage.includes('\n') || e.shiftKey || e.altKey))
+        ) {
+          // Let Enter add new line
+          return
+        }
+        e.preventDefault()
+        onSendMessage()
+      }
     }
   }
 
@@ -203,10 +214,10 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
       )}
 
       <div className={`${isFullPage ? 'w-[60%]' : 'w-full'} p-4`}>
-        <div className="flex items-end  gap-3  border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
+        <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
           <textarea
             ref={textareaRef}
-            placeholder="Ask about the task or discuss implementation... (Ctrl+Enter to send)"
+            placeholder="Ask about the task or discuss implementation... (Ctrl+Enter or Enter to send)"
             value={newMessage}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -214,14 +225,16 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
             rows={3}
             style={{ lineHeight: '1.5' }}
           />
-          <button
-            onClick={onSendMessage}
-            disabled={!newMessage.trim()}
-            className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0 self-end"
-            title="Send message (Ctrl+Enter)"
-          >
-            <Send className="w-4 h-4" />
-          </button>
+          <div className="flex items-center h-full">
+            <button
+              onClick={onSendMessage}
+              disabled={!newMessage.trim()}
+              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
+              title="Send message (Ctrl+Enter or Enter)"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -57,10 +57,14 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
   const [summary, setSummary] = useState<string>("")
   
-  // Add execution logs state
   const [executionLogs, setExecutionLogs] = useState<TaskExecutionLog[]>([])
   const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
   const [executionLogsMessageId, setExecutionLogsMessageId] = useState<string | undefined>()
+
+  // --- LIVE RETRIEVE PROJECT STATE ---
+  const [activeRetrieveProjectId, setActiveRetrieveProjectId] = useState<string | undefined>()
+  const [liveRetrieveProjectLogs, setLiveRetrieveProjectLogs] = useState<string[]>([])
+  const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string>("")
 
   const { user } = useUser()
   const navigate = useNavigate()
@@ -109,7 +113,17 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       onConnect: () => setSocketConnected(true),
       onDisconnect: () => setSocketConnected(false),
       onNewMessage: (msg: any) => {
-        setMessages((prev) => [...prev, mapBackendMsg(msg)])
+        setMessages((prev) => {
+          // Bind the first AI "Retrieve Project" block for live logs/summary
+          if (
+            msg.sender_type !== "human" &&
+            msg.content === "Generating Project" &&
+            activeRetrieveProjectId === undefined
+          ) {
+            setActiveRetrieveProjectId(msg.id || String(Date.now()))
+          }
+          return [...prev, mapBackendMsg(msg)]
+        })
         setCurrentInputMessage(msg)
       },
     })
@@ -117,7 +131,8 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     return () => {
       taskChatAPI.disconnectSocket(taskId)
     }
-  }, [isOpen, taskId, user?.username])
+  // eslint-disable-next-line
+  }, [isOpen, taskId, user?.username, activeRetrieveProjectId])
 
   useEffect(() => {
     if (!isOpen || !taskId) return
@@ -148,10 +163,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
-      // Fetch both generated files and execution logs when "Retrieve Project" is clicked
       const [files, logs] = await Promise.all([
         taskChatAPI.getGeneratedFiles(messageId),
-        taskChatAPI.getExecutionLogs(messageId).catch(() => []) // Don't fail if execution logs aren't available
+        taskChatAPI.getExecutionLogs(messageId).catch(() => [])
       ])
       
       if (files.length > 0) {
@@ -162,7 +176,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       if (logs.length > 0) {
         setExecutionLogs(logs)
         setExecutionLogsOpen(true)
-        setExecutionLogsMessageId(messageId) // Track which message these logs belong to
+        setExecutionLogsMessageId(messageId)
       }
     } catch (error) {
       console.error("Failed to fetch generated files:", error)
@@ -191,9 +205,11 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
       if (shouldExecuteTask) {
         setShowMonacoCanvas(true)
         setGeneratedFiles([])
-        // Reset execution logs when starting a new task
         setExecutionLogs([])
         setExecutionLogsMessageId(undefined)
+        setActiveRetrieveProjectId(undefined)
+        setLiveRetrieveProjectLogs([])
+        setLiveRetrieveProjectSummary("")
       }
 
       setNewMessage("")
@@ -219,11 +235,13 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const handleLogsUpdate = useCallback((newLogs: string[]) => {
     setLogs(newLogs)
     if (newLogs.length > 0) setLogsOpen(true)
-  }, [])
+    if (activeRetrieveProjectId) setLiveRetrieveProjectLogs(newLogs)
+  }, [activeRetrieveProjectId])
 
   const handleSummaryUpdate = useCallback((summaryValue: string) => {
     setSummary(summaryValue)
-  }, [])
+    if (activeRetrieveProjectId) setLiveRetrieveProjectSummary(summaryValue)
+  }, [activeRetrieveProjectId])
 
   const handleSocketConnected = (connected: boolean) => {
     setSocketConnected(connected)
@@ -271,6 +289,9 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           executionLogsOpen={executionLogsOpen}
           setExecutionLogsOpen={setExecutionLogsOpen}
           executionLogsMessageId={executionLogsMessageId}
+          activeRetrieveProjectId={activeRetrieveProjectId}
+          liveRetrieveProjectLogs={liveRetrieveProjectLogs}
+          liveRetrieveProjectSummary={liveRetrieveProjectSummary}
         />
 
         <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />
