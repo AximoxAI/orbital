@@ -74,6 +74,10 @@ interface MessagesListProps {
   executionLogsOpen?: boolean
   setExecutionLogsOpen?: (open: boolean) => void
   executionLogsMessageId?: string
+  // --- new props for live retrieve project ---
+  activeRetrieveProjectId?: string
+  liveRetrieveProjectLogs?: string[]
+  liveRetrieveProjectSummary?: string
 }
 
 const MessagesList = ({
@@ -90,6 +94,9 @@ const MessagesList = ({
   executionLogsOpen = false,
   setExecutionLogsOpen,
   executionLogsMessageId,
+  activeRetrieveProjectId,
+  liveRetrieveProjectLogs,
+  liveRetrieveProjectSummary,
 }: MessagesListProps) => {
   
   const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -243,8 +250,8 @@ const MessagesList = ({
     const executionSummary = hasExecutionLogsForThisMessage ? extractSummaryFromExecutionLogs(executionLogs) : ""
     const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummary(executionLogs) : []
 
-    // Check if this is a "Retrieve Project" block
     const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
+    const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
     if (message.isCode) {
       return (
@@ -275,13 +282,29 @@ const MessagesList = ({
           Code
         </span>
       </div>
-      {hasConsoleLogs && (
+      {/* Show live logs/summary for the active retrieve project block */}
+      {isActiveRetrieveProjectBlock && liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (
+        <LogsPanel
+          logs={liveRetrieveProjectLogs}
+          logsOpen={logsOpen}
+          setLogsOpen={setLogsOpen}
+          title="EXECUTION LOGS"
+        />
+      )}
+      {isActiveRetrieveProjectBlock && liveRetrieveProjectSummary && liveRetrieveProjectSummary.trim() && (
+        <TaskSummaryPanel summary={liveRetrieveProjectSummary} />
+      )}
+      {/* fallback to old logic for logs/summary */}
+      {!isActiveRetrieveProjectBlock && hasConsoleLogs && (
         <LogsPanel
           logs={logs}
           logsOpen={logsOpen}
           setLogsOpen={setLogsOpen}
           title="EXECUTION LOGS"
         />
+      )}
+      {!isActiveRetrieveProjectBlock && (hasConsoleLogs && summary && summary.trim()) && (
+        <TaskSummaryPanel summary={summary} />
       )}
       {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
         <LogsPanel
@@ -293,9 +316,6 @@ const MessagesList = ({
           setLogsOpen={setExecutionLogsOpen}
           title="EXECUTION LOGS"
         />
-      )}
-      {(hasConsoleLogs && summary && summary.trim()) && (
-        <TaskSummaryPanel summary={summary} />
       )}
       {(hasExecutionLogsForThisMessage &&
         !hasConsoleLogs &&
