@@ -1,5 +1,5 @@
 import React from "react"
-import { Bot, Code, Plus, FileText, Check, ChevronDown, ChevronRight } from "lucide-react"
+import { Bot, Code, Plus, FileText, Check, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -68,16 +68,15 @@ interface MessagesListProps {
   logsOpen: boolean
   setLogsOpen: (open: boolean) => void
   showMonacoCanvas: boolean
-  summary: string
+  summary: string[]
   onShowGeneratedFiles: (messageId: string) => void
   executionLogs?: TaskExecutionLog[]
   executionLogsOpen?: boolean
   setExecutionLogsOpen?: (open: boolean) => void
   executionLogsMessageId?: string
-  // --- new props for live retrieve project ---
   activeRetrieveProjectId?: string
   liveRetrieveProjectLogs?: string[]
-  liveRetrieveProjectSummary?: string
+  liveRetrieveProjectSummary?: string[]
 }
 
 const MessagesList = ({
@@ -88,7 +87,7 @@ const MessagesList = ({
   logsOpen,
   setLogsOpen,
   showMonacoCanvas,
-  summary,
+  summary = [],
   onShowGeneratedFiles,
   executionLogs = [],
   executionLogsOpen = false,
@@ -96,12 +95,12 @@ const MessagesList = ({
   executionLogsMessageId,
   activeRetrieveProjectId,
   liveRetrieveProjectLogs,
-  liveRetrieveProjectSummary,
+  liveRetrieveProjectSummary = [],
 }: MessagesListProps) => {
-  
+
   const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
-    const summaryLog = logs.find(log => log.type === "summary" && log.status === "completed")
-    return summaryLog ? summaryLog.content : ""
+    const summaryLogs = logs.filter(log => log.type === "summary" && log.status === "completed")
+    return summaryLogs.map(log => log.content)
   }
 
   const filterExecutionLogsWithoutSummary = (logs: TaskExecutionLog[]) => {
@@ -219,117 +218,20 @@ const MessagesList = ({
     </div>
   )
 
-  const TaskSummaryPanel = ({ summary }: { summary: string }) => (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
-      <div className="flex items-center space-x-2 mb-2">
-        <span className="text-green-600">✅</span>
-        <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
-      </div>
-      <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
-        {summary || "Task completed successfully!"}
-      </div>
-    </div>
-  )
-
-  const MessageContent = ({
-    message,
-    isFullPage,
-    onShowGeneratedFiles,
-    messageIndex,
-  }: {
-    message: any
-    isFullPage: boolean
-    onShowGeneratedFiles: (id: string) => void
-    messageIndex: number
-  }) => {
-    const isLatestHumanMessage = latestHumanIdx === messageIndex
-    const isFollowingBotMessage = followingBotIdx === messageIndex
-    const hasConsoleLogs = isLatestHumanMessage && logs.length > 0
-    const hasExecutionLogsForThisMessage = message.id === executionLogsMessageId && executionLogs.length > 0 && setExecutionLogsOpen
-    
-    const executionSummary = hasExecutionLogsForThisMessage ? extractSummaryFromExecutionLogs(executionLogs) : ""
-    const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummary(executionLogs) : []
-
-    const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
-    const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
-
-    if (message.isCode) {
-      return (
-        <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 shadow-sm">
-          <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
-            <Code className="w-4 h-4 text-slate-600" />
-            <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">Code suggestion</span>
-          </div>
-          <pre className="whitespace-pre-wrap text-sm text-slate-800 font-normal font-jetbrains">{message.content}</pre>
-        </div>
-      )
-    }
-
+  const TaskSummaryPanel = ({ summary }: { summary: string[] }) => {
+    const uniqueSummary = Array.from(new Set(summary));
     return (
-<div
-  className={`border border-slate-200 rounded-xl w-fit
-    ${isRetrieveProjectBlock ? "bg-slate-100 shadow-lg p-4" : "bg-white p-2 flex items-center h-auto"}
-  `}
->
-  {isRetrieveProjectBlock ? (
-    <div>
-      <div
-        className="flex items-center gap-2 cursor-pointer "
-        onClick={() => onShowGeneratedFiles(message.id)}
-      >
-        <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
-        <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium">
-          Code
-        </span>
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
+        <div className="flex items-center space-x-2 mb-2">
+          <span className="text-green-600">✅</span>
+          <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
+        </div>
+        <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
+          {(uniqueSummary && uniqueSummary.length > 0)
+            ? uniqueSummary.map((s, idx) => <div key={idx}>{s}</div>)
+            : "Task completed successfully!"}
+        </div>
       </div>
-      {/* Show live logs/summary for the active retrieve project block */}
-      {isActiveRetrieveProjectBlock && liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (
-        <LogsPanel
-          logs={liveRetrieveProjectLogs}
-          logsOpen={logsOpen}
-          setLogsOpen={setLogsOpen}
-          title="EXECUTION LOGS"
-        />
-      )}
-      {isActiveRetrieveProjectBlock && liveRetrieveProjectSummary && liveRetrieveProjectSummary.trim() && (
-        <TaskSummaryPanel summary={liveRetrieveProjectSummary} />
-      )}
-      {/* fallback to old logic for logs/summary */}
-      {!isActiveRetrieveProjectBlock && hasConsoleLogs && (
-        <LogsPanel
-          logs={logs}
-          logsOpen={logsOpen}
-          setLogsOpen={setLogsOpen}
-          title="EXECUTION LOGS"
-        />
-      )}
-      {!isActiveRetrieveProjectBlock && (hasConsoleLogs && summary && summary.trim()) && (
-        <TaskSummaryPanel summary={summary} />
-      )}
-      {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
-        <LogsPanel
-          logs={filteredExecutionLogs.map(
-            (log) =>
-              `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`
-          )}
-          logsOpen={executionLogsOpen}
-          setLogsOpen={setExecutionLogsOpen}
-          title="EXECUTION LOGS"
-        />
-      )}
-      {(hasExecutionLogsForThisMessage &&
-        !hasConsoleLogs &&
-        executionSummary &&
-        executionSummary.trim()) && (
-        <TaskSummaryPanel summary={executionSummary} />
-      )}
-    </div>
-  ) : (
-    <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
-      {renderMessageContent(message.content)}
-    </div>
-  )}
-</div>
     )
   }
 
@@ -351,6 +253,113 @@ const MessagesList = ({
   const followingBotIdx = allMessages.findIndex(
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
+
+  const MessageContent = ({
+    message,
+    isFullPage,
+    onShowGeneratedFiles,
+    messageIndex,
+  }: {
+    message: any
+    isFullPage: boolean
+    onShowGeneratedFiles: (id: string) => void
+    messageIndex: number
+  }) => {
+    const isLatestHumanMessage = latestHumanIdx === messageIndex
+    const isFollowingBotMessage = followingBotIdx === messageIndex
+    const hasConsoleLogs = isLatestHumanMessage && logs.length > 0
+    const hasExecutionLogsForThisMessage = message.id === executionLogsMessageId && executionLogs.length > 0 && setExecutionLogsOpen
+    
+    const executionSummary = hasExecutionLogsForThisMessage ? extractSummaryFromExecutionLogs(executionLogs) : []
+    const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummary(executionLogs) : []
+
+    const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
+    const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
+
+    if (message.isCode) {
+      return (
+        <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 shadow-sm">
+          <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
+            <Code className="w-4 h-4 text-slate-600" />
+            <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">Code suggestion</span>
+          </div>
+          <pre className="whitespace-pre-wrap text-sm text-slate-800 font-normal font-jetbrains">{message.content}</pre>
+        </div>
+      )
+    }
+
+    if (isRetrieveProjectBlock) {
+      return (
+        <div
+          className={`border border-slate-200 rounded-xl w-full max-w-2xl bg-slate-100 shadow-lg p-4`}
+        >
+          <div
+            className="flex items-center gap-2 cursor-pointer "
+            onClick={() => onShowGeneratedFiles(message.id)}
+          >
+            <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
+            <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium">
+              Code
+            </span>
+          </div>
+          {isActiveRetrieveProjectBlock ? (
+            <>
+              {liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (
+                <LogsPanel
+                  logs={liveRetrieveProjectLogs}
+                  logsOpen={logsOpen}
+                  setLogsOpen={setLogsOpen}
+                  title="EXECUTION LOGS"
+                />
+              )}
+              {Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0 && (
+                <TaskSummaryPanel summary={liveRetrieveProjectSummary} />
+              )}
+            </>
+          ) : (
+            <>
+              {hasConsoleLogs && (
+                <LogsPanel
+                  logs={logs}
+                  logsOpen={logsOpen}
+                  setLogsOpen={setLogsOpen}
+                  title="EXECUTION LOGS"
+                />
+              )}
+              {(hasConsoleLogs && Array.isArray(summary) && summary.length > 0) && (
+                <TaskSummaryPanel summary={summary} />
+              )}
+              {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
+                <LogsPanel
+                  logs={filteredExecutionLogs.map(
+                    (log) =>
+                      `[${new Date(log.timestamp).toLocaleTimeString()}] ${log.status.toUpperCase()} (${log.type}): ${log.content}`
+                  )}
+                  logsOpen={executionLogsOpen}
+                  setLogsOpen={setExecutionLogsOpen}
+                  title="EXECUTION LOGS"
+                />
+              )}
+              {(hasExecutionLogsForThisMessage &&
+                !hasConsoleLogs &&
+                Array.isArray(executionSummary) &&
+                executionSummary.length > 0) && (
+                <TaskSummaryPanel summary={executionSummary} />
+              )}
+            </>
+          )}
+        </div>
+      )
+    }
+
+    return (
+      <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto">
+        <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+          {renderMessageContent(message.content)}
+        </div>
+      </div>
+    )
+  }
 
   const renderMessage = (message: any, idx: number) => {
     return (
