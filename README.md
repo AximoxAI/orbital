@@ -1,8 +1,12 @@
 [![Orbital Build Status](https://github.com/AximoxAI/orbital/actions/workflows/webpack.yml/badge.svg)](https://github.com/AximoxAI/orbital/actions/workflows/webpack.yml)
 
-# Orbital - Smart AI Agent Collaboration Platform
+# Orbital - Multi-Agent SDLC Platform
 
 A modern, AI-powered collaboration platform built with React, Vite, TypeScript, and [shadcn/ui](https://ui.shadcn.com/). Orbital provides a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management, real-time task collaboration, and productivity tools.
+
+![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/collab.png)
+
+
 
 ## 🚀 Key Features
 
@@ -12,6 +16,7 @@ A modern, AI-powered collaboration platform built with React, Vite, TypeScript, 
 - **Automatic Github Sync**: Sync Code or Issues from Github
 - **Real-time Task Chat**: Live collaboration with AI assistants and team members
 - **Code Generation**: AI-assisted code writing, refactoring, and debugging
+- **Secure Sandbox**: Use secure sandboxes for running agentic tools and code.
 - **Requirements Generation**: Automatically generate project requirements from descriptions
 
 ### Project Management
