@@ -10,6 +10,15 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
 
 ## 🚀 Key Features
 
+<p>
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/context-engineering.png?raw=true" hspace="10" >
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/multi-agent.png?raw=true" hspace="10" >
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/real-time-task-chat.png?raw=true" hspace="10" >
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/secure%20sandboxes.png?raw=true" hspace="10" > 
+</p>
+
+
+
 ### AI-Powered Collaboration
 - **Multi-Agent Support**: Integrate with @goose, @orbital_cli, @gemini_cli, @claude_code AI agents
 - **Compare and Contrast**: Generate code or fix issues and apply the best 
