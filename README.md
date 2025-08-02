@@ -19,7 +19,7 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
 - **Secure Sandbox**: Use secure sandboxes for running agentic tools and code.
 - **Requirements Generation**: Automatically generate project requirements from descriptions
 - **Context Engineering**: Context Engineering and Pruning by Neo4j powered Knowledge Graph and MCP
-- 
+  
 
 ### Project Management
 - **Kanban Board**: Visual project management with drag-and-drop functionality
