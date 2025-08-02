@@ -2,7 +2,7 @@
 
 # Orbital - Multi-Agent SDLC Platform
 
-A modern, AI-powered collaboration platform built with React, Vite, TypeScript, and [shadcn/ui](https://ui.shadcn.com/). Orbital provides a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management, real-time task collaboration, and productivity tools.
+Orbital offers a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management tools, real-time task collaboration, and productivity enhancements.
 
 ![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/preview-version.png)
 
@@ -108,45 +108,10 @@ Located in `orbital-be/` - RESTful API with WebSocket support, PostgreSQL databa
    bun install
    # or
    npm install
-   ```
 
-3. **Environment Configuration:**
-   
-   Copy `.env.example` to `.env` and configure:
-   ```env
-   VITE_CLERK_PUBLISHABLE_KEY=pk_test_your_clerk_key
-   VITE_BACKEND_API_KEY=your_backend_api_key
-   ```
-
-4. **Generate API Client** (if backend is running):
+3. **Start development server:**
    ```bash
-   openapi-generator-cli generate -i swagger-spec.json -g typescript-axios -o src/api-client
-   ```
-
-5. **Start development server:**
-   ```bash
-   bun run dev  # Runs on http://localhost:8080
-   ```
-
-### Backend Setup
-
-1. **Navigate to backend directory:**
-   ```bash
-   cd orbital-be
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   pnpm install
-   ```
-
-3. **Configure environment variables:**
-   
-   Copy `orbital-be/.env.example` to `orbital-be/.env` and configure database and API keys.
-
-4. **Start backend development server:**
-   ```bash
-   pnpm run start:dev  # Runs on http://localhost:3000
+   bun run dev
    ```
 
 ## 📁 Detailed Project Structure
@@ -186,64 +151,6 @@ graph TD
 - **Automated testing and documentation**
 - **Requirements analysis and planning**
 
-## 🧪 Development Scripts
-
-### Frontend
-```bash
-bun run dev          # Start development server (port 8080)
-bun run build        # Production build
-bun run build:dev    # Development build
-bun run preview      # Preview production build
-bun run lint         # Run ESLint
-```
-
-### Backend
-```bash
-pnpm run start:dev              # Start NestJS dev server
-pnpm run test                   # Run all tests
-pnpm run test:watch             # Run tests in watch mode
-pnpm run test -- --testNamePattern="TestName"  # Run specific test
-```
-
-## 🎨 Customization
-
-### Theming
-- **CSS Variables**: Modify `src/index.css` for global design tokens
-- **Tailwind Config**: Update `tailwind.config.ts` for custom colors and spacing
-- **Component Variants**: Use `class-variance-authority` for component styling
-
-### AI Agents
-- **Add new agents**: Extend `src/pages/SoftwareEngineering.tsx`
-- **Custom prompts**: Configure in backend `orbital-be/src/prompts/`
-- **Provider integration**: Add new AI providers in backend configuration
-
-### UI Components
-- **shadcn/ui components**: Located in `src/components/ui/`
-- **Custom components**: Build on top of Radix UI primitives
-- **Design system**: Consistent with CSS variables and Tailwind classes
-
-## 🔧 API Integration
-
-The frontend communicates with the backend through:
-- **Generated TypeScript client** from OpenAPI specifications
-- **Real-time Socket.IO** connections for live updates
-- **TanStack Query** for efficient data fetching and caching
-- **Axios interceptors** for authentication and error handling
-
-## 🚀 Deployment
-
-### Frontend
-```bash
-bun run build
-# Deploy dist/ folder to your hosting platform
-```
-
-### Backend
-```bash
-cd orbital-be
-pnpm run build
-# Deploy using Docker or platform-specific deployment
-```
 
 ## 🤝 Contributing
 
