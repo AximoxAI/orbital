@@ -6,6 +6,7 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
 
 ![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/preview-version.png)
 
+<img width="3424" height="1910" alt="image" src="https://github.com/user-attachments/assets/f0530308-55c2-4723-87cd-b4d7f0e3a064" />
 
 
 ## 🚀 Key Features
