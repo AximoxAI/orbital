@@ -76,22 +76,6 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
    bun run dev
    ```
 
-## 📁 Detailed Project Structure
-
-### Core Application Flow
-
-```mermaid
-graph TD
-    A[Landing Page] --> B{User Authenticated?}
-    B -->|No| C[Sign In/Up]
-    B -->|Yes| D[Project Board]
-    D --> E[Create/View Projects]
-    D --> F[Create Tasks]
-    F --> G[Task Chat Interface]
-    G --> H[AI Agent Interaction]
-    G --> I[Code Editor]
-    G --> J[Real-time Collaboration]
-```
 
 ### Key Components
 
