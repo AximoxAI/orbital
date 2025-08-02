@@ -11,10 +11,10 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
 ## 🚀 Key Features
 
 <p>
-    <img src="https://github.com/AximoxAI/orbital/blob/main/public/context-engineering.png?raw=true" hspace="10" width="200" height="400">
-    <img src="https://github.com/AximoxAI/orbital/blob/main/public/multi-agent.png?raw=true" hspace="10" width="200" height="400">
-    <img src="https://github.com/AximoxAI/orbital/blob/main/public/real-time-task-chat.png?raw=true" hspace="10" width="200" height="400">
-    <img src="https://github.com/AximoxAI/orbital/blob/main/public/secure%20sandboxes.png?raw=true" hspace="10" width="200" height="400">
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/context-engineering.png?raw=true" hspace="10" width="300" height="400">
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/multi-agent.png?raw=true" hspace="10" width="300" height="400">
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/real-time-task-chat.png?raw=true" hspace="10" width="300" height="400">
+    <img src="https://github.com/AximoxAI/orbital/blob/main/public/secure%20sandboxes.png?raw=true" hspace="10" width="300" height="400">
 </p>
 
 
