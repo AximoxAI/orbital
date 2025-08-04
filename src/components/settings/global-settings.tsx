@@ -44,7 +44,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Claude Code',
       icon: (
         <img
-          src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/claude-ai-icon.png"
+          src="/icons/claude.webp"
           alt="Claude"
           className="w-4 h-4 object-contain"
         />
@@ -66,7 +66,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Gemini CLI',
       icon: (
         <img
-          src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/768px-Google_%22G%22_logo.svg.png"
+          src="/icons/google.webp"
           alt="Gemini"
           className="w-4 h-4 object-contain"
         />
@@ -88,15 +88,15 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
   const serverConfigs = {
     deepwiki: {
       name: 'DeepWiki',
-      icon: <span>🧩</span>
+      icon: <img src="/icons/deepwiki.png" alt="DeepWiki" className="w-4 h-4 object-contain" />
     },
     github: {
       name: 'GitHub',
       icon: (
         <img
-          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/github/github-original.svg"
+          src="/icons/github-original.svg"
           alt="GitHub"
-          className="w-4 h-4"
+          className="w-4 h-4 object-contain"
         />
       )
     },
@@ -104,7 +104,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Gmail',
       icon: (
         <img
-          src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/logo_gmail_lockup_default_1x_r2.png"
+          src="/icons/google.webp"
           alt="Gmail"
           className="w-4 h-4 object-contain"
         />
@@ -114,9 +114,9 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Postgres',
       icon: (
         <img
-          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg"
+          src="/icons/postgresql-original.svg"
           alt="Postgres"
-          className="w-4 h-4"
+          className="w-4 h-4 object-contain"
         />
       )
     },
@@ -124,9 +124,9 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'MongoDB',
       icon: (
         <img
-          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/mongodb/mongodb-original.svg"
+          src="/icons/mongodb-original.svg"
           alt="MongoDB"
-          className="w-4 h-4"
+          className="w-4 h-4 object-contain"
         />
       )
     },
@@ -134,9 +134,9 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Azure',
       icon: (
         <img
-          src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/azure/azure-original.svg"
+          src="/icons/azure-original.svg"
           alt="Azure"
-          className="w-4 h-4"
+          className="w-4 h-4 object-contain"
         />
       )
     },
@@ -144,7 +144,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       name: 'Neo4j',
       icon: (
         <img
-          src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmOZuTqPb6LhxyTyEUio8xxNxspa0gm-NncQ&s"
+          src="/icons/neo4j.png"
           alt="Neo4j"
           className="w-4 h-4 object-contain"
         />
