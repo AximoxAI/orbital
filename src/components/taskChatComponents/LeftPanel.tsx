@@ -92,8 +92,12 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
             </Button>
             <Button
               variant="outline"
-              className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${collapsed ? "px-0 justify-center" : "flex-1 justify-center"}`}
-              onClick={() => setShowSettings(true)}
+              className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${collapsed ? "px-0 justify-center cursor-not-allowed opacity-50" : "flex-1 justify-center"}`}
+              onClick={() => {
+                if (!collapsed) setShowSettings(true)
+              }}
+              disabled={collapsed}
+              aria-disabled={collapsed}
             >
               <Settings className="w-4 h-4 flex-shrink-0" />
               {!collapsed && <span>Settings</span>}
