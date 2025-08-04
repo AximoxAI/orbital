@@ -289,12 +289,24 @@ const MessagesList = ({
     }
 
     if (isRetrieveProjectBlock) {
+      const isExpanded = isActiveRetrieveProjectBlock
+        ? (liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0) ||
+          (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)
+        : hasConsoleLogs ||
+          (Array.isArray(summary) && summary.length > 0) ||
+          (hasExecutionLogsForThisMessage && !hasConsoleLogs) ||
+          (hasExecutionLogsForThisMessage &&
+            !hasConsoleLogs &&
+            Array.isArray(executionSummary) &&
+            executionSummary.length > 0);
+    
       return (
         <div
-          className={`border border-slate-200 rounded-xl w-full max-w-2xl bg-slate-100 shadow-lg p-4`}
+          className="border border-slate-200 rounded-xl w-full max-w-2xl h-[110px] bg-slate-100 shadow-lg p-4"
+          style={isExpanded ? { height: "auto", minHeight: 120 } : {}}
         >
           <div
-            className="flex items-center gap-2 cursor-pointer "
+            className={`flex gap-2 cursor-pointer ${isExpanded ? "" : "items-center h-full"}`}
             onClick={() => onShowGeneratedFiles(message.id)}
           >
             <span className="text-sm font-medium text-slate-900 font-inter">📄 Retrieve Project</span>
