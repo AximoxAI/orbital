@@ -1,9 +1,8 @@
-"use client"
-
-import type React from "react"
+import React, { useState } from "react"
 import { Search, ChevronDown, MoreHorizontal, Book, ChevronLeft, ChevronRight, Github, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import AgentMCPManager from "../settings/global-settings"
 
 interface LeftPanelProps {
   collapsed: boolean
@@ -11,9 +10,11 @@ interface LeftPanelProps {
 }
 
 const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) => {
+  const [showSettings, setShowSettings] = useState(false)
+
   return (
     <div className="relative flex flex-col h-full bg-white border-r border-gray-200">
-      {/* Main content container */}
+      {/* Main LeftPanel Content */}
       <div className={`flex flex-col h-full transition-all duration-300 ease-in-out ${collapsed ? "w-16" : "w-80"}`}>
         {/* Header with logo */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
@@ -84,18 +85,15 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
           <div className={`flex flex-col gap-2`}>
             <Button
               variant="outline"
-              className={`flex items-center gap-2 text-indigo-600 border-gray-200 hover:bg-indigo-50 ${
-                collapsed ? "px-0 justify-center" : "flex-1 justify-center"
-              }`}
+              className={`flex items-center gap-2 text-indigo-600 border-gray-200 hover:bg-indigo-50 ${collapsed ? "px-0 justify-center" : "flex-1 justify-center"}`}
             >
               <Book className="w-4 h-4 flex-shrink-0" />
               {!collapsed && <span>Docs</span>}
             </Button>
             <Button
               variant="outline"
-              className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${
-                collapsed ? "px-0 justify-center" : "flex-1 justify-center"
-              }`}
+              className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${collapsed ? "px-0 justify-center" : "flex-1 justify-center"}`}
+              onClick={() => setShowSettings(true)}
             >
               <Settings className="w-4 h-4 flex-shrink-0" />
               {!collapsed && <span>Settings</span>}
@@ -105,19 +103,31 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
       </div>
 
       {/* Toggle button - positioned outside the main container */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={onToggleCollapse}
-        className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm hover:shadow-md transition-shadow"
-        aria-label={collapsed ? "Expand panel" : "Collapse panel"}
-      >
-        {collapsed ? (
-          <ChevronRight className="w-3 h-3 text-gray-500" />
-        ) : (
-          <ChevronLeft className="w-3 h-3 text-gray-500" />
-        )}
-      </Button>
+      {!showSettings && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onToggleCollapse}
+          className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-200 rounded-full shadow-sm hover:shadow-md transition-shadow"
+          aria-label={collapsed ? "Expand panel" : "Collapse panel"}
+        >
+          {collapsed ? (
+            <ChevronRight className="w-3 h-3 text-gray-500" />
+          ) : (
+            <ChevronLeft className="w-3 h-3 text-gray-500" />
+          )}
+        </Button>
+      )}
+
+      {/* Overlay the Settings Panel */}
+      {showSettings && (
+        <div
+          className="absolute inset-0 z-50 bg-white bg-opacity-95 flex items-center justify-center"
+          style={{ minWidth: collapsed ? 64 : 320 }}
+        >
+          <AgentMCPManager onClose={() => setShowSettings(false)} />
+        </div>
+      )}
     </div>
   )
 }

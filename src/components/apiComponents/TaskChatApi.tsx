@@ -17,6 +17,8 @@ export class TaskChatAPI {
   async fetchMessages(taskId: string) {
     try {
       const response = await this.chatApi.chatControllerFindAll(taskId)
+      // const taskResponse = await this.
+      // console.log(taskResponse)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
       throw new Error("Failed to load messages from the server.")
