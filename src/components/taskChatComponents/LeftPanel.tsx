@@ -75,7 +75,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
 
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
               <Github className="w-5 h-5 text-gray-700 flex-shrink-0" />
-              {!collapsed && <span className="text-sm text-gray-700 truncate min-w-0">pranav-94/AlarmClock</span>}
+              {!collapsed && <span className="text-sm text-gray-700 truncate min-w-0">AximoxAI/orbital</span>}
             </div>
           </div>
         </div>
