@@ -11,6 +11,10 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
 <img width="3424" height="1910" alt="image" src="https://github.com/user-attachments/assets/f0530308-55c2-4723-87cd-b4d7f0e3a064" />
 
 
+## MCP Powered
+<img width="3424" height="1910" alt="image" src="https://github.com/AximoxAI/orbital/blob/main/public/mcp.png?raw=true" />
+
+
 ## 🚀 Key Features
 
 <p>
