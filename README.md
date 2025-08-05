@@ -1,6 +1,6 @@
 [![Orbital Build Status](https://github.com/AximoxAI/orbital/actions/workflows/webpack.yml/badge.svg)](https://github.com/AximoxAI/orbital/actions/workflows/webpack.yml)
 
-# Orbital - Multi-Agent SDLC Platform
+# Orbital - Provider Agnostic SDLC Platform
 
 Orbital offers a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management tools, real-time task collaboration, and productivity enhancements.
 
