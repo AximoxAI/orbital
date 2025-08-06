@@ -3,6 +3,9 @@ import { io, type Socket } from "socket.io-client"
 
 const SOCKET_URL = "http://localhost:3000/chat"
 
+// List of available bots to check for mentions
+const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
+
 export class TaskChatAPI {
   private chatApi: ChatApi
   private tasksApi: TasksApi
@@ -80,6 +83,12 @@ export class TaskChatAPI {
     timestamp: string
     taskId: string
   }) {
+    // Check for mentions of any of the 4 bots and log their names if mentioned
+    const mentionedBots = availableBots.filter((bot) => message.content.includes(bot))
+    mentionedBots.forEach((bot) => {
+      console.log(`Bot mentioned: ${bot}`)
+    })
+
     if (this.socket) {
       this.socket.emit("sendMessage", message)
     }

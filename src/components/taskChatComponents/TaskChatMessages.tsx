@@ -1,8 +1,9 @@
-import React from "react"
+import React, { useRef, useEffect } from "react"
 import { Bot, Code, Plus, FileText, Check, ChevronDown, ChevronRight } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -97,6 +98,8 @@ const MessagesList = ({
   liveRetrieveProjectLogs,
   liveRetrieveProjectSummary = [],
 }: MessagesListProps) => {
+  const [parent] = useAutoAnimate<HTMLDivElement>();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
     const summaryLogs = logs.filter(log => log.type === "summary" && log.status === "completed")
@@ -218,22 +221,24 @@ const MessagesList = ({
     </div>
   )
 
-  const TaskSummaryPanel = ({ summary }: { summary: string[] }) => {
-    const uniqueSummary = Array.from(new Set(summary));
-    return (
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
-        <div className="flex items-center space-x-2 mb-2">
-          <span className="text-green-600">✅</span>
-          <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
-        </div>
-        <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
-          {(uniqueSummary && uniqueSummary.length > 0)
-            ? uniqueSummary.map((s, idx) => <div key={idx}>{s}</div>)
-            : "Task completed successfully!"}
-        </div>
+// ... [rest of the imports and code remain unchanged]
+
+const TaskSummaryPanel = ({ summary }: { summary: string[] }) => {
+  const uniqueSummary = Array.from(new Set(summary));
+  return (
+    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
+      <div className="flex items-center space-x-2 mb-2">
+        <span className="text-green-600">✅</span>
+        <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
       </div>
-    )
-  }
+      {uniqueSummary && uniqueSummary.length > 0 && (
+        <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
+          {uniqueSummary.map((s, idx) => <div key={idx}>{s}</div>)}
+        </div>
+      )}
+    </div>
+  )
+}
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
@@ -404,11 +409,18 @@ const MessagesList = ({
     )
   }
 
+  // auto scroll to bottom on messages change
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [allMessages.length, loading])
+
   if (isFullPage) {
     return (
-      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
+      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
         <div className="flex flex-col items-center w-full h-full">
-          <div className="w-full max-w-4xl px-6 py-5 space-y-4">
+          <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
             {loading ? (
               <div className="text-center text-slate-500 py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -424,9 +436,9 @@ const MessagesList = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter">
+    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
       <div className="flex flex-col items-center w-full">
-        <div className="w-full max-w-4xl px-6 py-5 space-y-4">
+        <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
           {loading ? (
             <div className="text-center text-slate-500 py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-3"></div>
