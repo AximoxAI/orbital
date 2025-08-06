@@ -83,6 +83,14 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     setShowMonacoCanvas(false)
   }, [])
 
+  // New callback to handle when files are generated via socket
+  const handleFilesGenerated = useCallback((files: any[]) => {
+    if (files && files.length > 0) {
+      setGeneratedFiles(files)
+      setShowMonacoCanvas(true) // Show canvas when files are generated
+    }
+  }, [])
+
   const mapBackendMsg = (msg: any) => {
     let type: "ai" | "human"
     if (msg.sender_type) {
@@ -203,13 +211,14 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
         trimmedMessage.startsWith("@claude_code")
 
       if (shouldExecuteTask) {
-        setShowMonacoCanvas(true)
+        // Reset state when starting new execution
         setGeneratedFiles([])
         setExecutionLogs([])
         setExecutionLogsMessageId(undefined)
         setActiveRetrieveProjectId(undefined)
         setLiveRetrieveProjectLogs([])
         setLiveRetrieveProjectSummary("")
+        // Don't set showMonacoCanvas to false here, let handleFilesGenerated control it
       }
 
       setNewMessage("")
@@ -310,6 +319,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
           onSummaryUpdate={handleSummaryUpdate}
           onClose={handleCloseMonacoCanvas}
           inputMessage={currentInputMessage}
+          onFilesGenerated={handleFilesGenerated}
         />
       )}
     </div>

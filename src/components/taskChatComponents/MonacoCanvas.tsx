@@ -16,6 +16,7 @@ interface MonacoCanvasProps {
   onSummaryUpdate?: (summary: string[]) => void;
   onClose?: () => void;
   inputMessage?: string;
+  onFilesGenerated?: (files: any[]) => void; // New prop to notify parent when files are generated
 }
 
 interface FileItem {
@@ -55,7 +56,8 @@ const MonacoCanvas = forwardRef(({
   onLogsUpdate,
   onSummaryUpdate,
   onClose,
-  inputMessage
+  inputMessage,
+  onFilesGenerated
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
@@ -100,18 +102,6 @@ const MonacoCanvas = forwardRef(({
   }, [filesFromApi]);
 
   useEffect(() => {
-    if (!isVisible) {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-        socketRef.current = null;
-        setConnected(false);
-        onSocketConnected?.(false);
-      }
-      setConsoleLogs([]);
-      setSummaryLogs([]);
-      return;
-    }
-
     if (socketRef.current && socketRef.current.connected) {
       return;
     }
@@ -178,12 +168,20 @@ const MonacoCanvas = forwardRef(({
 
         setFiles(prevFiles => {
           const existingIndex = prevFiles.findIndex(f => f.path === message.path);
+          let updatedFiles;
           if (existingIndex >= 0) {
-            const updated = [...prevFiles];
-            updated[existingIndex] = newFile;
-            return updated;
+            updatedFiles = [...prevFiles];
+            updatedFiles[existingIndex] = newFile;
+          } else {
+            updatedFiles = [...prevFiles, newFile];
           }
-          return [...prevFiles, newFile];
+          
+          // Notify parent component about files being generated
+          if (onFilesGenerated) {
+            onFilesGenerated(updatedFiles);
+          }
+          
+          return updatedFiles;
         });
 
         setSelectedFile(prev => prev || message.path);
@@ -195,7 +193,7 @@ const MonacoCanvas = forwardRef(({
         socket.disconnect();
       }
     };
-  }, [isVisible, taskId, setValue]);
+  }, [taskId, setValue, onFilesGenerated]);
 
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
