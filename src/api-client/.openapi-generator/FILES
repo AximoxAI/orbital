@@ -13,6 +13,7 @@ docs/CreateConversationalProjectDto.md
 docs/CreateMessageDto.md
 docs/CreateProjectDto.md
 docs/CreateTaskDto.md
+docs/CreateUserDto.md
 docs/HealthApi.md
 docs/ProjectAnalysisDto.md
 docs/ProjectsApi.md

@@ -11,11 +11,11 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { TasksApi, Configuration } from "@/api-client";
-
-const api = new TasksApi(new Configuration({ basePath: import.meta.env.VITE_BACKEND_API_KEY }));
+import { useAuth } from "@clerk/clerk-react";
 
 export function CreateTask({ defaultProjectId }) {
   const { toast } = useToast();
+  const { getToken } = useAuth();
 
   const form = useForm({
     defaultValues: {
@@ -38,7 +38,16 @@ export function CreateTask({ defaultProjectId }) {
     };
 
     try {
-      await api.tasksControllerCreate( defaultProjectId,payload);
+      // Get the session token for authentication
+      const sessionToken = await getToken();
+      // Create API instance with auth header
+      const api = new TasksApi(
+        new Configuration({
+          basePath: import.meta.env.VITE_BACKEND_API_KEY,
+          accessToken: sessionToken || undefined,
+        })
+      );
+      await api.tasksControllerCreate(defaultProjectId, payload);
       toast({ title: "Task created successfully!" });
       form.reset();
     } catch (err: any) {

@@ -2,19 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Send, CheckCircle, AlertCircle } from "lucide-react";
 import { Configuration, ProjectsApi } from "@/api-client";
-
-const configuration = new Configuration({
-  basePath: import.meta.env.VITE_BACKEND_API_KEY,
-});
-
-const projectsApi = new ProjectsApi(configuration);
+import { useAuth } from "@clerk/clerk-react";
 
 const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ defaultProjectId }) => {
+  const { getToken } = useAuth();
   const [formData, setFormData] = useState({
     requirements: "",
     project_id: defaultProjectId || "",
@@ -49,6 +44,14 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
     setSuccess(false);
 
     try {
+      // Get session token and create authenticated API instance
+      const sessionToken = await getToken();
+      const configuration = new Configuration({
+        basePath: import.meta.env.VITE_BACKEND_API_KEY,
+        accessToken: sessionToken || undefined,
+      });
+      const projectsApi = new ProjectsApi(configuration);
+
       const result = await projectsApi.projectsControllerCreateConversational(formData);
       setResponse(result.data);
       setSuccess(true);
@@ -87,11 +90,6 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
                 className="min-h-[120px]"
                 required
               />
-            </div>
-            <div className="space-y-2">
-            </div>
-            <div className="flex items-center space-x-2">
-              
             </div>
             <Button 
               type="submit" 

@@ -11,17 +11,23 @@ export class TaskChatAPI {
   private tasksApi: TasksApi
   private socket: Socket | null = null
 
-  constructor() {
-    const config = new Configuration({ basePath: import.meta.env.VITE_BACKEND_API_KEY })
+  /**
+   * Pass sessionToken for HTTP API calls. If sessionToken is not supplied,
+   * API calls will be unauthenticated.
+   */
+  constructor(sessionToken?: string) {
+    const config = new Configuration({
+      basePath: import.meta.env.VITE_BACKEND_API_KEY,
+      accessToken: sessionToken || undefined,
+    })
     this.chatApi = new ChatApi(config)
     this.tasksApi = new TasksApi(config)
   }
 
+  // HTTP API calls
   async fetchMessages(taskId: string) {
     try {
       const response = await this.chatApi.chatControllerFindAll(taskId)
-      // const taskResponse = await this.
-      // console.log(taskResponse)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
       throw new Error("Failed to load messages from the server.")
@@ -47,6 +53,7 @@ export class TaskChatAPI {
     }
   }
 
+  // Socket connection (no sessionToken usage for sockets)
   connectSocket(
     taskId: string,
     callbacks: {
@@ -95,4 +102,8 @@ export class TaskChatAPI {
   }
 }
 
-export const taskChatAPI = new TaskChatAPI()
+/**
+ * Factory function to create a TaskChatAPI instance with a sessionToken.
+ * For HTTP API calls, always create a fresh instance with the latest sessionToken.
+ */
+export const createTaskChatAPI = (sessionToken?: string) => new TaskChatAPI(sessionToken)

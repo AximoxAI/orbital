@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import TaskChat from "@/components/taskChatComponents/TaskChat";
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useClerk, useUser, useAuth } from "@clerk/clerk-react";
 import { Configuration, ProjectsApi } from "@/api-client";
 import CreateProject from "@/components/apiComponents/CreateProject";
 import GenerateRequirements from "@/components/apiComponents/GenerateRequirements";
@@ -30,12 +30,6 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
-
-const configuration = new Configuration({
-  basePath: import.meta.env.VITE_BACKEND_API_KEY,
-});
-
-const projectsApi = new ProjectsApi(configuration);
 
 const avatarMap: { [key: string]: string } = {
   'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
@@ -201,11 +195,21 @@ const ProjectBoard = () => {
 
   const { user } = useUser();
   const { signOut } = useClerk();
+  const { getToken } = useAuth(); // Add this hook
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
+        // Get the auth token from Clerk
+        const sessionToken = await getToken();
+        // Create configuration with auth header
+        const configuration = new Configuration({
+          basePath: import.meta.env.VITE_BACKEND_API_KEY,
+          accessToken: sessionToken || undefined, // Pass the token
+        });
+
+        const projectsApi = new ProjectsApi(configuration);
         const response: any = await projectsApi.projectsControllerFindAll();
         const projectsData = response.data || response;
         const projectsWithAvatars = projectsData.map((project: any) => ({
@@ -224,7 +228,7 @@ const ProjectBoard = () => {
     };
 
     fetchProjects();
-  }, []);
+  }, [getToken]); // Add getToken to dependencies
 
   const handleCreateTask = (taskName: string, projectName: string) => {
     setProjects(prevProjects => {
