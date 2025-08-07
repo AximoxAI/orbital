@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { ProjectsApi, Configuration } from '../../api-client';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/button'
+import { useAuth } from "@clerk/clerk-react";
 import {
   Card,
   CardHeader,
@@ -11,12 +12,6 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-
-const config = new Configuration({
-  basePath: import.meta.env.VITE_BACKEND_API_KEY,
-});
-
-const api = new ProjectsApi(config);
 
 const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [form, setForm] = useState({
@@ -30,6 +25,8 @@ const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { getToken } = useAuth();
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
@@ -39,13 +36,21 @@ const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
     setError('');
     setLoading(true);
     try {
+      // Get session token from Clerk
+      const sessionToken = await getToken();
+      // Create API instance with token
+      const config = new Configuration({
+        basePath: import.meta.env.VITE_BACKEND_API_KEY,
+        accessToken: sessionToken || undefined,
+      });
+      const api = new ProjectsApi(config);
+
       const result = await api.projectsControllerCreate(form);
       setResponse(result.data);
       setLoading(false);
       if (onSuccess) {
         onSuccess();
       }
-      // Optionally: Wait for a short moment before reload for UX
       setTimeout(() => {
         window.location.reload();
       }, 400);

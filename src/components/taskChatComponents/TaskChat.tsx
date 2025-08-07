@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import LeftPanel from "./LeftPanel"
 import MonacoCanvas from "./MonacoCanvas"
-import { useUser } from "@clerk/clerk-react"
+import { useUser, useAuth } from "@clerk/clerk-react"
 import { useNavigate, useLocation, useParams } from "react-router-dom"
 import TaskChatHeader from "./TaskChatHeader"
 import MessagesList from "./TaskChatMessages"
 import ChatInput from "./TaskChatInput"
-import { taskChatAPI } from "../apiComponents/TaskChatApi"
+import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
 
 interface TaskChatProps {
   isOpen: boolean
@@ -43,7 +43,13 @@ function formatDateTime(datetime: string) {
   })
 }
 
-const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTask }: TaskChatProps) => {
+const TaskChat = ({
+  isOpen,
+  onClose,
+  taskName: propTaskName,
+  taskId,
+  onCreateTask,
+}: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [currentInputMessage, setCurrentInputMessage] = useState("")
@@ -56,8 +62,8 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const [logsOpen, setLogsOpen] = useState(true)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
   const [summary, setSummary] = useState<string>("")
-  
-  const [executionLogs, setExecutionLogs] = useState<TaskExecutionLog[]>([])
+
+  const [executionLogs, setExecutionLogs] = useState<any[]>([])
   const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
   const [executionLogsMessageId, setExecutionLogsMessageId] = useState<string | undefined>()
 
@@ -67,6 +73,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
   const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string>("")
 
   const { user } = useUser()
+  const { getToken } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { taskId: routeTaskId } = useParams<{ taskId?: string }>()
@@ -114,10 +121,13 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     }
   }
 
+  // SOCKET: Use one instance for socket (does not need accessToken)
+  const [socketApiInstance] = useState(() => new TaskChatAPI())
+
   useEffect(() => {
     if (!isOpen || !taskId) return
 
-    const socket = taskChatAPI.connectSocket(taskId, {
+    const socket = socketApiInstance.connectSocket(taskId, {
       onConnect: () => setSocketConnected(true),
       onDisconnect: () => setSocketConnected(false),
       onNewMessage: (msg: any) => {
@@ -137,21 +147,48 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
     })
 
     return () => {
-      taskChatAPI.disconnectSocket(taskId)
+      socketApiInstance.disconnectSocket(taskId)
     }
-  // eslint-disable-next-line
-  }, [isOpen, taskId, user?.username, activeRetrieveProjectId])
+    // eslint-disable-next-line
+  }, [isOpen, taskId, user?.username, activeRetrieveProjectId, socketApiInstance])
+
+  const fetchMessages = useCallback(
+    async (taskId: string) => {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      return api.fetchMessages(taskId)
+    },
+    [getToken]
+  )
+
+  const getGeneratedFiles = useCallback(
+    async (messageId: string) => {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      return api.getGeneratedFiles(messageId)
+    },
+    [getToken]
+  )
+
+  const getExecutionLogs = useCallback(
+    async (messageId: string) => {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      return api.getExecutionLogs(messageId)
+    },
+    [getToken]
+  )
 
   useEffect(() => {
     if (!isOpen || !taskId) return
     setLoading(true)
 
-    const fetchMessages = async () => {
-      try {
-        const apiMessages = await taskChatAPI.fetchMessages(taskId)
+    fetchMessages(taskId)
+      .then(apiMessages => {
         const mapped = apiMessages.map((msg: any) => mapBackendMsg(msg))
         setMessages(mapped)
-      } catch (error) {
+      })
+      .catch(() => {
         setMessages([
           {
             id: "error",
@@ -161,26 +198,23 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
             timestamp: "Now",
           },
         ])
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchMessages()
-  }, [isOpen, taskId, user?.username])
+      })
+      .finally(() => setLoading(false))
+    // eslint-disable-next-line
+  }, [isOpen, taskId, user?.username, fetchMessages])
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
       const [files, logs] = await Promise.all([
-        taskChatAPI.getGeneratedFiles(messageId),
-        taskChatAPI.getExecutionLogs(messageId).catch(() => [])
+        getGeneratedFiles(messageId),
+        getExecutionLogs(messageId).catch(() => [])
       ])
-      
+
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
       }
-      
+
       if (logs.length > 0) {
         setExecutionLogs(logs)
         setExecutionLogsOpen(true)
@@ -201,7 +235,7 @@ const TaskChat = ({ isOpen, onClose, taskName: propTaskName, taskId, onCreateTas
         taskId,
       }
 
-      taskChatAPI.sendMessage(message)
+      socketApiInstance.sendMessage(message)
 
       const trimmedMessage = newMessage.trim()
       const shouldExecuteTask =
