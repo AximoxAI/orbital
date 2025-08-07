@@ -121,36 +121,50 @@ const TaskChat = ({
     }
   }
 
-  // SOCKET: Use one instance for socket (does not need accessToken)
-  const [socketApiInstance] = useState(() => new TaskChatAPI())
+  // Socket API instance and socket reference
+  const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
+  const [socket, setSocket] = useState<any>(null)
 
   useEffect(() => {
+    let cancelled = false
     if (!isOpen || !taskId) return
 
-    const socket = socketApiInstance.connectSocket(taskId, {
-      onConnect: () => setSocketConnected(true),
-      onDisconnect: () => setSocketConnected(false),
-      onNewMessage: (msg: any) => {
-        setMessages((prev) => {
-          // Bind the first AI "Retrieve Project" block for live logs/summary
-          if (
-            msg.sender_type !== "human" &&
-            msg.content === "Generating Project" &&
-            activeRetrieveProjectId === undefined
-          ) {
-            setActiveRetrieveProjectId(msg.id || String(Date.now()))
-          }
-          return [...prev, mapBackendMsg(msg)]
-        })
-        setCurrentInputMessage(msg)
-      },
+    // Get session token and connect socket with it
+    getToken().then(sessionToken => {
+      if (cancelled) return
+
+      socketApiInstanceRef.current = new TaskChatAPI(sessionToken)
+      const socketInstance = socketApiInstanceRef.current.connectSocket(taskId, {
+        onConnect: () => setSocketConnected(true),
+        onDisconnect: () => setSocketConnected(false),
+        onNewMessage: (msg: any) => {
+          setMessages(prev => {
+            // Bind the first AI "Retrieve Project" block for live logs/summary
+            if (
+              msg.sender_type !== "human" &&
+              msg.content === "Generating Project" &&
+              activeRetrieveProjectId === undefined
+            ) {
+              setActiveRetrieveProjectId(msg.id || String(Date.now()))
+            }
+            return [...prev, mapBackendMsg(msg)]
+          })
+          setCurrentInputMessage(msg)
+        },
+      })
+      setSocket(socketInstance)
     })
 
+    // Cleanup
     return () => {
-      socketApiInstance.disconnectSocket(taskId)
+      cancelled = true
+      if (socketApiInstanceRef.current) {
+        socketApiInstanceRef.current.disconnectSocket(taskId)
+      }
+      setSocket(null)
     }
     // eslint-disable-next-line
-  }, [isOpen, taskId, user?.username, activeRetrieveProjectId, socketApiInstance])
+  }, [isOpen, taskId, user?.username, activeRetrieveProjectId])
 
   const fetchMessages = useCallback(
     async (taskId: string) => {
@@ -235,7 +249,7 @@ const TaskChat = ({
         taskId,
       }
 
-      socketApiInstance.sendMessage(message)
+      socketApiInstanceRef.current?.sendMessage(message)
 
       const trimmedMessage = newMessage.trim()
       const shouldExecuteTask =

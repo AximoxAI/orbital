@@ -1,7 +1,12 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+
 
 const HeroSection = () => {
+  
+  const navigate = useNavigate()
+
   return (
     <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-accent/30 to-transparent" />
@@ -23,14 +28,17 @@ const HeroSection = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-16">
-          <Button variant="outline-hero" size="lg" className="text-lg px-8 py-4">
+          <Button 
+          variant="outline-hero"
+          onClick={() => navigate("/waitlist")}
+          size="lg" className="text-lg px-8 py-4">
             Start Free Trial
             <ArrowRight className="w-5 h-5" />
           </Button>
-          <Button variant="outline-hero" size="lg" className="text-lg px-8 py-4">
+          {/* <Button variant="outline-hero" size="lg" className="text-lg px-8 py-4">
             <Play className="w-5 h-5" />
             Watch Demo
-          </Button>
+          </Button> */}
         </div>
         
         <div className="relative max-w-5xl mx-auto">

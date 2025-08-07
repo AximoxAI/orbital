@@ -1,12 +1,12 @@
 import HeroSection from "@/components/landingPageComponents/HeroSection";
-import SocialProof from "@/components/landingPageComponents/SocialProof";
+// import SocialProof from "@/components/landingPageComponents/SocialProof";
 import ProblemSolution from "@/components/landingPageComponents/ProblemSolution";
 import Features from "@/components/landingPageComponents/Features";
 import HowItWorks from "@/components/landingPageComponents/HowItWorks";
 import Testimonials from "@/components/landingPageComponents/Testimonials";
 import FAQ from "@/components/landingPageComponents/FAQ";
 import CTASection from "@/components/landingPageComponents/CTASection";
-import Footer from "@/components/landingPageComponents/Footer";
+// import Footer from "@/components/landingPageComponents/Footer";
 import Navbar from "@/components/landingPageComponents/Navbar";
 
 const Index = () => {
@@ -14,14 +14,14 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <HeroSection />
-      <SocialProof />
+      {/* <SocialProof /> */}
       <ProblemSolution />
       <Features />
       <HowItWorks />
       <Testimonials />
       <FAQ />
       <CTASection />
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 };

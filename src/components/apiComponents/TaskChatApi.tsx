@@ -10,6 +10,7 @@ export class TaskChatAPI {
   private chatApi: ChatApi
   private tasksApi: TasksApi
   private socket: Socket | null = null
+  private sessionToken?: string
 
   /**
    * Pass sessionToken for HTTP API calls. If sessionToken is not supplied,
@@ -22,6 +23,9 @@ export class TaskChatAPI {
     })
     this.chatApi = new ChatApi(config)
     this.tasksApi = new TasksApi(config)
+    this.sessionToken = sessionToken
+    // LOG 1: At construction time
+    console.log("[TaskChatAPI] Constructor sessionToken:", sessionToken)
   }
 
   // HTTP API calls
@@ -53,7 +57,7 @@ export class TaskChatAPI {
     }
   }
 
-  // Socket connection (no sessionToken usage for sockets)
+  // Socket connection (pass sessionToken for sockets as well)
   connectSocket(
     taskId: string,
     callbacks: {
@@ -62,9 +66,19 @@ export class TaskChatAPI {
       onNewMessage: (msg: any) => void
     },
   ) {
-    this.socket = io(SOCKET_URL, { transports: ["websocket"] })
+    // LOG 2: Just before socket connection
+    console.log("[TaskChatAPI] Connecting socket with sessionToken:", this.sessionToken)
+    // Pass session token as auth param (query param or auth option)
+    this.socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      auth: {
+        token: this.sessionToken,
+      },
+    })
 
+    // LOG 3: After socket creation, before events
     this.socket.on("connect", () => {
+      console.log("[TaskChatAPI] Socket connected. SessionToken was:", this.sessionToken)
       callbacks.onConnect()
       this.socket?.emit("joinTaskRoom", { taskId })
     })
