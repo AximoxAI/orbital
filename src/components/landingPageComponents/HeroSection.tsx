@@ -13,7 +13,7 @@ const HeroSection = () => {
       
       <div className="max-w-7xl mx-auto text-center relative">
         <div className="inline-flex items-center animate-bounce  duration-1000 px-4 py-2 rounded-full bg-accent text-accent-foreground text-sm font-medium mb-8 ">
-          🚀 Multi-Agent SDLC Platform
+          🚀 Provider Agnostic SDLC Platform
         </div>
         
         <h1 className="text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
