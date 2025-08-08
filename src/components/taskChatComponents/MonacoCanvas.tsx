@@ -3,7 +3,8 @@ import Editor from "@monaco-editor/react";
 import { io, Socket } from "socket.io-client";
 import { Eye, EyeOff, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@clerk/clerk-react"; // <-- Add this import
+import { useAuth } from "@clerk/clerk-react";
+import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client";
 
 interface MonacoCanvasProps {
   value: string;
@@ -17,7 +18,7 @@ interface MonacoCanvasProps {
   onSummaryUpdate?: (summary: string[]) => void;
   onClose?: () => void;
   inputMessage?: string;
-  onFilesGenerated?: (files: any[]) => void; // New prop to notify parent when files are generated
+  onFilesGenerated?: (files: any[]) => void;
 }
 
 interface FileItem {
@@ -74,10 +75,9 @@ const MonacoCanvas = forwardRef(({
   const resizeRef = useRef<HTMLDivElement>(null);
 
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
-  // Change: collect all summary logs
   const [summaryLogs, setSummaryLogs] = useState<string[]>([]);
 
-  const { getToken } = useAuth(); // <-- Add this hook
+  const { getToken } = useAuth();
 
   useEffect(() => {
     if (onLogsUpdate) {
@@ -109,14 +109,14 @@ const MonacoCanvas = forwardRef(({
     let socket: Socket | null = null;
 
     const connectSocket = async () => {
-      const sessionToken = await getToken(); // Get session token
+      const sessionToken = await getToken();
       if (!isMounted) return;
 
       socket = io(SOCKET_URL, {
         transports: ["websocket"],
         forceNew: true,
         auth: {
-          token: sessionToken || undefined, // Pass the session token
+          token: sessionToken || undefined,
         },
       });
       socketRef.current = socket;
@@ -138,13 +138,15 @@ const MonacoCanvas = forwardRef(({
 
       socket.on('execution_result', (data) => {
         console.log(data);
-        if (data && (data.type === "agent" || data.type === "sandbox")) {
+        if (
+          data &&
+          (data.type === TaskExecutionLogTypeEnum.Agent || data.type === TaskExecutionLogTypeEnum.Sandbox)
+        ) {
           if (typeof data.content === "string") {
             setConsoleLogs(prev => [...prev, data.content]);
           }
         }
-        // Now collect all summary logs
-        if (data && (data.type === "summary")) {
+        if (data && data.type === TaskExecutionLogTypeEnum.Summary) {
           setSummaryLogs(prev => [...prev, data.content || ""]);
           console.log("Summary received:", data.content);
         }
@@ -153,7 +155,7 @@ const MonacoCanvas = forwardRef(({
 
         if (
           resultTaskId === taskId &&
-          status === "in_progress" &&
+          status === TaskExecutionLogStatusEnum.InProgress &&
           typeof message === "string"
         ) {
           if (value !== message) {
@@ -163,7 +165,7 @@ const MonacoCanvas = forwardRef(({
 
         if (
           resultTaskId === taskId &&
-          status === "file" &&
+          status === TaskExecutionLogStatusEnum.File &&
           message &&
           typeof message === "object" &&
           message.content &&
@@ -184,12 +186,11 @@ const MonacoCanvas = forwardRef(({
             } else {
               updatedFiles = [...prevFiles, newFile];
             }
-            
-            // Notify parent component about files being generated
+
             if (onFilesGenerated) {
               onFilesGenerated(updatedFiles);
             }
-            
+
             return updatedFiles;
           });
 
@@ -209,7 +210,7 @@ const MonacoCanvas = forwardRef(({
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [taskId, setValue, onFilesGenerated, getToken]); // Make sure getToken is a dep
+  }, [taskId, setValue, onFilesGenerated, getToken]);
 
   const handleFileSelect = (filePath: string) => {
     setSelectedFile(filePath);
@@ -248,10 +249,10 @@ const MonacoCanvas = forwardRef(({
         const messageToSend = messageOverride || inputMessage;
         console.log(messageToSend);
 
-        socketRef.current.emit("execute", { 
-          taskId, 
-          agentId, 
-          message: messageToSend 
+        socketRef.current.emit("execute", {
+          taskId,
+          agentId,
+          message: messageToSend
         });
       } catch (error) {
         console.error("Error executing task:", error);
@@ -464,6 +465,5 @@ const MonacoCanvas = forwardRef(({
     </>
   );
 });
-
 
 export default MonacoCanvas;

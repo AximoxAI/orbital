@@ -305,17 +305,17 @@ export interface TaskExecutionLog {
      */
     'task_id': string;
     /**
-     * Log status like completed, stdout, stderr, file, command, processing
+     * Log status
      * @type {string}
      * @memberof TaskExecutionLog
      */
-    'status': string;
+    'status': TaskExecutionLogStatusEnum;
     /**
-     * Type of log, e.g., agent, sandbox, summary
+     * Type of log entry
      * @type {string}
      * @memberof TaskExecutionLog
      */
-    'type'?: string;
+    'type'?: TaskExecutionLogTypeEnum;
     /**
      * Human-readable log content to show on frontend
      * @type {string}
@@ -329,6 +329,32 @@ export interface TaskExecutionLog {
      */
     'timestamp': string;
 }
+
+export const TaskExecutionLogStatusEnum = {
+    SandboxReused: 'sandbox_reused',
+    SandboxCreated: 'sandbox_created',
+    InProgress: 'in_progress',
+    Processing: 'processing',
+    Completed: 'completed',
+    Error: 'error',
+    Agent: 'agent',
+    File: 'file',
+    FileRead: 'file_read',
+    FileReadError: 'file_read_error',
+    Command: 'command',
+    Stdout: 'stdout',
+    Stderr: 'stderr'
+} as const;
+
+export type TaskExecutionLogStatusEnum = typeof TaskExecutionLogStatusEnum[keyof typeof TaskExecutionLogStatusEnum];
+export const TaskExecutionLogTypeEnum = {
+    Agent: 'agent',
+    Sandbox: 'sandbox',
+    Summary: 'summary'
+} as const;
+
+export type TaskExecutionLogTypeEnum = typeof TaskExecutionLogTypeEnum[keyof typeof TaskExecutionLogTypeEnum];
+
 /**
  * 
  * @export
