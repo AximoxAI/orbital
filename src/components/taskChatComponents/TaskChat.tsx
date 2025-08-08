@@ -142,7 +142,6 @@ const TaskChat = ({
             // Bind the first AI "Retrieve Project" block for live logs/summary
             if (
               msg.sender_type !== "human" &&
-              msg.content === "Generating Project" &&
               activeRetrieveProjectId === undefined
             ) {
               setActiveRetrieveProjectId(msg.id || String(Date.now()))
