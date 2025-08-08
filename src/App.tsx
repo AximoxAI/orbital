@@ -12,7 +12,9 @@ import NotFound from "./pages/NotFound";
 import SignUpPage from "./pages/SignUp";
 import SignInPage from "./pages/SignIn";
 import TaskChat from "./components/taskChatComponents/TaskChat";
+import WaitlistPage from "./pages/Waitlist";
 
+// Helper for task chat route
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const location = useLocation();
@@ -89,6 +91,10 @@ const App = () => (
                   <TaskChatRoute />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/waitlist"
+              element={<WaitlistPage />}
             />
             <Route path="*" element={<NotFound />} />
             <Route path="/sign-in" element={<SignInPage />} />
