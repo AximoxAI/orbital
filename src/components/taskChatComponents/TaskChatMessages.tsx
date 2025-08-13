@@ -229,27 +229,21 @@ const MessagesList = ({
     return (
       <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
         <div className="flex items-center space-x-2 mb-2">
-         
         </div>
         {uniqueSummary && uniqueSummary.length > 0 && (
           <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
-            {uniqueSummary.map((s, idx) => {
-              // Simple markdown detection: numbered list, bold, italics, headers, etc.
-              const isMarkdown = /(^\s*\d+\.\s)|(\*\*)|(_)|(^#+\s)/m.test(s)
-              return (
-                <div key={idx}>
-                  {isMarkdown
-                    ? <div className="prose prose-sm max-w-none"><ReactMarkdown>{s}</ReactMarkdown></div>
-                    : <div>{s}</div>
-                  }
+            {uniqueSummary.map((s, idx) => (
+              <div key={idx}>
+                <div className="prose prose-sm max-w-none">
+                  <ReactMarkdown>{s}</ReactMarkdown>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>
-    )
-  }
+    );
+  };
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
