@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 import ReactMarkdown from "react-markdown"
 
+import ReactMarkdown from "react-markdown"
+
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
