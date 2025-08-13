@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
+import ReactMarkdown from "react-markdown"
+
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -221,24 +223,33 @@ const MessagesList = ({
     </div>
   )
 
-// ... [rest of the imports and code remain unchanged]
 
-const TaskSummaryPanel = ({ summary }: { summary: string[] }) => {
-  const uniqueSummary = Array.from(new Set(summary));
-  return (
-    <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
-      <div className="flex items-center space-x-2 mb-2">
-        <span className="text-green-600">✅</span>
-        <span className="font-semibold text-green-600 text-sm uppercase tracking-wide font-inter">TASK SUMMARY</span>
-      </div>
-      {uniqueSummary && uniqueSummary.length > 0 && (
-        <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
-          {uniqueSummary.map((s, idx) => <div key={idx}>{s}</div>)}
+  const TaskSummaryPanel = ({ summary }: { summary: string[] }) => {
+    const uniqueSummary = Array.from(new Set(summary));
+    return (
+      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mt-3">
+        <div className="flex items-center space-x-2 mb-2">
+         
         </div>
-      )}
-    </div>
-  )
-}
+        {uniqueSummary && uniqueSummary.length > 0 && (
+          <div className="text-slate-900 text-sm leading-relaxed whitespace-pre-wrap font-normal font-inter">
+            {uniqueSummary.map((s, idx) => {
+              // Simple markdown detection: numbered list, bold, italics, headers, etc.
+              const isMarkdown = /(^\s*\d+\.\s)|(\*\*)|(_)|(^#+\s)/m.test(s)
+              return (
+                <div key={idx}>
+                  {isMarkdown
+                    ? <div className="prose prose-sm max-w-none"><ReactMarkdown>{s}</ReactMarkdown></div>
+                    : <div>{s}</div>
+                  }
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
