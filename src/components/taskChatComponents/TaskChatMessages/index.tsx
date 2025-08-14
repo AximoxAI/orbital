@@ -1,0 +1,156 @@
+import React, { useRef, useEffect } from "react"
+import { useAutoAnimate } from "@formkit/auto-animate/react"
+
+import { MessageAvatar } from "./MessageAvatar"
+import { MessageContent } from "./MessageContent"
+import { TaskSuggestion } from "./TaskSuggestion"
+import { MessageType, TaskExecutionLog } from "./types"
+
+interface MessagesListProps {
+  messages: MessageType[]
+  loading: boolean
+  isFullPage: boolean
+  logs: string[]
+  logsOpen: boolean
+  setLogsOpen: (open: boolean) => void
+  showMonacoCanvas: boolean
+  summary: string[]
+  onShowGeneratedFiles: (messageId: string) => void
+  executionLogs?: TaskExecutionLog[]
+  executionLogsOpen?: boolean
+  setExecutionLogsOpen?: (open: boolean) => void
+  executionLogsMessageId?: string
+  activeRetrieveProjectId?: string
+  liveRetrieveProjectLogs?: string[]
+  liveRetrieveProjectSummary?: string[]
+}
+
+const MessagesList = ({
+  messages,
+  loading,
+  isFullPage,
+  logs,
+  logsOpen,
+  setLogsOpen,
+  showMonacoCanvas,
+  summary = [],
+  onShowGeneratedFiles,
+  executionLogs = [],
+  executionLogsOpen = false,
+  setExecutionLogsOpen,
+  executionLogsMessageId,
+  activeRetrieveProjectId,
+  liveRetrieveProjectLogs,
+  liveRetrieveProjectSummary = [],
+}: MessagesListProps) => {
+  const [parent] = useAutoAnimate<HTMLDivElement>()
+  const scrollRef = useRef<HTMLDivElement | null>(null)
+
+  const allMessages = messages
+    .filter((msg) => !msg.status && msg.type !== "system")
+    .sort((a, b) => {
+      const timeA =
+        a.timestamp && a.timestamp !== "Just now" ? new Date(a.timestamp).getTime() : Number(a.id.split(".")[0])
+      const timeB =
+        b.timestamp && b.timestamp !== "Just now" ? new Date(b.timestamp).getTime() : Number(b.id.split(".")[0])
+      return timeA - timeB
+    })
+
+  const latestHumanIdx = allMessages
+    .map((msg, idx) => (msg.type === "human" ? idx : -1))
+    .filter((idx) => idx !== -1)
+    .pop()
+
+  const followingBotIdx = allMessages.findIndex(
+    (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
+  )
+
+  const renderMessage = (message: MessageType, idx: number) => (
+    <React.Fragment key={message.id}>
+      <div className="flex justify-center w-full animate-slide-in">
+        <div className="flex gap-3 w-full max-w-4xl">
+          <MessageAvatar 
+          //@ts-ignore
+          type={message.type} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 mb-1">
+              <span className="text-sm font-semibold text-slate-900 font-inter">
+                {message.type === "human" ? "You" : "Bot"}
+              </span>
+              <span className="text-xs text-slate-400 font-medium font-inter">
+                {message.timestamp}
+              </span>
+            </div>
+            <MessageContent
+              message={message}
+              isFullPage={isFullPage}
+              onShowGeneratedFiles={onShowGeneratedFiles}
+              messageIndex={idx}
+              latestHumanIdx={latestHumanIdx}
+              followingBotIdx={followingBotIdx}
+              logs={logs}
+              logsOpen={logsOpen}
+              setLogsOpen={setLogsOpen}
+              showMonacoCanvas={showMonacoCanvas}
+              summary={summary}
+              executionLogs={executionLogs}
+              executionLogsOpen={executionLogsOpen}
+              setExecutionLogsOpen={setExecutionLogsOpen}
+              executionLogsMessageId={executionLogsMessageId}
+              activeRetrieveProjectId={activeRetrieveProjectId}
+              liveRetrieveProjectLogs={liveRetrieveProjectLogs}
+              liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+            />
+            {message.taskSuggestion && (
+              <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
+            )}
+          </div>
+        </div>
+      </div>
+    </React.Fragment>
+  )
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    }
+  }, [allMessages.length, loading])
+
+  if (isFullPage) {
+    return (
+      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+        <div className="flex flex-col items-center w-full h-full">
+          <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
+            {loading ? (
+              <div className="text-center text-slate-500 py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <span className="font-medium font-inter">Loading messages...</span>
+              </div>
+            ) : (
+              allMessages.map(renderMessage)
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+      <div className="flex flex-col items-center w-full">
+        <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
+          {loading ? (
+            <div className="text-center text-slate-500 py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto mb-3"></div>
+              <span className="font-medium font-inter">Loading messages...</span>
+            </div>
+          ) : (
+            allMessages.map(renderMessage)
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export default MessagesList
