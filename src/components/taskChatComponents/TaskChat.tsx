@@ -4,9 +4,9 @@ import MonacoCanvas from "./MonacoCanvas"
 import { useUser, useAuth } from "@clerk/clerk-react"
 import { useNavigate, useLocation, useParams } from "react-router-dom"
 import TaskChatHeader from "./TaskChatHeader"
-import MessagesList from "./TaskChatMessages"
 import ChatInput from "./TaskChatInput"
 import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
+import MessagesList from "./TaskChatMessages/index"
 
 interface TaskChatProps {
   isOpen: boolean
