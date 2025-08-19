@@ -29,6 +29,7 @@ interface FileItem {
 
 const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
 const DEFAULT_AGENT_ID = "codebot";
+const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"];
 
 const getLanguage = (filePath: string) => {
   if (!filePath) return "plaintext";
@@ -45,6 +46,11 @@ const getLanguage = (filePath: string) => {
   if (ext === 'sql') return 'sql';
 
   return 'plaintext';
+};
+
+const extractBotMentions = (content: string) => {
+  if (!content) return [];
+  return availableBots.filter(bot => content.includes(bot));
 };
 
 const MonacoCanvas = forwardRef(({
@@ -246,13 +252,14 @@ const MonacoCanvas = forwardRef(({
       }
 
       try {
-        const messageToSend = messageOverride || inputMessage;
-        console.log(messageToSend);
+        const messageToSend = messageOverride || inputMessage || "";
+        const mentions = extractBotMentions(messageToSend);
 
         socketRef.current.emit("execute", {
           taskId,
           agentId,
-          message: messageToSend
+          message: messageToSend,
+          mentions
         });
       } catch (error) {
         console.error("Error executing task:", error);
