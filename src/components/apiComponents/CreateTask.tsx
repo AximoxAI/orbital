@@ -23,7 +23,6 @@ export function CreateTask({ defaultProjectId }) {
       description: "",
       status: "design",
       priority: "low",
-      assignees: "",
       estimated_hours: 1,
     },
   });
@@ -31,10 +30,6 @@ export function CreateTask({ defaultProjectId }) {
   const onSubmit = async (values: any) => {
     const payload = {
       ...values,
-      assignees: values.assignees
-        .split(",")
-        .map((id: string) => id.trim())
-        .filter((id: string) => id !== ""),
     };
 
     try {
@@ -129,25 +124,6 @@ export function CreateTask({ defaultProjectId }) {
                   </SelectContent>
                 </Select>
               </FormControl>
-            </FormItem>
-          )}
-        />
-
-        {/* Assignees (comma separated) */}
-        <FormField
-          name="assignees"
-          control={form.control}
-          rules={{ required: "Please enter at least one assignee ID" }}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Assignees</FormLabel>
-              <FormControl>
-                <Input
-                  {...field}
-                  placeholder="e.g. user1,user2"
-                />
-              </FormControl>
-              <FormMessage />
             </FormItem>
           )}
         />
