@@ -97,6 +97,7 @@ export class TaskChatAPI {
     content: string
     timestamp: string
     taskId: string
+    mentions?: string[]
   }) {
     // Check for mentions of any of the 4 bots and log their names if mentioned
     const mentionedBots = availableBots.filter((bot) => message.content.includes(bot))
@@ -104,8 +105,39 @@ export class TaskChatAPI {
       console.log(`Bot mentioned: ${bot}`)
     })
 
+    // Add the mentions field to the message if any bots are mentioned
+    const messageWithMentions = {
+      ...message,
+      mentions: mentionedBots.length > 0 ? mentionedBots : message.mentions,
+    }
+
     if (this.socket) {
-      this.socket.emit("sendMessage", message)
+      this.socket.emit("sendMessage", messageWithMentions)
+    }
+  }
+
+  // Optionally, handle mention extraction for other socket events
+  sendExecuteMessage(payload: {
+    senderType: string
+    senderId: string
+    content: string
+    taskId: string
+    agentId: string
+    mentions?: string
+  }) {
+    // Extract bot mentions from the content
+    const mentionedBots = availableBots.filter((bot) => payload.content.includes(bot))
+    mentionedBots.forEach((bot) => {
+      console.log(`Bot mentioned in execute: ${bot}`)
+    })
+
+    const payloadWithMentions = {
+      ...payload,
+      mentions: mentionedBots.length > 0 ? mentionedBots : payload.mentions,
+    }
+
+    if (this.socket) {
+      this.socket.emit("execute", payloadWithMentions)
     }
   }
 }

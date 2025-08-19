@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react"
+import React, { useRef, useEffect, useState } from "react"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 
 import { MessageAvatar } from "./MessageAvatar"
@@ -23,7 +23,31 @@ interface MessagesListProps {
   activeRetrieveProjectId?: string
   liveRetrieveProjectLogs?: string[]
   liveRetrieveProjectSummary?: string[]
+  isUserSkeletonVisible?: boolean
 }
+
+const UserMessageSkeleton = () => (
+  <div className="flex justify-center w-full animate-slide-in">
+    <div className="flex gap-3 w-full max-w-4xl">
+      <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-slate-300 animate-pulse" />
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center space-x-2 mb-1">
+          <span className="text-sm font-semibold text-slate-900 font-inter">
+
+          </span>
+          <span className="text-xs text-slate-400 font-medium font-inter">
+
+          </span>
+        </div>
+        <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto">
+          <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+            <span className="inline-block bg-slate-200 rounded h-4 w-32 animate-pulse" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+)
 
 const MessagesList = ({
   messages,
@@ -42,9 +66,11 @@ const MessagesList = ({
   activeRetrieveProjectId,
   liveRetrieveProjectLogs,
   liveRetrieveProjectSummary = [],
+  isUserSkeletonVisible = false,
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [renderedSkeleton, setRenderedSkeleton] = useState(false)
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
@@ -114,7 +140,16 @@ const MessagesList = ({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [allMessages.length, loading])
+  }, [allMessages.length, loading, isUserSkeletonVisible])
+
+  // Show the skeleton only for a short time if isUserSkeletonVisible changes from false to true
+  useEffect(() => {
+    if (isUserSkeletonVisible) {
+      setRenderedSkeleton(true)
+    } else {
+      setRenderedSkeleton(false)
+    }
+  }, [isUserSkeletonVisible])
 
   if (isFullPage) {
     return (
@@ -127,7 +162,12 @@ const MessagesList = ({
                 <span className="font-medium font-inter">Loading messages...</span>
               </div>
             ) : (
-              allMessages.map(renderMessage)
+              <>
+                {allMessages.map(renderMessage)}
+                {isUserSkeletonVisible && renderedSkeleton && (
+                  <UserMessageSkeleton />
+                )}
+              </>
             )}
           </div>
         </div>
@@ -145,12 +185,18 @@ const MessagesList = ({
               <span className="font-medium font-inter">Loading messages...</span>
             </div>
           ) : (
-            allMessages.map(renderMessage)
+            <>
+              {allMessages.map(renderMessage)}
+              {isUserSkeletonVisible && renderedSkeleton && (
+                <UserMessageSkeleton />
+              )}
+            </>
           )}
         </div>
       </div>
     </div>
   )
 }
+
 
 export default MessagesList

@@ -72,6 +72,10 @@ const TaskChat = ({
   const [liveRetrieveProjectLogs, setLiveRetrieveProjectLogs] = useState<string[]>([])
   const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string>("")
 
+  // NEW state for skeleton loading
+  const [isUserSkeletonVisible, setIsUserSkeletonVisible] = useState(false)
+  const [userSkeletonMessage, setUserSkeletonMessage] = useState("")
+
   const { user } = useUser()
   const { getToken } = useAuth()
   const navigate = useNavigate()
@@ -129,7 +133,6 @@ const TaskChat = ({
     let cancelled = false
     if (!isOpen || !taskId) return
 
-    // Get session token and connect socket with it
     getToken().then(sessionToken => {
       if (cancelled) return
 
@@ -139,6 +142,8 @@ const TaskChat = ({
         onDisconnect: () => setSocketConnected(false),
         onNewMessage: (msg: any) => {
           setMessages(prev => {
+            // Remove skeleton when real message arrives
+            setIsUserSkeletonVisible(false)
             // Bind the first AI "Retrieve Project" block for live logs/summary
             if (
               msg.sender_type !== "human" &&
@@ -240,6 +245,10 @@ const TaskChat = ({
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
+      // Show skeleton immediately for the user message
+      setUserSkeletonMessage(newMessage)
+      setIsUserSkeletonVisible(true)
+
       const message = {
         senderType: "human",
         senderId: user?.username || "unknown_user",
@@ -331,7 +340,7 @@ const TaskChat = ({
           users={mockUsers}
         />
 
-        <MessagesList
+<MessagesList
           messages={messages}
           loading={loading}
           isFullPage={isFullPage}
@@ -348,6 +357,7 @@ const TaskChat = ({
           activeRetrieveProjectId={activeRetrieveProjectId}
           liveRetrieveProjectLogs={liveRetrieveProjectLogs}
           liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+          isUserSkeletonVisible={isUserSkeletonVisible}
         />
 
         <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />
