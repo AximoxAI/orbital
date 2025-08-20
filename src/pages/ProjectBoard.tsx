@@ -514,7 +514,7 @@ const ProjectBoard = () => {
               >
                 ×
               </button>
-              <CreateTask defaultProjectId={requirementsProjectId}/>
+              <CreateTask defaultProjectId={createTaskProjectId}/>
             </div>
           </div>
         )}

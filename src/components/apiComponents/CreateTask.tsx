@@ -32,9 +32,11 @@ export function CreateTask({ defaultProjectId }) {
     const payload = {
       ...values,
       assignees: values.assignees
-        .split(",")
-        .map((id: string) => id.trim())
-        .filter((id: string) => id !== ""),
+        ? values.assignees
+            .split(",")
+            .map((id: string) => id.trim())
+            .filter((id: string) => id !== "")
+        : [],
     };
 
     try {
@@ -133,18 +135,18 @@ export function CreateTask({ defaultProjectId }) {
           )}
         />
 
-        {/* Assignees (comma separated) */}
+        {/* Assignees (comma separated, optional) */}
         <FormField
           name="assignees"
           control={form.control}
-          rules={{ required: "Please enter at least one assignee ID" }}
+          // Removed required rule to make it optional
           render={({ field }) => (
             <FormItem>
               <FormLabel>Assignees</FormLabel>
               <FormControl>
                 <Input
                   {...field}
-                  placeholder="e.g. user1,user2"
+                  placeholder="e.g. user1,user2 (optional)"
                 />
               </FormControl>
               <FormMessage />

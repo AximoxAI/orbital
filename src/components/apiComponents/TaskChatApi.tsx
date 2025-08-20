@@ -1,9 +1,7 @@
 import { ChatApi, Configuration, TasksApi } from "@/api-client"
 import { io, type Socket } from "socket.io-client"
 
-const SOCKET_URL = "http://localhost:3000/chat"
-
-// List of available bots to check for mentions
+const SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/chat`;
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
 export class TaskChatAPI {

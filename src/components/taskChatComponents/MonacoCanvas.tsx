@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import Editor from "@monaco-editor/react";
 import { io, Socket } from "socket.io-client";
-import { Eye, EyeOff, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, EyeOff, ChevronLeft, ChevronRight, X, ChevronDown, ChevronRight as ChevronRightIcon, Folder, File as FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
 import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client";
@@ -27,8 +27,59 @@ interface FileItem {
   timestamp: string;
 }
 
-const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
-const DEFAULT_AGENT_ID = "codebot";
+// --- FILE TREE BEGIN ---
+type FileNode = {
+  type: "file";
+  name: string;
+  path: string;
+};
+type FolderNode = {
+  type: "folder";
+  name: string;
+  path: string;
+  children: (FileNode | FolderNode)[];
+};
+function buildFileTree(files: FileItem[]): FolderNode {
+  const root: FolderNode = { type: "folder", name: "", path: "", children: [] };
+  for (const file of files) {
+    const parts = file.path.split("/");
+    let curr: FolderNode = root;
+    let currPath = "";
+    for (let i = 0; i < parts.length; i++) {
+      currPath = currPath ? currPath + "/" + parts[i] : parts[i];
+      const existing = curr.children.find(
+        (c) => c.name === parts[i] && (i === parts.length - 1 ? c.type === "file" : c.type === "folder")
+      );
+      if (i === parts.length - 1) {
+        if (!existing) {
+          curr.children.push({
+            type: "file",
+            name: parts[i],
+            path: file.path,
+          });
+        }
+      } else {
+        if (existing && existing.type === "folder") {
+          curr = existing as FolderNode;
+        } else if (!existing) {
+          const newFolder: FolderNode = {
+            type: "folder",
+            name: parts[i],
+            path: currPath,
+            children: [],
+          };
+          curr.children.push(newFolder);
+          curr = newFolder;
+        }
+      }
+    }
+  }
+  return root;
+}
+// --- FILE TREE END ---
+
+const SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/ws/v1/tasks`;
+const DEFAULT_AGENT_ID = "orbital_cli";
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"];
 
 const getLanguage = (filePath: string) => {
@@ -69,7 +120,6 @@ const MonacoCanvas = forwardRef(({
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
-  const [agentId] = useState(DEFAULT_AGENT_ID);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [hasTriggeredExecution, setHasTriggeredExecution] = useState(false);
@@ -82,6 +132,10 @@ const MonacoCanvas = forwardRef(({
 
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [summaryLogs, setSummaryLogs] = useState<string[]>([]);
+
+  // --- FILE TREE BEGIN ---
+  const [treeOpen, setTreeOpen] = useState<Record<string, boolean>>({});
+  // --- FILE TREE END ---
 
   const { getToken } = useAuth();
 
@@ -143,7 +197,6 @@ const MonacoCanvas = forwardRef(({
       });
 
       socket.on('execution_result', (data) => {
-        console.log(data);
         if (
           data &&
           (data.type === TaskExecutionLogTypeEnum.Agent || data.type === TaskExecutionLogTypeEnum.Sandbox)
@@ -154,10 +207,9 @@ const MonacoCanvas = forwardRef(({
         }
         if (data && data.type === TaskExecutionLogTypeEnum.Summary) {
           setSummaryLogs(prev => [...prev, data.content || ""]);
-          console.log("Summary received:", data.content);
         }
 
-        const { taskId: resultTaskId, status, message, summary: unusedSummary, timestamp } = data;
+        const { taskId: resultTaskId, status, message, timestamp } = data;
 
         if (
           resultTaskId === taskId &&
@@ -235,7 +287,7 @@ const MonacoCanvas = forwardRef(({
   }, [setValue]);
 
   const handleExecuteTask = useCallback((messageOverride?: string) => {
-    if (!taskId || !agentId) {
+    if (!taskId) {
       return;
     }
 
@@ -255,9 +307,13 @@ const MonacoCanvas = forwardRef(({
         const messageToSend = messageOverride || inputMessage || "";
         const mentions = extractBotMentions(messageToSend);
 
+        const mentionAgent = mentions.length > 0
+          ? mentions[0].replace(/^@/, "")
+          : DEFAULT_AGENT_ID;
+
         socketRef.current.emit("execute", {
           taskId,
-          agentId,
+          agentId: mentionAgent,
           message: messageToSend,
           mentions
         });
@@ -271,7 +327,7 @@ const MonacoCanvas = forwardRef(({
     } else {
       setTimeout(executeAfterConnection, 1000);
     }
-  }, [taskId, agentId, inputMessage, clearCanvasState]);
+  }, [taskId, inputMessage, clearCanvasState]);
 
   useEffect(() => {
     if (executeTaskRef) {
@@ -346,6 +402,67 @@ const MonacoCanvas = forwardRef(({
     }
   }, [currentFileContent, showPreview]);
 
+  // --- FILE TREE BEGIN ---
+  const fileTree = buildFileTree(files);
+
+  const renderFileTree = (node: FolderNode | FileNode, level = 0) => {
+    if (node.type === "folder") {
+      // Don't render the root folder node itself (it's virtual)
+      if (level === 0) {
+        return (
+          <div>
+            {node.children.map((child) => renderFileTree(child, level + 1))}
+          </div>
+        );
+      }
+      const open = !!treeOpen[node.path];
+      return (
+        <div key={node.path}>
+          <div
+            className={`flex items-center px-2 py-1 cursor-pointer ${open ? "bg-blue-50" : ""}`}
+            style={{ paddingLeft: `${level * 16}px` }}
+            onClick={() =>
+              setTreeOpen((prev) => ({
+                ...prev,
+                [node.path]: !prev[node.path],
+              }))
+            }
+          >
+            {open ? (
+              <ChevronDown className="w-3 h-3 mr-1 text-gray-500" />
+            ) : (
+              <ChevronRightIcon className="w-3 h-3 mr-1 text-gray-500" />
+            )}
+            <Folder className="w-4 h-4 mr-1 text-yellow-500" />
+            <span className="font-medium text-xs">{node.name}</span>
+          </div>
+          {open && (
+            <div>
+              {node.children.map((child) => renderFileTree(child, level + 1))}
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      return (
+        <div
+          key={node.path}
+          className={`flex items-center px-2 py-1 text-sm cursor-pointer border-b border-gray-100 last:border-b-0 ${
+            selectedFile === node.path ? "bg-blue-100 text-blue-800" : "text-gray-700"
+          }`}
+          style={{ paddingLeft: `${level * 16 + 28}px` }}
+          onClick={() => handleFileSelect(node.path)}
+        >
+          <FileIcon className="w-3 h-3 mr-1 text-gray-500" />
+          <span className="truncate" title={node.path}>
+            {node.name}
+          </span>
+        </div>
+      );
+    }
+  };
+  // --- FILE TREE END ---
+
   if (!isVisible) {
     return null;
   }
@@ -410,26 +527,14 @@ const MonacoCanvas = forwardRef(({
         </div>
 
         <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
+          {/* --- FILE TREE SIDEBAR --- */}
           {files.length > 0 && !showPreview && (
             <div className="w-48 bg-gray-50 border-r border-gray-200 flex flex-col">
               <div className="text-xs text-gray-600 font-medium p-2 border-b border-gray-200 bg-white">
                 Files ({files.length})
               </div>
               <div className="flex-1 overflow-y-auto">
-                {files.map((file) => (
-                  <div
-                    key={file.path}
-                    className={`px-2 py-2 text-sm cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
-                      selectedFile === file.path ? 'bg-blue-100 text-blue-800' : 'text-gray-700'
-                    }`}
-                    onClick={() => handleFileSelect(file.path)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">📄</span>
-                      <span className="truncate" title={file.path}>{file.path}</span>
-                    </div>
-                  </div>
-                ))}
+                {renderFileTree(fileTree)}
               </div>
             </div>
           )}
