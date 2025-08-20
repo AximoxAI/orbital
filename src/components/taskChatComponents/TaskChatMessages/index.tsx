@@ -15,6 +15,7 @@ interface MessagesListProps {
   setLogsOpen: (open: boolean) => void
   showMonacoCanvas: boolean
   summary: string[]
+  agentOutput: string[]
   onShowGeneratedFiles: (messageId: string) => void
   executionLogs?: TaskExecutionLog[]
   executionLogsOpen?: boolean
@@ -23,6 +24,7 @@ interface MessagesListProps {
   activeRetrieveProjectId?: string
   liveRetrieveProjectLogs?: string[]
   liveRetrieveProjectSummary?: string[]
+  liveAgentOutput?: string[]
   isUserSkeletonVisible?: boolean
 }
 
@@ -58,6 +60,7 @@ const MessagesList = ({
   setLogsOpen,
   showMonacoCanvas,
   summary = [],
+  agentOutput = [],
   onShowGeneratedFiles,
   executionLogs = [],
   executionLogsOpen = false,
@@ -66,6 +69,7 @@ const MessagesList = ({
   activeRetrieveProjectId,
   liveRetrieveProjectLogs,
   liveRetrieveProjectSummary = [],
+  liveAgentOutput = [],
   isUserSkeletonVisible = false,
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
@@ -119,6 +123,7 @@ const MessagesList = ({
               setLogsOpen={setLogsOpen}
               showMonacoCanvas={showMonacoCanvas}
               summary={summary}
+              agentOutput={agentOutput}
               executionLogs={executionLogs}
               executionLogsOpen={executionLogsOpen}
               setExecutionLogsOpen={setExecutionLogsOpen}
@@ -126,6 +131,7 @@ const MessagesList = ({
               activeRetrieveProjectId={activeRetrieveProjectId}
               liveRetrieveProjectLogs={liveRetrieveProjectLogs}
               liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+              liveAgentOutput={liveAgentOutput}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />

@@ -18,6 +18,7 @@ interface MessageContentProps {
   setLogsOpen: (open: boolean) => void
   showMonacoCanvas: boolean
   summary: string[]
+  agentOutput: string[]
   executionLogs: TaskExecutionLog[]
   executionLogsOpen: boolean
   setExecutionLogsOpen?: (open: boolean) => void
@@ -25,6 +26,7 @@ interface MessageContentProps {
   activeRetrieveProjectId?: string
   liveRetrieveProjectLogs?: string[]
   liveRetrieveProjectSummary?: string[]
+  liveAgentOutput?: string[]
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -32,8 +34,13 @@ const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
   return summaryLogs.map(log => log.content)
 }
 
-const filterExecutionLogsWithoutSummary = (logs: TaskExecutionLog[]) => {
-  return logs.filter(log => !(log.type === "summary"))
+const extractAgentOutputFromExecutionLogs = (logs: TaskExecutionLog[]) => {
+  const agentOutputLogs = logs.filter(log => log.type === "agent_output" && log.status === "completed")
+  return agentOutputLogs.map(log => log.content)
+}
+
+const filterExecutionLogsWithoutSummaryAndAgentOutput = (logs: TaskExecutionLog[]) => {
+  return logs.filter(log => !(log.type === "summary" || log.type === "agent_output"))
 }
 
 const renderMessageContent = (content: string) => {
@@ -77,6 +84,7 @@ export const MessageContent = ({
   setLogsOpen,
   showMonacoCanvas,
   summary,
+  agentOutput,
   executionLogs,
   executionLogsOpen,
   setExecutionLogsOpen,
@@ -84,6 +92,7 @@ export const MessageContent = ({
   activeRetrieveProjectId,
   liveRetrieveProjectLogs,
   liveRetrieveProjectSummary = [],
+  liveAgentOutput = [],
 }: MessageContentProps) => {
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -92,7 +101,8 @@ export const MessageContent = ({
     message.id === executionLogsMessageId && executionLogs.length > 0 && setExecutionLogsOpen
 
   const executionSummary = hasExecutionLogsForThisMessage ? extractSummaryFromExecutionLogs(executionLogs) : []
-  const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummary(executionLogs) : []
+  const executionAgentOutput = hasExecutionLogsForThisMessage ? extractAgentOutputFromExecutionLogs(executionLogs) : []
+  const filteredExecutionLogs = hasExecutionLogsForThisMessage ? filterExecutionLogsWithoutSummaryAndAgentOutput(executionLogs) : []
 
   const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
@@ -112,14 +122,16 @@ export const MessageContent = ({
   if (isRetrieveProjectBlock) {
     const isExpanded = isActiveRetrieveProjectBlock
       ? (liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0) ||
-        (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)
+        (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0) ||
+        (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0)
       : hasConsoleLogs ||
         (Array.isArray(summary) && summary.length > 0) ||
+        (Array.isArray(agentOutput) && agentOutput.length > 0) ||
         (hasExecutionLogsForThisMessage && !hasConsoleLogs) ||
         (hasExecutionLogsForThisMessage &&
           !hasConsoleLogs &&
-          Array.isArray(executionSummary) &&
-          executionSummary.length > 0);
+          (Array.isArray(executionSummary) && executionSummary.length > 0 ||
+           Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0));
 
     return (
       <div
@@ -145,8 +157,12 @@ export const MessageContent = ({
                 title="EXECUTION LOGS"
               />
             )}
-            {Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0 && (
-              <TaskSummaryPanel summary={liveRetrieveProjectSummary} />
+            {((Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) || 
+              (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)) && (
+              <TaskSummaryPanel 
+                agentOutput={liveAgentOutput || []} 
+                summary={liveRetrieveProjectSummary || []} 
+              />
             )}
           </>
         ) : (
@@ -159,8 +175,13 @@ export const MessageContent = ({
                 title="EXECUTION LOGS"
               />
             )}
-            {(hasConsoleLogs && Array.isArray(summary) && summary.length > 0) && (
-              <TaskSummaryPanel summary={summary} />
+            {(hasConsoleLogs && 
+              ((Array.isArray(agentOutput) && agentOutput.length > 0) || 
+               (Array.isArray(summary) && summary.length > 0))) && (
+              <TaskSummaryPanel 
+                agentOutput={agentOutput || []} 
+                summary={summary || []} 
+              />
             )}
             {hasExecutionLogsForThisMessage && !hasConsoleLogs && (
               <LogsPanel
@@ -175,9 +196,12 @@ export const MessageContent = ({
             )}
             {(hasExecutionLogsForThisMessage &&
               !hasConsoleLogs &&
-              Array.isArray(executionSummary) &&
-              executionSummary.length > 0) && (
-              <TaskSummaryPanel summary={executionSummary} />
+              ((Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) ||
+               (Array.isArray(executionSummary) && executionSummary.length > 0))) && (
+              <TaskSummaryPanel 
+                agentOutput={executionAgentOutput || []} 
+                summary={executionSummary || []} 
+              />
             )}
           </>
         )}

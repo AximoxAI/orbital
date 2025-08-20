@@ -16,6 +16,7 @@ interface MonacoCanvasProps {
   filesFromApi?: { path: string; content: string; [key: string]: any }[];
   onLogsUpdate?: (logs: string[]) => void;
   onSummaryUpdate?: (summary: string[]) => void;
+  onAgentOutputUpdate?: (agentOutput: string[]) => void;
   onClose?: () => void;
   inputMessage?: string;
   onFilesGenerated?: (files: any[]) => void;
@@ -114,6 +115,7 @@ const MonacoCanvas = forwardRef(({
   filesFromApi = [],
   onLogsUpdate,
   onSummaryUpdate,
+  onAgentOutputUpdate,
   onClose,
   inputMessage,
   onFilesGenerated
@@ -132,6 +134,7 @@ const MonacoCanvas = forwardRef(({
 
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [summaryLogs, setSummaryLogs] = useState<string[]>([]);
+  const [agentOutputLogs, setAgentOutputLogs] = useState<string[]>([]);
 
   // --- FILE TREE BEGIN ---
   const [treeOpen, setTreeOpen] = useState<Record<string, boolean>>({});
@@ -150,6 +153,12 @@ const MonacoCanvas = forwardRef(({
       onSummaryUpdate(summaryLogs);
     }
   }, [summaryLogs, onSummaryUpdate]);
+
+  useEffect(() => {
+    if (onAgentOutputUpdate) {
+      onAgentOutputUpdate(agentOutputLogs);
+    }
+  }, [agentOutputLogs, onAgentOutputUpdate]);
 
   useEffect(() => {
     if (filesFromApi && filesFromApi.length > 0) {
@@ -197,6 +206,7 @@ const MonacoCanvas = forwardRef(({
       });
 
       socket.on('execution_result', (data) => {
+        console.log(data)
         if (
           data &&
           (data.type === TaskExecutionLogTypeEnum.Agent || data.type === TaskExecutionLogTypeEnum.Sandbox)
@@ -205,6 +215,13 @@ const MonacoCanvas = forwardRef(({
             setConsoleLogs(prev => [...prev, data.content]);
           }
         }
+
+        // Handle AgentOutput logs separately for the agent section
+        if (data && data.type === TaskExecutionLogTypeEnum.AgentOutput) {
+          setAgentOutputLogs(prev => [...prev, data.content || ""]);
+        }
+
+        // Handle Summary logs for the summary section
         if (data && data.type === TaskExecutionLogTypeEnum.Summary) {
           setSummaryLogs(prev => [...prev, data.content || ""]);
         }
@@ -296,6 +313,7 @@ const MonacoCanvas = forwardRef(({
     setHasTriggeredExecution(true);
     setConsoleLogs([]);
     setSummaryLogs([]);
+    setAgentOutputLogs([]);
 
     const executeAfterConnection = () => {
       if (!socketRef.current || !socketRef.current.connected) {

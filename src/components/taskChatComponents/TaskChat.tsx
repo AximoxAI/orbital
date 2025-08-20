@@ -61,7 +61,8 @@ const TaskChat = ({
   const [logs, setLogs] = useState<string[]>([])
   const [logsOpen, setLogsOpen] = useState(true)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
-  const [summary, setSummary] = useState<string>("")
+  const [summary, setSummary] = useState<string[]>([])
+  const [agentOutput, setAgentOutput] = useState<string[]>([])
 
   const [executionLogs, setExecutionLogs] = useState<any[]>([])
   const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
@@ -70,7 +71,8 @@ const TaskChat = ({
   // --- LIVE RETRIEVE PROJECT STATE ---
   const [activeRetrieveProjectId, setActiveRetrieveProjectId] = useState<string | undefined>()
   const [liveRetrieveProjectLogs, setLiveRetrieveProjectLogs] = useState<string[]>([])
-  const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string>("")
+  const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string[]>([])
+  const [liveAgentOutput, setLiveAgentOutput] = useState<string[]>([])
 
   // NEW state for skeleton loading
   const [isUserSkeletonVisible, setIsUserSkeletonVisible] = useState(false)
@@ -273,7 +275,8 @@ const TaskChat = ({
         setExecutionLogsMessageId(undefined)
         setActiveRetrieveProjectId(undefined)
         setLiveRetrieveProjectLogs([])
-        setLiveRetrieveProjectSummary("")
+        setLiveRetrieveProjectSummary([])
+        setLiveAgentOutput([])
         // Don't set showMonacoCanvas to false here, let handleFilesGenerated control it
       }
 
@@ -303,9 +306,14 @@ const TaskChat = ({
     if (activeRetrieveProjectId) setLiveRetrieveProjectLogs(newLogs)
   }, [activeRetrieveProjectId])
 
-  const handleSummaryUpdate = useCallback((summaryValue: string) => {
+  const handleSummaryUpdate = useCallback((summaryValue: string[]) => {
     setSummary(summaryValue)
     if (activeRetrieveProjectId) setLiveRetrieveProjectSummary(summaryValue)
+  }, [activeRetrieveProjectId])
+
+  const handleAgentOutputUpdate = useCallback((agentOutputValue: string[]) => {
+    setAgentOutput(agentOutputValue)
+    if (activeRetrieveProjectId) setLiveAgentOutput(agentOutputValue)
   }, [activeRetrieveProjectId])
 
   const handleSocketConnected = (connected: boolean) => {
@@ -349,6 +357,7 @@ const TaskChat = ({
           setLogsOpen={setLogsOpen}
           showMonacoCanvas={showMonacoCanvas}
           summary={summary}
+          agentOutput={agentOutput}
           onShowGeneratedFiles={handleShowGeneratedFiles}
           executionLogs={executionLogs}
           executionLogsOpen={executionLogsOpen}
@@ -357,6 +366,7 @@ const TaskChat = ({
           activeRetrieveProjectId={activeRetrieveProjectId}
           liveRetrieveProjectLogs={liveRetrieveProjectLogs}
           liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+          liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
         />
 
@@ -374,6 +384,7 @@ const TaskChat = ({
           filesFromApi={generatedFiles}
           onLogsUpdate={handleLogsUpdate}
           onSummaryUpdate={handleSummaryUpdate}
+          onAgentOutputUpdate={handleAgentOutputUpdate}
           onClose={handleCloseMonacoCanvas}
           inputMessage={currentInputMessage}
           onFilesGenerated={handleFilesGenerated}

@@ -350,7 +350,8 @@ export type TaskExecutionLogStatusEnum = typeof TaskExecutionLogStatusEnum[keyof
 export const TaskExecutionLogTypeEnum = {
     Agent: 'agent',
     Sandbox: 'sandbox',
-    Summary: 'summary'
+    Summary: 'summary',
+    AgentOutput: 'agent_output'
 } as const;
 
 export type TaskExecutionLogTypeEnum = typeof TaskExecutionLogTypeEnum[keyof typeof TaskExecutionLogTypeEnum];
