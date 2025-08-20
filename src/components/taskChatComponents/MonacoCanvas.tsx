@@ -78,8 +78,8 @@ function buildFileTree(files: FileItem[]): FolderNode {
 }
 // --- FILE TREE END ---
 
-const SOCKET_URL = "http://localhost:3000/ws/v1/tasks";
-const DEFAULT_AGENT_ID = "codebot";
+const SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/ws/v1/tasks`;
+const DEFAULT_AGENT_ID = "orbital_cli";
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"];
 
 const getLanguage = (filePath: string) => {
@@ -120,7 +120,6 @@ const MonacoCanvas = forwardRef(({
 }: MonacoCanvasProps, _ref) => {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
-  const [agentId] = useState(DEFAULT_AGENT_ID);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [hasTriggeredExecution, setHasTriggeredExecution] = useState(false);
@@ -198,7 +197,6 @@ const MonacoCanvas = forwardRef(({
       });
 
       socket.on('execution_result', (data) => {
-        console.log(data);
         if (
           data &&
           (data.type === TaskExecutionLogTypeEnum.Agent || data.type === TaskExecutionLogTypeEnum.Sandbox)
@@ -209,10 +207,9 @@ const MonacoCanvas = forwardRef(({
         }
         if (data && data.type === TaskExecutionLogTypeEnum.Summary) {
           setSummaryLogs(prev => [...prev, data.content || ""]);
-          console.log("Summary received:", data.content);
         }
 
-        const { taskId: resultTaskId, status, message, summary: unusedSummary, timestamp } = data;
+        const { taskId: resultTaskId, status, message, timestamp } = data;
 
         if (
           resultTaskId === taskId &&
@@ -290,7 +287,7 @@ const MonacoCanvas = forwardRef(({
   }, [setValue]);
 
   const handleExecuteTask = useCallback((messageOverride?: string) => {
-    if (!taskId || !agentId) {
+    if (!taskId) {
       return;
     }
 
@@ -310,9 +307,13 @@ const MonacoCanvas = forwardRef(({
         const messageToSend = messageOverride || inputMessage || "";
         const mentions = extractBotMentions(messageToSend);
 
+        const mentionAgent = mentions.length > 0
+          ? mentions[0].replace(/^@/, "")
+          : DEFAULT_AGENT_ID;
+
         socketRef.current.emit("execute", {
           taskId,
-          agentId,
+          agentId: mentionAgent,
           message: messageToSend,
           mentions
         });
@@ -326,7 +327,7 @@ const MonacoCanvas = forwardRef(({
     } else {
       setTimeout(executeAfterConnection, 1000);
     }
-  }, [taskId, agentId, inputMessage, clearCanvasState]);
+  }, [taskId, inputMessage, clearCanvasState]);
 
   useEffect(() => {
     if (executeTaskRef) {
