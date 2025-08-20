@@ -206,7 +206,6 @@ const MonacoCanvas = forwardRef(({
       });
 
       socket.on('execution_result', (data) => {
-        console.log(data)
         if (
           data &&
           (data.type === TaskExecutionLogTypeEnum.Agent || data.type === TaskExecutionLogTypeEnum.Sandbox)
