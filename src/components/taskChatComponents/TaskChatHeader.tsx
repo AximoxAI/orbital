@@ -9,7 +9,6 @@ const WS_URL = import.meta.env.VITE_LIVEKIT_URL;
 
 const apiBaseUrl = import.meta.env.VITE_BACKEND_API_KEY;
 const apiConfig = new Configuration({ basePath: apiBaseUrl });
-// If you use authentication, pass the token in Configuration above.
 
 const liveKitApi = LiveKitApiFactory(apiConfig);
 
@@ -19,7 +18,6 @@ const getLiveKitToken = async (
   name?: string,
   metadata?: string
 ) => {
-  // This returns a promise of AxiosResponse
   const res = await liveKitApi.livekitControllerGetToken(roomName, identity, name, metadata);
   if (res.status !== 200) throw new Error("Failed to get token");
   return res.data;
@@ -98,7 +96,7 @@ const TaskChatHeader = ({
         </div>
       </div>
 
-      {/* User Avatars Section + Video Call Button (right aligned) */}
+
       <div className="w-full max-w-[1500px] px-8 py-2 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
         <div className="flex items-center justify-between">
           {/* Avatars row */}
@@ -124,7 +122,6 @@ const TaskChatHeader = ({
               </div>
             ))}
           </div>
-          {/* Video call button at the far right */}
           <Button
             variant="outline"
             size="icon"
