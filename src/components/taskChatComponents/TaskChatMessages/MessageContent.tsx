@@ -30,12 +30,12 @@ interface MessageContentProps {
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
-  const summaryLogs = logs.filter(log => log.type === "summary" && log.status === "completed")
+  const summaryLogs = logs.filter(log => log.type === "summary" && log.status === "agent" )
   return summaryLogs.map(log => log.content)
 }
 
 const extractAgentOutputFromExecutionLogs = (logs: TaskExecutionLog[]) => {
-  const agentOutputLogs = logs.filter(log => log.type === "agent_output" && log.status === "completed")
+  const agentOutputLogs = logs.filter(log => log.type === "agent_output" && log.status === "agent" )
   return agentOutputLogs.map(log => log.content)
 }
 
