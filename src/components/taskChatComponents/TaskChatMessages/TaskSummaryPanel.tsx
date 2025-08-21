@@ -20,7 +20,7 @@ const MermaidComponent = ({ children }: { children: string }) => {
   }
 
   return (
-    <div className="mermaid-container bg-white p-4 rounded-lg border overflow-x-auto">
+    <div className="mermaid-container bg-white p-4 rounded-lg  overflow-x-auto">
       <Mermaid chart={children} />
     </div>
   )
@@ -87,8 +87,8 @@ export const TaskSummaryPanel = ({
         )}
 
         {/* Summary Section */}
-        {/* <div> */}
-        {/* {uniqueSummary.length > 0 && (
+        {/* <div>
+        {uniqueSummary.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-slate-700">
               <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 rounded-full">
@@ -104,11 +104,11 @@ export const TaskSummaryPanel = ({
                       components={{
                         p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                         strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
-                        code: ({ node, inline, className, children, ...props }) => {
+                        code: ({ node, className, children, ...props }) => {
                           const match = /language-(\w+)/.exec(className || '')
                           const language = match ? match[1] : ''
                           
-                          if (!inline && language === 'mermaid') {
+                          if ( language === 'mermaid') {
                             return <MermaidComponent>{String(children).replace(/\n$/, '')}</MermaidComponent>
                           }
                           
