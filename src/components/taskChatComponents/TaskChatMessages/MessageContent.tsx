@@ -5,6 +5,7 @@ import { availableBots, getBotStyles } from "./botStyles"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import { TaskExecutionLog, MessageType } from "./types"
+import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client";
 
 interface MessageContentProps {
   message: MessageType
@@ -30,17 +31,17 @@ interface MessageContentProps {
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
-  const summaryLogs = logs.filter(log => log.type === "summary" && log.status === "agent" )
+  const summaryLogs = logs.filter(log => log.type === TaskExecutionLogTypeEnum.Summary && log.status ===  TaskExecutionLogStatusEnum.Agent )
   return summaryLogs.map(log => log.content)
 }
 
 const extractAgentOutputFromExecutionLogs = (logs: TaskExecutionLog[]) => {
-  const agentOutputLogs = logs.filter(log => log.type === "agent_output" && log.status === "agent" )
+  const agentOutputLogs = logs.filter(log => log.type === TaskExecutionLogTypeEnum.AgentOutput && log.status === TaskExecutionLogStatusEnum.Agent )
   return agentOutputLogs.map(log => log.content)
 }
 
 const filterExecutionLogsWithoutSummaryAndAgentOutput = (logs: TaskExecutionLog[]) => {
-  return logs.filter(log => !(log.type === "summary" || log.type === "agent_output"))
+  return logs.filter(log => !(log.type === TaskExecutionLogTypeEnum.Summary || log.type === TaskExecutionLogTypeEnum.AgentOutput))
 }
 
 const renderMessageContent = (content: string) => {
