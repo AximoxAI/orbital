@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useUser } from "@clerk/clerk-react"
 import {
   LiveKitRoom,
   FocusLayout,
@@ -20,8 +21,10 @@ import {
   LayoutContextProvider,
   useCreateLayoutContext,
   useChat,
+  TrackRefContext,
+  useTrackRefContext,
 } from "@livekit/components-react"
-import { Track } from "livekit-client"
+import { Track, ParticipantKind } from "livekit-client"
 import "@livekit/components-styles"
 import { LiveKitApiFactory, Configuration } from "@/api-client"
 
@@ -164,26 +167,46 @@ function EnhancedChat() {
   )
 }
 
+// Custom ParticipantTile wrapper with proper props
+function CustomParticipantTile({ trackRef, disableSpeakingIndicator = false, ...props }: any) {
+  return (
+    <ParticipantTile
+      trackRef={trackRef}
+      disableSpeakingIndicator={disableSpeakingIndicator}
+      showConnectionQuality={true}
+      showDisplayName={true}
+      showMicrophone={true}
+      showCamera={true}
+      {...props}
+      className="rounded-lg overflow-hidden shadow-md"
+    />
+  )
+}
+
 // Custom Video Conference with proper layout and controls
 function MyVideoConference() {
   const layoutContext = useCreateLayoutContext()
   const participants = useParticipants()
 
-  // Get all tracks for camera and screen share
+  // Get all tracks for camera and screen share with proper options
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
       { source: Track.Source.ScreenShare, withPlaceholder: false },
     ],
-    { onlySubscribed: false },
+    { 
+      onlySubscribed: false,
+      updateOnlyOn: [Track.Source.Camera, Track.Source.ScreenShare]
+    },
   )
 
-  // Find screen share track first, then fallback to camera
-  const screenShareTrack = tracks.find((track) => track.source === Track.Source.ScreenShare)
-  const cameraTrack = tracks.find((track) => track.source === Track.Source.Camera)
+  // Separate screen share and camera tracks
+  const screenShareTracks = tracks.filter((track) => track.source === Track.Source.ScreenShare)
+  const cameraTracks = tracks.filter((track) => track.source === Track.Source.Camera)
 
-  // Use screen share if available, otherwise use camera
-  const focusTrack = screenShareTrack || cameraTrack
+  // Determine which layout to use
+  const hasScreenShare = screenShareTracks.length > 0
+  const focusTrack = hasScreenShare ? screenShareTracks[0] : null
 
   return (
     <LayoutContextProvider value={layoutContext}>
@@ -194,17 +217,41 @@ function MyVideoConference() {
         <div className="flex-1 flex min-h-0">
           {/* Video area */}
           <div className="flex-1 relative bg-gray-900">
-            {focusTrack ? (
-              <FocusLayout trackRef={focusTrack}>
-                <ParticipantTile />
-              </FocusLayout>
+            {hasScreenShare && focusTrack ? (
+              // Screen share layout with focus on screen share
+              <div className="h-full flex flex-col">
+                {/* Main screen share area */}
+                <div className="flex-1 relative">
+                  <FocusLayout trackRef={focusTrack}>
+                    <CustomParticipantTile />
+                  </FocusLayout>
+                </div>
+                
+                {/* Camera thumbnails at bottom */}
+                {cameraTracks.length > 0 && (
+                  <div className="h-32 flex gap-2 p-2 bg-black/20">
+                    {cameraTracks.map((track, index) => (
+                      <div key={track.participant.sid || index} className="w-24 h-28 flex-shrink-0">
+                        <TrackRefContext.Provider value={track}>
+                          <CustomParticipantTile 
+                            trackRef={track}
+                            disableSpeakingIndicator={true}
+                          />
+                        </TrackRefContext.Provider>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
-              <GridLayout tracks={tracks}>
-                <ParticipantTile />
+              // Grid layout for camera feeds only
+              <GridLayout tracks={cameraTracks}>
+                <CustomParticipantTile />
               </GridLayout>
             )}
           </div>
 
+          {/* Chat sidebar */}
           <div className="w-80 flex-shrink-0">
             <EnhancedChat />
           </div>
@@ -227,7 +274,7 @@ function MyVideoConference() {
                 controls={{
                   microphone: true,
                   camera: true,
-                  chat: true,
+                  chat: false, // Disabled since we have custom chat
                   screenShare: true,
                   leave: true,
                 }}
@@ -250,6 +297,7 @@ function MyVideoConference() {
 }
 
 const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) => {
+  const { user, isLoaded } = useUser()
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -257,6 +305,14 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
   const [roomName, setRoomName] = useState(taskName || "")
   const [name, setName] = useState("")
   const [metadata, setMetadata] = useState("")
+
+  // Auto-populate user identity from Clerk when user data is loaded
+  useEffect(() => {
+    if (isLoaded && user) {
+      setIdentity(user.username || user.id)
+      // Removed auto-filling of display name
+    }
+  }, [isLoaded, user])
 
   const handleJoinRoom = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -284,8 +340,19 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
       {!token && (
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Users className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
+                <Users className="h-6 w-6 text-blue-600" />
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClose}
+                className="hover:bg-gray-100"
+                aria-label="Close form"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </div>
             <CardTitle>Join Video Conference</CardTitle>
             <CardDescription>Enter your details to join the video call</CardDescription>
@@ -319,7 +386,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
                 <Label htmlFor="displayName">Display Name</Label>
                 <Input
                   id="displayName"
-                  placeholder="How others will see you (optional)"
+                  placeholder="How others will see you"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="w-full"
@@ -343,19 +410,33 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
                 </Alert>
               )}
 
-              <Button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700">
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Joining Room...
-                  </>
-                ) : (
-                  <>
-                    <Video className="mr-2 h-4 w-4" />
-                    Join Video Call
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={handleClose}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={loading || !identity.trim()} 
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Joining...
+                    </>
+                  ) : (
+                    <>
+                      <Video className="mr-2 h-4 w-4" />
+                      Join Call
+                    </>
+                  )}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>

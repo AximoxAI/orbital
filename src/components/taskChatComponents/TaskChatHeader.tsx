@@ -73,16 +73,19 @@ const TaskChatHeader = ({ taskName, isFullPage, onClose, onMaximize, onMinimize,
               </div>
             ))}
           </div>
-          <Button
-            variant="default"
-            size="sm"
-            className="ml-4 flex-shrink-0 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
-            onClick={handleVideoClick}
-            aria-label="Start Video Call"
-          >
-            <Video className="mr-2 h-4 w-4" />
-            Join Call
-          </Button>
+          {/* Only show Join Call button in full screen mode */}
+          {isFullPage && (
+            <Button
+              variant="default"
+              size="sm"
+              className="ml-4 flex-shrink-0 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+              onClick={handleVideoClick}
+              aria-label="Start Video Call"
+            >
+              <Video className="mr-2 h-4 w-4" />
+              Join Call
+            </Button>
+          )}
         </div>
       </div>
 
