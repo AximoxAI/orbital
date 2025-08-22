@@ -1,209 +1,100 @@
-import { X, Maximize2, Minimize2, Video } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import React, { useState } from "react";
-import { LiveKitRoom, VideoConference } from "@livekit/components-react";
-import "@livekit/components-styles";
-import { LiveKitApiFactory, Configuration } from "@/api-client";
+"use client"
 
-const WS_URL = import.meta.env.VITE_LIVEKIT_URL;
+import { X, Maximize2, Minimize2, Video } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import type React from "react"
+import { useState } from "react"
+import VideoCallModal from "./VideoCallModal"
 
-const apiBaseUrl = import.meta.env.VITE_BACKEND_API_KEY;
-const apiConfig = new Configuration({ basePath: apiBaseUrl });
+const TaskChatHeader = ({ taskName, isFullPage, onClose, onMaximize, onMinimize, users }) => {
+  const [showVideoModal, setShowVideoModal] = useState(false)
 
-const liveKitApi = LiveKitApiFactory(apiConfig);
+  const handleVideoClick = () => {
+    setShowVideoModal(true)
+  }
 
-const getLiveKitToken = async (
-  roomName: string,
-  identity: string,
-  name?: string,
-  metadata?: string
-) => {
-  const res = await liveKitApi.livekitControllerGetToken(roomName, identity, name, metadata);
-  if (res.status !== 200) throw new Error("Failed to get token");
-  return res.data;
-};
-
-const TaskChatHeader = ({
-  taskName,
-  isFullPage,
-  onClose,
-  onMaximize,
-  onMinimize,
-  users,
-}) => {
-  const [showVideo, setShowVideo] = useState(false);
-  const [token, setToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [identity, setIdentity] = useState("");
-  const [roomName, setRoomName] = useState(taskName || "");
-  const [name, setName] = useState("");
-  const [metadata, setMetadata] = useState("");
-
-  const handleVideoClick = async () => {
-    setShowVideo(true);
-    setToken(null);
-  };
-
-  const handleJoinRoom = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const resp = await getLiveKitToken(roomName, identity, name, metadata);
-      setToken(resp.accessToken);
-    } catch (err) {
-      setError((err as Error).message || "Failed to get token");
-      setToken(null);
-    }
-    setLoading(false);
-  };
-
-  const handleCloseVideo = () => {
-    setShowVideo(false);
-    setToken(null);
-    setLoading(false);
-    setError(null);
-  };
+  const handleCloseVideoModal = () => {
+    setShowVideoModal(false)
+  }
 
   return (
     <>
       {/* Header */}
-      <div className="px-4 py-4 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 flex flex-wrap items-center gap-y-2 gap-x-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-bold text-base sm:text-lg text-gray-900 mb-1 truncate">Task Discussion</h3>
-          <p className="text-xs sm:text-sm text-gray-600 truncate font-medium">{taskName}</p>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 px-4 py-4">
+        <div className="min-w-0 flex-1">
+          <h3 className="mb-1 truncate text-base font-bold text-gray-900 sm:text-lg">Task Discussion</h3>
+          <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
         </div>
-        <div className="flex items-center space-x-2 flex-shrink-0">
+        <div className="flex flex-shrink-0 items-center space-x-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={isFullPage ? onMinimize : onMaximize}
-            className="hover:bg-gray-100 transition-colors duration-200"
+            className="transition-colors duration-200 hover:bg-gray-100"
             aria-label={isFullPage ? "Minimize" : "Maximize"}
           >
-            {isFullPage ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            {isFullPage ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="hover:bg-gray-100 transition-colors duration-200"
+            className="transition-colors duration-200 hover:bg-gray-100"
             aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-
-      <div className="w-full max-w-[1500px] px-8 py-2 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+      {/* Users section */}
+      <div className="w-full max-w-[1500px] border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-8 py-2">
         <div className="flex items-center justify-between">
           {/* Avatars row */}
-          <div className="flex gap-8 overflow-x-auto pb-2 scrollbar-hide">
+          <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-2">
             {users.map((user) => (
               <div
                 key={user.id}
-                className="flex flex-col items-center justify-center min-w-[90px] cursor-pointer group transition-all duration-200 hover:scale-105"
+                className="group min-w-[90px] cursor-pointer transition-all duration-200 hover:scale-105 flex flex-col items-center justify-center"
               >
                 <div className="relative mb-3">
                   <img
                     src={user.avatar || "/placeholder.svg"}
                     alt={user.name}
-                    className="w-10 h-10 rounded-full object-cover border-3 border-white shadow-lg group-hover:shadow-xl transition-all duration-200"
+                    className="h-10 w-10 rounded-full border-3 border-white object-cover shadow-lg transition-all duration-200 group-hover:shadow-xl"
                   />
                   {user.isOnline && (
-                    <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-3 border-white rounded-full shadow-sm"></div>
+                    <div className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full border-3 border-white bg-green-500 shadow-sm"></div>
                   )}
                 </div>
-                <span className="text-sm text-gray-700 text-center max-w-[90px] truncate font-medium group-hover:text-gray-900 transition-colors duration-200">
+                <span className="max-w-[90px] truncate text-center text-sm font-medium text-gray-700 transition-colors duration-200 group-hover:text-gray-900">
                   {user.name}
                 </span>
               </div>
             ))}
           </div>
           <Button
-            variant="outline"
-            size="icon"
-            className="ml-4 flex-shrink-0"
+            variant="default"
+            size="sm"
+            className="ml-4 flex-shrink-0 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
             onClick={handleVideoClick}
             aria-label="Start Video Call"
           >
-            <Video className="w-6 h-6" />
+            <Video className="mr-2 h-4 w-4" />
+            Join Call
           </Button>
         </div>
       </div>
 
-      {/* LiveKit Video Modal */}
-      {showVideo && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
-          <div
-            className="bg-white rounded-lg shadow-lg p-0 relative w-full max-w-3xl h-[80vh] flex flex-col pointer-events-auto"
-            style={{ minHeight: 400, minWidth: 320 }}
-            onClick={e => e.stopPropagation()}
-          >
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute top-2 right-2 z-10"
-              onClick={handleCloseVideo}
-              aria-label="Close Video Call"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-            <div className="flex-1 flex flex-col overflow-hidden p-6">
-              {/* Show form if token is not fetched yet */}
-              {!token && (
-                <form onSubmit={handleJoinRoom} className="flex flex-col gap-3 items-center justify-center flex-1">
-                  <input
-                    className="border rounded px-3 py-2 w-full"
-                    placeholder="Room Name"
-                    value={roomName}
-                    onChange={e => setRoomName(e.target.value)}
-                    required
-                  />
-                  <input
-                    className="border rounded px-3 py-2 w-full"
-                    placeholder="Your Identity (unique user id)"
-                    value={identity}
-                    onChange={e => setIdentity(e.target.value)}
-                    required
-                  />
-                  <input
-                    className="border rounded px-3 py-2 w-full"
-                    placeholder="Display Name (optional)"
-                    value={name}
-                    onChange={e => setName(e.target.value)}
-                  />
-                  <input
-                    className="border rounded px-3 py-2 w-full"
-                    placeholder="Metadata (optional)"
-                    value={metadata}
-                    onChange={e => setMetadata(e.target.value)}
-                  />
-                  <Button type="submit" disabled={loading}>
-                    {loading ? "Joining..." : "Join Video Call"}
-                  </Button>
-                  {error && <span className="text-red-600">{error}</span>}
-                </form>
-              )}
-              {/* Show LiveKitRoom after token is fetched */}
-              {token && (
-                <LiveKitRoom
-                  token={token}
-                  serverUrl={WS_URL}
-                  connect={true}
-                  style={{ width: "100%", height: "100%" }}
-                >
-                  <VideoConference style={{ width: "100%", height: "100%" }} />
-                </LiveKitRoom>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* Video Modal */}
+      {showVideoModal && (
+        <VideoCallModal
+          taskName={taskName}
+          onClose={handleCloseVideoModal}
+        />
       )}
     </>
-  );
-};
+  )
+}
 
-export default TaskChatHeader;
+export default TaskChatHeader
