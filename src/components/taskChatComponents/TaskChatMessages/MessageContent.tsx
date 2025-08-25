@@ -143,7 +143,7 @@ export const MessageContent = ({
           className={`flex gap-2 cursor-pointer ${isExpanded ? "" : "items-center h-full"}`}
           onClick={() => onShowGeneratedFiles(message.id)}
         >
-          <span className="text-sm font-medium text-slate-900 font-inter">📄 Open in Editor</span>
+          <span className="text-sm font-medium text-slate-600 font-inter">📄 Open in Editor</span>
           <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium w-[70px] h-[70px] flex justify-center items-center">
             {'<code></code>'}
           </span>

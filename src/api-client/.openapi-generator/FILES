@@ -15,6 +15,7 @@ docs/CreateProjectDto.md
 docs/CreateTaskDto.md
 docs/CreateUserDto.md
 docs/HealthApi.md
+docs/LiveKitApi.md
 docs/ProjectAnalysisDto.md
 docs/ProjectsApi.md
 docs/TaskExecutionLog.md
