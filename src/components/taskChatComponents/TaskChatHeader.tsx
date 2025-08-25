@@ -78,7 +78,7 @@ const TaskChatHeader = ({ taskName, isFullPage, onClose, onMaximize, onMinimize,
             <Button
               variant="default"
               size="sm"
-              className="ml-4 flex-shrink-0 bg-blue-600 text-white shadow-sm hover:bg-blue-700"
+              className="ml-4 flex-shrink-0 bg-slate-600 text-white shadow-sm hover:bg-slate-700"
               onClick={handleVideoClick}
               aria-label="Start Video Call"
             >

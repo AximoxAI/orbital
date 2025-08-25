@@ -67,13 +67,13 @@ function EnhancedChat() {
   }
 
   return (
-    <Card className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white border-l-2 border-blue-100 shadow-lg">
+    <Card className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white border-l-2 border-slate-100 shadow-lg">
       {/* Chat Header */}
       <CardHeader className="pb-3 border-b bg-white/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <MessageCircle className="h-4 w-4 text-blue-600" />
+            <div className="p-2 bg-slate-100 rounded-lg">
+              <MessageCircle className="h-4 w-4 text-slate-600" />
             </div>
             <div>
               <CardTitle className="text-sm font-semibold text-gray-900">Chat</CardTitle>
@@ -109,7 +109,7 @@ function EnhancedChat() {
                   <div key={index} className="group">
                     <div className="flex items-start gap-3">
                       {/* Avatar */}
-                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                      <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-slate-500 to-purple-600 rounded-full flex items-center justify-center">
                         <User className="h-4 w-4 text-white" />
                       </div>
 
@@ -144,7 +144,7 @@ function EnhancedChat() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   placeholder="Type your message..."
-                  className="pr-12 border-gray-300 focus:border-blue-500 focus:ring-blue-500/20 bg-white"
+                  className="pr-12 border-gray-300 focus:border-slate-500 focus:ring-slate-500/20 bg-white"
                   maxLength={500}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -155,7 +155,7 @@ function EnhancedChat() {
                 type="submit"
                 disabled={!message.trim()}
                 size="sm"
-                className="px-3 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                className="px-3 bg-slate-600 hover:bg-slate-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
               >
                 <Send className="h-4 w-4" />
               </Button>
@@ -341,8 +341,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex items-center justify-between mb-4">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-                <Users className="h-6 w-6 text-blue-600" />
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-slate-100">
+                <Users className="h-6 w-6 text-slate-600" />
               </div>
               <Button
                 variant="ghost"
@@ -422,7 +422,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
                 <Button 
                   type="submit" 
                   disabled={loading || !identity.trim()} 
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-slate-600 hover:bg-slate-700"
                 >
                   {loading ? (
                     <>
@@ -451,8 +451,8 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
           {/* Modal Header */}
           <div className="flex items-center justify-between border-b bg-gray-50/50 p-6 flex-shrink-0">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-100 p-2">
-                <Video className="h-5 w-5 text-blue-600" />
+              <div className="rounded-lg bg-slate-100 p-2">
+                <Video className="h-5 w-5 text-slate-600" />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">Video Conference</h2>
