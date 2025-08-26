@@ -139,27 +139,27 @@ export const MessageContent = ({
         className="border border-slate-200 rounded-xl w-full max-w-2xl h-[110px] bg-slate-100 shadow-lg p-4"
         style={isExpanded ? { height: "auto", minHeight: 120 } : {}}
       >
-        <div
-  className="flex items-center w-full bg-slate-100 rounded-2xl  cursor-pointer transition "
+ <div
+  className="flex items-center w-full bg-slate-100 rounded-2xl cursor-pointer transition p-3 sm:p-4"
   style={{
-    minHeight: 72,
+    minHeight: 60,
     margin: "0 auto",
-    gap: "1.5rem",
+    gap: "0.75rem",
     maxWidth: "100%",
   }}
   onClick={() => onShowGeneratedFiles(message.id)}
 >
   {/* Left robot icon with purple/blue gradient */}
   <span
-    className="flex justify-center items-center rounded-xl"
+    className="flex justify-center items-center rounded-xl flex-shrink-0"
     style={{
-      width: 38,
-      height: 38,
+      width: 32,
+      height: 32,
       background: "linear-gradient(135deg, #5C6DF7 0%, #8F54FF 100%)",
     }}
   >
-    {/* Simple robot SVG */}
-    <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
+    {/* Simple robot SVG - smaller for mobile */}
+    <svg width="20" height="20" fill="none" viewBox="0 0 32 32" className="sm:w-6 sm:h-6">
       <g>
         <rect x="8" y="13" width="16" height="10" rx="4" fill="#fff" />
         <rect x="13" y="8" width="6" height="3" rx="1.5" fill="#fff" />
@@ -168,26 +168,34 @@ export const MessageContent = ({
       </g>
     </svg>
   </span>
+  
   {/* Message and subtext */}
-  <div className="flex flex-col flex-1 min-w-0">
-    <span className="font-semibold text-md text-slate-600" style={{ fontFamily: "Inter" }}>
+  <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+    <span 
+      className="font-semibold text-sm sm:text-md text-slate-600 truncate" 
+      style={{ fontFamily: "Inter" }}
+    >
       Code Generated Successfully
     </span>
-    <span className="text-slate-400 text-sm " style={{ fontFamily: "Inter" }}>
+    <span 
+      className="text-slate-400 text-xs sm:text-sm truncate" 
+      style={{ fontFamily: "Inter" }}
+    >
       Click to open in editor
     </span>
   </div>
+  
   {/* Right editor pencil icon with purple/blue gradient */}
   <span
-    className="flex justify-center items-center rounded-xl"
+    className="flex justify-center items-center rounded-xl flex-shrink-0"
     style={{
-      width: 38,
-      height: 38,
+      width: 32,
+      height: 32,
       background: "linear-gradient(135deg, #5C6DF7 0%, #8F54FF 100%)",
     }}
   >
-    {/* Simple pencil SVG */}
-    <svg width="26" height="26" fill="none" viewBox="0 0 26 26">
+    {/* Simple pencil SVG - smaller for mobile */}
+    <svg width="18" height="18" fill="none" viewBox="0 0 26 26" className="sm:w-5 sm:h-5">
       <g>
         <path
           d="M7.2 17.8l1.03-4.12a.5.5 0 01.13-.22l6.7-6.7a1.41 1.41 0 112 2l-6.7 6.7a.5.5 0 01-.22.13L7.2 17.8z"
