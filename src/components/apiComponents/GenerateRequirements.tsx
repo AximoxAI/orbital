@@ -94,17 +94,17 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
             <Button 
               type="submit" 
               disabled={loading || !formData.requirements || !formData.project_id}
-              className="w-full"
+              className="w-[100%] bg-slate-800 hover:bg-slate-600"
             >
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating Task...
+                  Generating Task...
                 </>
               ) : (
                 <>
                   <Send className="mr-2 h-4 w-4" />
-                  Create Task
+                  Generate Tasks
                 </>
               )}
             </Button>
