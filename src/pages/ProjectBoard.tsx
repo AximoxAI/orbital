@@ -354,15 +354,15 @@ const ProjectBoard = () => {
             <div className="space-y-2">
               <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span>Paper.so</span>
+                <span>API Discussion</span>
               </a>
               <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>GoodWriter™</span>
+                <span>DB Design</span>
               </a>
               <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Thoughts™</span>
+                <span>AI Engineer</span>
               </a>
               <button className="flex items-center space-x-3 text-gray-500 hover:bg-gray-100 rounded-lg p-2 w-full">
                 <Plus className="w-4 h-4" />
