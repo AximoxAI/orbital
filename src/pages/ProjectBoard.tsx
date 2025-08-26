@@ -113,12 +113,12 @@ function ProjectsList({
                         <DropdownMenuItem
                           onClick={() => onShowCreateTaskModal(project.id)}
                         >
-                          Create new task
+                           New task
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => onGenerateRequirements(project.id)}
                         >
-                          Generate Requirements
+                          Generate Tasks
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

@@ -23,6 +23,7 @@ import {
   useChat,
   TrackRefContext,
   useTrackRefContext,
+  useRoomContext,
 } from "@livekit/components-react"
 import { Track, ParticipantKind } from "livekit-client"
 import "@livekit/components-styles"
@@ -184,7 +185,7 @@ function CustomParticipantTile({ trackRef, disableSpeakingIndicator = false, ...
 }
 
 // Custom Video Conference with proper layout and controls
-function MyVideoConference() {
+function MyVideoConference({ onLeave }: { onLeave: () => void }) {
   const layoutContext = useCreateLayoutContext()
   const participants = useParticipants()
 
@@ -207,6 +208,19 @@ function MyVideoConference() {
   // Determine which layout to use
   const hasScreenShare = screenShareTracks.length > 0
   const focusTrack = hasScreenShare ? screenShareTracks[0] : null
+
+  // Listen for room disconnect event to trigger onLeave
+  const room = useRoomContext?.()
+  useEffect(() => {
+    if (!room) return
+    const handleDisconnected = () => {
+      onLeave()
+    }
+    room.on("disconnected", handleDisconnected)
+    return () => {
+      room.off("disconnected", handleDisconnected)
+    }
+  }, [room, onLeave])
 
   return (
     <LayoutContextProvider value={layoutContext}>
@@ -334,7 +348,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
     setError(null)
     onClose()
   }
-
+  
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
       {!token && (
@@ -515,7 +529,7 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
                   },
                 }}
               >
-                <MyVideoConference />
+                <MyVideoConference onLeave={handleClose} />
               </LiveKitRoom>
             </div>
           </div>

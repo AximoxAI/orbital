@@ -101,31 +101,35 @@ const TaskChat = ({
     if (files && files.length > 0) {
       setGeneratedFiles(files)
       setShowMonacoCanvas(true) // Show canvas when files are generated
+    } else {
+      // If no files, close the canvas
+      setShowMonacoCanvas(false)
     }
   }, [])
 
-  const mapBackendMsg = (msg: any) => {
-    let type: "ai" | "human"
-    if (msg.sender_type) {
-      type = msg.sender_type === "human" ? "human" : "ai"
-    } else if (msg.type) {
-      type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : "ai"
-    } else {
-      type = "ai"
-    }
-    let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
-    if (type === "ai") author = "Bot"
-    return {
-      id: msg.id || String(Date.now()),
-      type,
-      sender_id: msg.sender_id,
-      author,
-      content: msg.content,
-      timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
-      isCode: !!msg.isCode,
-      taskSuggestion: msg.taskSuggestion || undefined,
-    }
+const mapBackendMsg = (msg: any) => {
+  let type: "ai" | "human"
+  if (msg.sender_type) {
+    type = msg.sender_type === "human" ? "human" : "ai"
+  } else if (msg.type) {
+    type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : "ai"
+  } else {
+    type = "ai"
   }
+  let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
+  if (type === "ai") author = msg.sender_id || "Bot"    // <--- changed here
+  return {
+    id: msg.id || String(Date.now()),
+    type,
+    sender_id: msg.sender_id,
+    author,
+    content: msg.content,
+    timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
+    isCode: !!msg.isCode,
+    taskSuggestion: msg.taskSuggestion || undefined,
+  }
+}
+// ...existing code...
 
   // Socket API instance and socket reference
   const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
@@ -233,6 +237,10 @@ const TaskChat = ({
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
+      } else {
+        // If no files, close the canvas
+        setGeneratedFiles([])
+        setShowMonacoCanvas(false)
       }
 
       if (logs.length > 0) {
@@ -277,7 +285,8 @@ const TaskChat = ({
         setLiveRetrieveProjectLogs([])
         setLiveRetrieveProjectSummary([])
         setLiveAgentOutput([])
-        // Don't set showMonacoCanvas to false here, let handleFilesGenerated control it
+        // Close canvas since files are being reset
+        setShowMonacoCanvas(false)
       }
 
       setNewMessage("")
@@ -319,6 +328,13 @@ const TaskChat = ({
   const handleSocketConnected = (connected: boolean) => {
     setSocketConnected(connected)
   }
+
+  // Auto-close canvas when no generated files
+  useEffect(() => {
+    if (generatedFiles.length === 0) {
+      setShowMonacoCanvas(false)
+    }
+  }, [generatedFiles])
 
   if (!isOpen) return null
 

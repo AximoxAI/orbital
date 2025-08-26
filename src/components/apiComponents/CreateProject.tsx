@@ -95,7 +95,7 @@ const CreateProject = ({ onSuccess }: { onSuccess?: () => void }) => {
             value={form.repoUrl}
             onChange={handleChange}
           />
-          <Button type="submit" >
+          <Button type="submit" className="w-[100%] bg-slate-800 hover:bg-slate-600" >
              Create Project
           </Button>
         </form>

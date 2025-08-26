@@ -58,13 +58,13 @@ const renderMessageContent = (content: string) => {
           className={`inline-flex  items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
         >
           {/* You may import Bot icon here if needed */}
-          {part}
+          {part.replace(/^@/, "")}
         </span>
       )
     } else if (part.trim()) {
       elements.push(
         <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
-          {part}
+          {part.replace(/^@/, "")}
         </span>
       )
     }
@@ -140,14 +140,73 @@ export const MessageContent = ({
         style={isExpanded ? { height: "auto", minHeight: 120 } : {}}
       >
         <div
-          className={`flex gap-2 cursor-pointer ${isExpanded ? "" : "items-center h-full"}`}
-          onClick={() => onShowGeneratedFiles(message.id)}
-        >
-          <span className="text-sm font-medium text-slate-600 font-inter">📄 Open in Editor</span>
-          <span className="ml-auto bg-slate-200 text-slate-700 px-2 py-1 rounded text-xs font-jetbrains font-medium w-[70px] h-[70px] flex justify-center items-center">
-            {'<code></code>'}
-          </span>
-        </div>
+  className="flex items-center w-full bg-slate-100 rounded-2xl  cursor-pointer transition "
+  style={{
+    minHeight: 72,
+    margin: "0 auto",
+    gap: "1.5rem",
+    maxWidth: "100%",
+  }}
+  onClick={() => onShowGeneratedFiles(message.id)}
+>
+  {/* Left robot icon with purple/blue gradient */}
+  <span
+    className="flex justify-center items-center rounded-xl"
+    style={{
+      width: 38,
+      height: 38,
+      background: "linear-gradient(135deg, #5C6DF7 0%, #8F54FF 100%)",
+    }}
+  >
+    {/* Simple robot SVG */}
+    <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
+      <g>
+        <rect x="8" y="13" width="16" height="10" rx="4" fill="#fff" />
+        <rect x="13" y="8" width="6" height="3" rx="1.5" fill="#fff" />
+        <circle cx="11.5" cy="18" r="1.5" fill="#8F54FF" />
+        <circle cx="20.5" cy="18" r="1.5" fill="#8F54FF" />
+      </g>
+    </svg>
+  </span>
+  {/* Message and subtext */}
+  <div className="flex flex-col flex-1 min-w-0">
+    <span className="font-semibold text-md text-slate-600" style={{ fontFamily: "Inter" }}>
+      Code Generated Successfully
+    </span>
+    <span className="text-slate-400 text-sm " style={{ fontFamily: "Inter" }}>
+      Click to open in editor
+    </span>
+  </div>
+  {/* Right editor pencil icon with purple/blue gradient */}
+  <span
+    className="flex justify-center items-center rounded-xl"
+    style={{
+      width: 38,
+      height: 38,
+      background: "linear-gradient(135deg, #5C6DF7 0%, #8F54FF 100%)",
+    }}
+  >
+    {/* Simple pencil SVG */}
+    <svg width="26" height="26" fill="none" viewBox="0 0 26 26">
+      <g>
+        <path
+          d="M7.2 17.8l1.03-4.12a.5.5 0 01.13-.22l6.7-6.7a1.41 1.41 0 112 2l-6.7 6.7a.5.5 0 01-.22.13L7.2 17.8z"
+          stroke="#fff"
+          strokeWidth="1.8"
+          strokeLinejoin="round"
+          fill="none"
+        />
+        <path
+          d="M15.1 7.8l2.1 2.1"
+          stroke="#fff"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          fill="none"
+        />
+      </g>
+    </svg>
+  </span>
+</div>
         {isActiveRetrieveProjectBlock ? (
           <>
             {liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (

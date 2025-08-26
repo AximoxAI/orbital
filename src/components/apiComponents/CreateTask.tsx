@@ -75,7 +75,6 @@ export function CreateTask({ defaultProjectId }) {
     <Card className="max-w-lg mx-auto mt-4 p-4">
       <CardHeader>
         <CardTitle>Create a New Task</CardTitle>
-        <CardDescription>Fill out the form below to create a task</CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -194,7 +193,7 @@ export function CreateTask({ defaultProjectId }) {
               )}
             />
 
-            <Button type="submit">Create Task</Button>
+            <Button variant="default" type="submit" className="w-[100%] bg-slate-800 hover:bg-slate-600">Create Task</Button>
           </form>
         </Form>
       </CardContent>

@@ -92,19 +92,24 @@ export const TaskSummaryPanel = React.memo(({
   agentOutput: string[]; 
   summary: string[] 
 }) => {
-  // Stabilize the arrays with deep comparison
+  // Stabilize the arrays with deep comparison and filter out empty/whitespace strings
   const stableAgentOutput = useMemo(() => {
     if (!agentOutput || !Array.isArray(agentOutput)) return []
-    return Array.from(new Set(agentOutput.filter(Boolean)))
+    return Array.from(new Set(agentOutput.filter(item => item && item.trim().length > 0)))
   }, [JSON.stringify(agentOutput)])
   
   const stableSummary = useMemo(() => {
     if (!summary || !Array.isArray(summary)) return []
-    return Array.from(new Set(summary.filter(Boolean)))
+    return Array.from(new Set(summary.filter(item => item && item.trim().length > 0)))
   }, [JSON.stringify(summary)])
+
+  // Check if both arrays are effectively empty
+  const hasAgentOutput = stableAgentOutput.length > 0
   
-  // Early return if no content
-  if (!stableAgentOutput.length && !stableSummary.length) return null
+  // Don't render if both arrays are empty
+  if (!hasAgentOutput) {
+    return null
+  }
 
   return (
     <div className="relative bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 border border-slate-200/60 rounded-xl p-5 mt-4 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
@@ -113,7 +118,7 @@ export const TaskSummaryPanel = React.memo(({
 
       <div className="relative flex flex-col gap-4">
         {/* Agent Output Section */}
-        {stableAgentOutput.length > 0 && (
+        {hasAgentOutput && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-slate-700">
               <div className="flex items-center justify-center w-6 h-6 bg-slate-300 rounded-full">
@@ -135,7 +140,7 @@ export const TaskSummaryPanel = React.memo(({
 
         {/* Summary Section */}
         {/* <div>
-        {stableSummary.length > 0 && (
+        {hasSummary && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-slate-700">
               <div className="flex items-center justify-center w-6 h-6 bg-indigo-100 rounded-full">
@@ -154,7 +159,7 @@ export const TaskSummaryPanel = React.memo(({
             </div>
           </div>
         )}
-      </div> */}
+        </div> */}
       </div>
 
       {/* Subtle shine effect */}

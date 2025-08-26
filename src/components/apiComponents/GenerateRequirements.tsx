@@ -94,7 +94,7 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
             <Button 
               type="submit" 
               disabled={loading || !formData.requirements || !formData.project_id}
-              className="w-full"
+              className="w-[100%] bg-slate-800 hover:bg-slate-600"
             >
               {loading ? (
                 <>
