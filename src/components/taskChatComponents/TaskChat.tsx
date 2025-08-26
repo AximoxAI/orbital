@@ -129,9 +129,7 @@ const mapBackendMsg = (msg: any) => {
     taskSuggestion: msg.taskSuggestion || undefined,
   }
 }
-// ...existing code...
 
-  // Socket API instance and socket reference
   const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
   const [socket, setSocket] = useState<any>(null)
 
