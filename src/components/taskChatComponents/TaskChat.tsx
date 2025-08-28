@@ -218,7 +218,7 @@ const mapBackendMsg = (msg: any) => {
           const messagesWithFilesSet = new Set<string>()
           
           for (const msg of mapped) {
-            if (msg.type === "ai" && msg.content === "Generating Project") {
+            if (msg.type === "ai") {
               try {
                 const files = await getGeneratedFiles(msg.id)
                 if (files && files.length > 0) {
