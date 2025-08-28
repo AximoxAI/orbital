@@ -1,7 +1,7 @@
 import React from "react"
 import ReactMarkdown from "react-markdown"
 import { Code } from 'lucide-react'
-import { availableBots, getBotStyles } from "./botStyles"
+import { availableBots, availableUsers, getBotStyles, getUserMentionStyle, isKnownUser } from "./botStyles"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import { TaskExecutionLog, MessageType } from "./types"
@@ -28,6 +28,7 @@ interface MessageContentProps {
   liveRetrieveProjectLogs?: string[]
   liveRetrieveProjectSummary?: string[]
   liveAgentOutput?: string[]
+  hasFilesForMessage?: boolean
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -45,26 +46,41 @@ const filterExecutionLogsWithoutSummaryAndAgentOutput = (logs: TaskExecutionLog[
 }
 
 const renderMessageContent = (content: string) => {
-  const botMentionRegex = /(@orbital_cli|@goose|@gemini_cli|@claude_code)/g
-  const parts = content.split(botMentionRegex)
+  // Create a regex that matches all bots and the specific known users
+  const allKnownMentions = [...availableBots, ...availableUsers]
+  const escapedMentions = allKnownMentions.map(mention => mention.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  const mentionRegex = new RegExp(`(${escapedMentions.join('|')})`, 'g')
+  
+  const parts = content.split(mentionRegex)
   const elements: React.ReactNode[] = []
 
   parts.forEach((part, index) => {
     if (availableBots.includes(part)) {
+      // Handle bot mentions
       const styles = getBotStyles(part)
       elements.push(
         <span
           key={index}
-          className={`inline-flex  items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
+          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
         >
-          {/* You may import Bot icon here if needed */}
+          {part.replace(/^@/, "")}
+        </span>
+      )
+    } else if (isKnownUser(part)) {
+      // Handle known user mentions
+      const userStyles = getUserMentionStyle()
+      elements.push(
+        <span
+          key={index}
+          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${userStyles.bgColor} ${userStyles.textColor} border ${userStyles.borderColor}`}
+        >
           {part.replace(/^@/, "")}
         </span>
       )
     } else if (part.trim()) {
       elements.push(
         <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
-          {part.replace(/^@/, "")}
+          {part}
         </span>
       )
     }
@@ -94,6 +110,7 @@ export const MessageContent = ({
   liveRetrieveProjectLogs,
   liveRetrieveProjectSummary = [],
   liveAgentOutput = [],
+  hasFilesForMessage = false,
 }: MessageContentProps) => {
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -110,7 +127,7 @@ export const MessageContent = ({
 
   if (message.isCode) {
     return (
-      <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 shadow-sm">
+      <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 ">
         <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
           <Code className="w-4 h-4 text-slate-600" />
           <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">Code suggestion</span>
@@ -133,6 +150,9 @@ export const MessageContent = ({
           !hasConsoleLogs &&
           (Array.isArray(executionSummary) && executionSummary.length > 0 ||
            Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0));
+
+    // Check if there are actual generated files for THIS specific message
+    const hasGeneratedFiles = hasFilesForMessage
 
     return (
       <div
@@ -171,18 +191,29 @@ export const MessageContent = ({
   
   {/* Message and subtext */}
   <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-    <span 
-      className="font-semibold text-sm sm:text-md text-slate-600 truncate" 
-      style={{ fontFamily: "Inter" }}
-    >
-      Code Generated Successfully
-    </span>
-    <span 
-      className="text-slate-400 text-xs sm:text-sm truncate" 
-      style={{ fontFamily: "Inter" }}
-    >
-      Click to open in editor
-    </span>
+    {hasGeneratedFiles ? (
+      <>
+        <span 
+          className="font-semibold text-sm sm:text-md text-slate-600 truncate" 
+          style={{ fontFamily: "Inter" }}
+        >
+          Code Generated Successfully
+        </span>
+        <span 
+          className="text-slate-400 text-xs sm:text-sm truncate" 
+          style={{ fontFamily: "Inter" }}
+        >
+          Click to open in editor
+        </span>
+      </>
+    ) : (
+      <span 
+        className="font-semibold text-sm sm:text-md text-slate-600 truncate" 
+        style={{ fontFamily: "Inter" }}
+      >
+        Check execution logs
+      </span>
+    )}
   </div>
   
   {/* Right editor pencil icon with purple/blue gradient */}
@@ -278,7 +309,7 @@ export const MessageContent = ({
   }
 
   return (
-    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto">
+    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto shadow-md">
       <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
         {renderMessageContent(message.content)}
       </div>

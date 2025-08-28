@@ -26,6 +26,7 @@ interface MessagesListProps {
   liveRetrieveProjectSummary?: string[]
   liveAgentOutput?: string[]
   isUserSkeletonVisible?: boolean
+  messagesWithFiles?: Set<string> // NEW PROP
 }
 
 const UserMessageSkeleton = () => (
@@ -71,6 +72,7 @@ const MessagesList = ({
   liveRetrieveProjectSummary = [],
   liveAgentOutput = [],
   isUserSkeletonVisible = false,
+  messagesWithFiles = new Set(), // NEW PROP
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -132,6 +134,7 @@ const MessagesList = ({
               liveRetrieveProjectLogs={liveRetrieveProjectLogs}
               liveRetrieveProjectSummary={liveRetrieveProjectSummary}
               liveAgentOutput={liveAgentOutput}
+              hasFilesForMessage={messagesWithFiles.has(message.id)} // NEW PROP
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
