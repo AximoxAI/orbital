@@ -46,14 +46,14 @@ const MermaidComponent = React.memo(({ children }: { children: string }) => {
 
   if (error) {
     return (
-      <div className="bg-red-100 p-4 rounded-lg">
+      <div className="bg-red-100 p-4 rounded-lg my-4">
         <p className="text-red-600">{error}</p>
       </div>
     )
   }
 
   return (
-    <div className="mermaid-container bg-white p-4 rounded-lg overflow-x-auto">
+    <div className="mermaid-container bg-white p-4 rounded-lg overflow-x-auto my-4">
       <div ref={ref} />
     </div>
   )
@@ -63,22 +63,35 @@ const MermaidComponent = React.memo(({ children }: { children: string }) => {
 const MemoizedMarkdown = React.memo(({ content, index }: { content: string; index: number }) => (
   <ReactMarkdown
     components={{
-      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+      p: ({ children }) => <p className="mb-3 last:mb-0 text-slate-700 text-sm leading-relaxed">{children}</p>,
       strong: ({ children }) => <strong className="font-semibold text-slate-800">{children}</strong>,
+      em: ({ children }) => <em className="italic text-slate-600">{children}</em>,
+      ul: ({ children }) => <ul className="list-disc pl-4 mb-3 space-y-1">{children}</ul>,
+      ol: ({ children }) => <ol className="list-decimal pl-4 mb-3 space-y-1">{children}</ol>,
+      li: ({ children }) => <li className="text-slate-700 text-sm leading-relaxed">{children}</li>,
+      h1: ({ children }) => <h1 className="text-lg font-bold text-slate-800 mb-2 mt-4 first:mt-0">{children}</h1>,
+      h2: ({ children }) => <h2 className="text-base font-semibold text-slate-800 mb-2 mt-3 first:mt-0">{children}</h2>,
+      h3: ({ children }) => <h3 className="text-sm font-semibold text-slate-800 mb-2 mt-3 first:mt-0">{children}</h3>,
+
       code: ({ node, className, children, ...props }) => {
         const match = /language-(\w+)/.exec(className || '')
         const language = match ? match[1] : ''
         
         if (language === 'mermaid') {
-          return <MermaidComponent>{String(children).replace(/\n$/, '')}</MermaidComponent>
+          return <MermaidComponent >{String(children).replace(/\n$/, '')}</MermaidComponent>
         }
         
         return (
-          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono" {...props}>
+          <code className="bg-slate-100 px-1.5 py-0.5 rounded text-xs font-mono text-slate-800" {...props}>
             {children}
           </code>
         )
       },
+      a: ({ children, href }) => (
+        <a href={href} className="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">
+          {children}
+        </a>
+      ),
     }}
   >
     {content}
@@ -127,9 +140,9 @@ export const TaskSummaryPanel = React.memo(({
               <span className="font-semibold text-xs tracking-wide uppercase text-slate-600">Agent Output</span>
             </div>
             <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border border-slate-200/50">
-              <div className="space-y-2">
+              <div className="prose prose-sm max-w-none ">
                 {stableAgentOutput.map((output, idx) => (
-                  <div key={`agent-output-${idx}`} className="text-slate-700 text-sm leading-relaxed">
+                  <div key={`agent-output-${idx}`} className={idx > 0 ? " border-t border-slate-200/50 mt-4 pt-4" : ""}>
                     <MemoizedMarkdown content={output} index={idx} />
                   </div>
                 ))}

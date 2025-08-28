@@ -78,6 +78,9 @@ const TaskChat = ({
   const [isUserSkeletonVisible, setIsUserSkeletonVisible] = useState(false)
   const [userSkeletonMessage, setUserSkeletonMessage] = useState("")
 
+  // NEW state to track which messages have files
+  const [messagesWithFiles, setMessagesWithFiles] = useState<Set<string>>(new Set())
+
   const { user } = useUser()
   const { getToken } = useAuth()
   const navigate = useNavigate()
@@ -209,6 +212,28 @@ const mapBackendMsg = (msg: any) => {
       .then(apiMessages => {
         const mapped = apiMessages.map((msg: any) => mapBackendMsg(msg))
         setMessages(mapped)
+        
+        // Check which messages have files when loading initial messages
+        const checkFilesForMessages = async () => {
+          const messagesWithFilesSet = new Set<string>()
+          
+          for (const msg of mapped) {
+            if (msg.type === "ai" && msg.content === "Generating Project") {
+              try {
+                const files = await getGeneratedFiles(msg.id)
+                if (files && files.length > 0) {
+                  messagesWithFilesSet.add(msg.id)
+                }
+              } catch (error) {
+                // Ignore errors for individual messages
+              }
+            }
+          }
+          
+          setMessagesWithFiles(messagesWithFilesSet)
+        }
+        
+        checkFilesForMessages()
       })
       .catch(() => {
         setMessages([
@@ -235,6 +260,9 @@ const mapBackendMsg = (msg: any) => {
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
+        
+        // Update the messagesWithFiles set
+        setMessagesWithFiles(prev => new Set(prev).add(messageId))
       } else {
         // If no files, close the canvas
         setGeneratedFiles([])
@@ -382,6 +410,7 @@ const mapBackendMsg = (msg: any) => {
           liveRetrieveProjectSummary={liveRetrieveProjectSummary}
           liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
+          messagesWithFiles={messagesWithFiles} // NEW PROP
         />
 
         <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />

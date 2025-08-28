@@ -1,4 +1,5 @@
 export const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
+export const availableUsers = ["@James Adams", "@Sam Acer", "@Erin Reyes", "@Holt Andrey"]
 
 export const BOT_STYLES = {
   "@goose": {
@@ -44,5 +45,20 @@ export const DEFAULT_BOT_STYLE = {
   borderColor: "border-gray-200",
 }
 
+// User mention styles
+export const USER_MENTION_STYLE = {
+  bgColor: "bg-gradient-to-r from-indigo-50 to-blue-50",
+  textColor: "text-indigo-800",
+  selectedBg: "bg-gradient-to-r from-indigo-100 to-blue-100",
+  selectedText: "text-indigo-900",
+  iconColor: "text-indigo-600",
+  borderColor: "border-indigo-200",
+}
+
 export const getBotStyles = (bot: string) =>
   BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
+
+export const getUserMentionStyle = () => USER_MENTION_STYLE
+
+// Helper function to check if a mention is a known user
+export const isKnownUser = (mention: string) => availableUsers.includes(mention)
