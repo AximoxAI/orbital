@@ -144,7 +144,7 @@ const mapBackendMsg = (msg: any) => {
       if (cancelled) return
 
       socketApiInstanceRef.current = new TaskChatAPI(sessionToken)
-      const socketInstance = socketApiInstanceRef.current.connectSocket(taskId, {
+      const socketInstance = socketApiInstanceRef.current.connectChatSocket(taskId, {
         onConnect: () => setSocketConnected(true),
         onDisconnect: () => setSocketConnected(false),
         onNewMessage: (msg: any) => {
@@ -170,7 +170,7 @@ const mapBackendMsg = (msg: any) => {
     return () => {
       cancelled = true
       if (socketApiInstanceRef.current) {
-        socketApiInstanceRef.current.disconnectSocket(taskId)
+        socketApiInstanceRef.current.disconnectChatSocket(taskId)
       }
       setSocket(null)
     }
