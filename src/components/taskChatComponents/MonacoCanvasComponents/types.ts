@@ -11,7 +11,7 @@ export interface MonacoCanvasProps {
     onAgentOutputUpdate?: (agentOutput: string[]) => void;
     onClose?: () => void;
     inputMessage?: string;
-    onFilesGenerated?: (files: any[]) => void;
+    onFilesGenerated?: (files: FileItem[]) => void;
   }
   
   export interface FileItem {

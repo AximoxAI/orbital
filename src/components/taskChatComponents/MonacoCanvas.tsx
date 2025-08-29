@@ -3,7 +3,7 @@ import Editor from "@monaco-editor/react";
 import { Eye, EyeOff, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
-import { createTaskChatAPI } from "../apiComponents/TaskChatApi";
+import { TaskChatAPI, createTaskChatAPI } from "../apiComponents/TaskChatApi";
 import { MonacoCanvasProps, FileItem } from "./MonacoCanvasComponents/types";
 import { getLanguage, buildFileTree, extractBotMentions, DEFAULT_AGENT_ID } from "./MonacoCanvasComponents/monacoUtils";
 import { useMonacoSocket } from "./MonacoCanvasComponents/useMonacoSocket";
@@ -15,7 +15,7 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
     filesFromApi = [], onLogsUpdate, onSummaryUpdate, onAgentOutputUpdate,
     onClose, inputMessage, onFilesGenerated
   } = props;
-  const [api, setApi] = useState<any>(null);
+  const [api, setApi] = useState<TaskChatAPI | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [width, setWidth] = useState(50);
