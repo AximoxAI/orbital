@@ -24,26 +24,17 @@ const ProfilePage = () => {
           </Button>
         </header>
         <div className="flex-1 flex items-center justify-center bg-gray-50">
-          <div className="w-full max-w-xl flex justify-center items-center">
+          <div className="w-full max-w-xl flex justify-center items-center clerk-profile-container">
             <UserProfile
               appearance={{
-                elements: {
-                  card: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  rootBox: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  header: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  pageScrollBox: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  profileSection: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  profileSection__main: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  scrollBox: "!shadow-none !ring-0 !border-0 !border-none !bg-transparent",
-                  navbar: "!hidden",
-                  formButtonPrimary: "bg-blue-500 hover:bg-blue-600",
-                  formFieldInput: "border-gray-200 focus:ring-blue-500"
-                },
                 variables: {
                   colorPrimary: "#3b82f6",
                   colorBackground: "transparent",
                   fontSize: "16px",
-                  fontFamily: "inherit"
+                  fontFamily: "inherit",
+                },
+                elements: {
+                   navbar: "hidden"
                 }
               }}
               routing="hash"
@@ -51,6 +42,12 @@ const ProfilePage = () => {
           </div>
         </div>
       </div>
+      
+      <style jsx global>{`
+        .clerk-profile-container * {
+          box-shadow: none !important;
+        }
+      `}</style>
     </div>
   );
 };
