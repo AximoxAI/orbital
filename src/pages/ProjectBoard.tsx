@@ -30,6 +30,7 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import Sidebar from "@/components/Sidebar";
 
 const avatarMap: { [key: string]: string } = {
   'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
@@ -296,93 +297,7 @@ const ProjectBoard = () => {
         // or you can add maximize button logic inside TaskChat itself.
       />
 
-      <div className={`w-64 bg-white border-r border-gray-200 flex flex-col transition-all duration-300 overflow-y-scroll`}>
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
-              <span className="text-white text-sm font-bold">O</span>
-            </div>
-            <span className="font-semibold text-gray-800">Orbital</span>
-          </div>
-        </div>
-        <nav className="flex-1 p-4">
-          <div className="space-y-2">
-            <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-              <Home className="w-5 h-5" />
-              <span>Home</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-              <Bell className="w-5 h-5" />
-              <span>Updates</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-              <Inbox className="w-5 h-5" />
-              <span>Inbox</span>
-            </a>
-            <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-              <CheckSquare className="w-5 h-5" />
-              <span>Your tasks</span>
-            </a>
-          </div>
-          <div className="mt-8">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">WORKSPACE</h3>
-            <div className="space-y-2">
-              <a href="#" className="flex items-center space-x-3 text-gray-900 bg-gray-100 rounded-lg p-2 font-medium">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>Project board</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <Calendar className="w-5 h-5" />
-                <span>Upcoming</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <FileText className="w-5 h-5" />
-                <span>Templates</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <FileText className="w-5 h-5" />
-                <span>Views</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <Users className="w-5 h-5" />
-                <span>Teams</span>
-              </a>
-            </div>
-          </div>
-          <div className="mt-8">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">SPACES</h3>
-            <div className="space-y-2">
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span>API Discussion</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span>DB Design</span>
-              </a>
-              <a href="#" className="flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg p-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span>AI Engineer</span>
-              </a>
-              <button className="flex items-center space-x-3 text-gray-500 hover:bg-gray-100 rounded-lg p-2 w-full">
-                <Plus className="w-4 h-4" />
-                <span>Add new space</span>
-              </button>
-            </div>
-          </div>
-        </nav>
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center space-x-3">
-            <Avatar>
-              <AvatarImage src="https://randomuser.me/api/portraits/men/40.jpg" alt="Louis Nguyen" />
-              <AvatarFallback className="bg-orange-500 text-white">LN</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">{user?.username || "Unknown User"}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <Sidebar />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? '' : ''}`}>
         <header className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">

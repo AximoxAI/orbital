@@ -13,6 +13,7 @@ import SignUpPage from "./pages/SignUp";
 import SignInPage from "./pages/SignIn";
 import TaskChat from "./components/taskChatComponents/TaskChat";
 import WaitlistPage from "./pages/Waitlist";
+import ProfilePage from "./pages/ProfilePage";
 
 // Helper for task chat route
 const TaskChatRoute = () => {
@@ -92,6 +93,14 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+            <Route
+  path="/profile"
+  element={
+    <ProtectedRoute>
+      <ProfilePage />
+    </ProtectedRoute>
+  }
+/>
             <Route
               path="/waitlist"
               element={<WaitlistPage />}
