@@ -79,7 +79,13 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
-            <Route path="/signup-success" element={<SignUpSuccess />} />
+            <Route 
+            path="/signup-success" 
+            element={
+              <ProtectedRoute>
+            <SignUpSuccess />
+            </ProtectedRoute>
+            } />
             <Route
               path="/project-board"
               element={
