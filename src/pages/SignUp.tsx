@@ -5,7 +5,7 @@ const SignUpPage = () => {
     <div className="min-h-screen flex items-center justify-center">
       <SignUp 
         path="/sign-up"
-        forceRedirectUrl="/signup-success" // Redirect to our custom success page
+        forceRedirectUrl="/signup-success" 
         routing="path"
       />
     </div>
