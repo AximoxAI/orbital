@@ -277,7 +277,9 @@ const TaskChat = ({
                 if (files && files.length > 0) {
                   messagesWithFilesSet.add(msg.id)
                 }
-              } catch {}
+              } catch (error) {
+                console.error("Failed to get generated files for message", msg.id, error)
+              }
             }
           }
           setMessagesWithFiles(messagesWithFilesSet)
