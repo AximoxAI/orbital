@@ -40,7 +40,7 @@ function formatDateTime(datetime: string) {
   })
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY // <--- pass backend url like TaskChatApi
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY 
 
 const TaskChat = ({
   isOpen,
@@ -79,7 +79,6 @@ const TaskChat = ({
   // NEW state to track which messages have files
   const [messagesWithFiles, setMessagesWithFiles] = useState<Set<string>>(new Set())
 
-  // --- Manage chat users ---
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
 
