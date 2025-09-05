@@ -185,12 +185,12 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
 
   return (
     <div className="absolute inset-0 flex flex-col h-full w-full bg-white rounded-none shadow-none z-50">
-      <div className="bg-gray-100 px-4 py-3 flex items-center justify-between border-b flex-shrink-0">
+      <div className="bg-gray-100 px-4 py-2 flex items-center justify-between border-b flex-shrink-0">
         <div className="flex items-center space-x-2">
           <div className="w-6 h-6 bg-gray-400 rounded flex items-center justify-center border border-gray-300">
             <Settings className="w-4 h-4 flex-shrink-0" />
           </div>
-          <span className="font-semibold text-gray-800">MCP Agent Manager</span>
+          <span className="font-medium text-sm text-gray-800">MCP Agent Manager</span>
         </div>
         <button className="text-gray-500 hover:text-gray-700" onClick={onClose}>
           <X size={20} />
@@ -198,19 +198,19 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       </div>
 
       <div className="flex border-b bg-gray-50 flex-shrink-0">
-        <button className="flex-1 px-4 py-3 text-sm font-medium text-gray-900 border-b-2 border-blue-500 bg-white">
+        <button className="flex-1 px-4 py-2 text-xs font-normal text-gray-900 border-b-2 border-blue-500 bg-white">
           Agents
         </button>
-        <button className="flex-1 px-4 py-3 text-sm font-medium text-gray-500 hover:text-gray-700">
+        <button className="flex-1 px-4 py-2 text-xs font-normal text-gray-500 hover:text-gray-700">
           Global Settings
         </button>
       </div>
 
       <div className="px-4 py-3 border-b bg-gray-50 flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">AI Agents</h2>
-          <button className="flex items-center space-x-1 text-sm text-blue-600 hover:text-blue-700 font-medium">
-            <Plus size={16} />
+          <h2 className="text-base font-medium text-gray-900">AI Agents</h2>
+          <button className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 font-normal">
+            <Plus size={14} />
             <span>Add Agent</span>
           </button>
         </div>
@@ -232,7 +232,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                     <span className="text-xs">{agent.icon}</span>
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{agent.name}</div>
+                    <div className="font-normal text-sm text-gray-900">{agent.name}</div>
                     <div className="text-xs text-gray-500">
                       {getEnabledCount(agent)} MCP servers enabled
                     </div>
@@ -256,7 +256,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                           {serverConfig.icon}
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-gray-800">{serverConfig.name}</div>
+                          <div className="text-xs font-normal text-gray-800">{serverConfig.name}</div>
                           {agent.servers[serverKey].tools > 0 && (
                             <div className="text-xs text-gray-500">
                               Tools: {agent.servers[serverKey].tools}
