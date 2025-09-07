@@ -7,6 +7,16 @@ import TaskChatHeader from "./TaskChatHeader"
 import ChatInput from "./TaskChatInput"
 import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
 import MessagesList from "./TaskChatMessages/index"
+import { UsersApi, UserResponseDto } from "@/api-client"
+
+// UserType interface
+interface UserType {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+  email?: string
+}
 
 interface TaskChatProps {
   isOpen: boolean
@@ -16,20 +26,7 @@ interface TaskChatProps {
   onCreateTask?: (taskName: string, projectName: string) => void
 }
 
-interface UserType {
-  id: string
-  name: string
-  avatar: string
-  isOnline: boolean
-}
-
-const mockUsers: UserType[] = [
-  { id: "1", name: "James Adams", avatar: "https://randomuser.me/api/portraits/men/11.jpg", isOnline: true },
-  { id: "2", name: "Sam Acer", avatar: "https://randomuser.me/api/portraits/men/22.jpg", isOnline: true },
-  { id: "3", name: "Erin Reyes", avatar: "https://randomuser.me/api/portraits/women/33.jpg", isOnline: true },
-  { id: "4", name: "Holt Andrey", avatar: "https://randomuser.me/api/portraits/men/44.jpg", isOnline: true },
-]
-
+// Helper to format date/time display
 function formatDateTime(datetime: string) {
   if (!datetime) return ""
   const d = new Date(datetime)
@@ -42,6 +39,8 @@ function formatDateTime(datetime: string) {
     minute: "2-digit",
   })
 }
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY 
 
 const TaskChat = ({
   isOpen,
@@ -76,10 +75,12 @@ const TaskChat = ({
 
   // NEW state for skeleton loading
   const [isUserSkeletonVisible, setIsUserSkeletonVisible] = useState(false)
-  const [userSkeletonMessage, setUserSkeletonMessage] = useState("")
 
   // NEW state to track which messages have files
   const [messagesWithFiles, setMessagesWithFiles] = useState<Set<string>>(new Set())
+
+  const [chatUsers, setChatUsers] = useState<UserType[]>([])
+  const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
 
   const { user } = useUser()
   const { getToken } = useAuth()
@@ -95,43 +96,102 @@ const TaskChat = ({
     taskName = location.state.taskName
   }
 
+  useEffect(() => {
+    async function fetchAllUsers() {
+      try {
+        const sessionToken = await getToken();
+        const api = new UsersApi(undefined, BACKEND_URL, undefined);
+        const res = await api.usersControllerFindAll({
+          headers: { Authorization: `Bearer ${sessionToken}` }
+        });
+        const users: UserResponseDto[] = res.data;
+        const mapped: UserType[] = users.map((u) => ({
+          id: u.id,
+          name: u.name || u.email || u.id,
+          avatar: u.avatar,
+          isOnline: u.status === "online",
+          email: u.email,
+        }));
+        setAvailableUsers(mapped);
+
+        setChatUsers(prev => {
+          if (prev.length > 0) return prev;
+          if (user) {
+            const self = mapped.find(
+              (u) => u.email === user.primaryEmailAddress?.emailAddress || u.id === user.id
+            );
+            if (self) return [self];
+          }
+          if (mapped.length > 0) return [mapped[0]];
+          return [];
+        });
+      } catch (err) {
+        if (user) {
+          const fallbackUser: UserType = {
+            id: user.id,
+            name:
+              user.firstName && user.lastName
+                ? `${user.firstName} ${user.lastName}`
+                : user.username || user.id,
+            avatar: user.imageUrl,
+            isOnline: true,
+            email: user.primaryEmailAddress?.emailAddress || user.username,
+          };
+          setAvailableUsers([fallbackUser]);
+          setChatUsers(prev => (prev.length > 0 ? prev : [fallbackUser]));
+        }
+      }
+    }
+    fetchAllUsers();
+  }, [user, getToken]);
+
+  const handleAddUser = (userId: string) => {
+    const toAdd = availableUsers.find(u => u.id === userId)
+    if (toAdd && !chatUsers.some(u => u.id === userId)) {
+      setChatUsers(prev => [...prev, toAdd])
+    }
+  }
+
+  const handleRemoveUser = (userId: string) => {
+    if (chatUsers.length <= 1) return
+    setChatUsers(prev => prev.filter(u => u.id !== userId))
+  }
+
   const handleCloseMonacoCanvas = useCallback(() => {
     setShowMonacoCanvas(false)
   }, [])
 
-  // New callback to handle when files are generated via socket
   const handleFilesGenerated = useCallback((files: any[]) => {
     if (files && files.length > 0) {
       setGeneratedFiles(files)
-      setShowMonacoCanvas(true) // Show canvas when files are generated
+      setShowMonacoCanvas(true)
     } else {
-      // If no files, close the canvas
       setShowMonacoCanvas(false)
     }
   }, [])
 
-const mapBackendMsg = (msg: any) => {
-  let type: "ai" | "human"
-  if (msg.sender_type) {
-    type = msg.sender_type === "human" ? "human" : "ai"
-  } else if (msg.type) {
-    type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : "ai"
-  } else {
-    type = "ai"
+  const mapBackendMsg = (msg: any) => {
+    let type: "ai" | "human"
+    if (msg.sender_type) {
+      type = msg.sender_type === "human" ? "human" : "ai"
+    } else if (msg.type) {
+      type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : "ai"
+    } else {
+      type = "ai"
+    }
+    let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
+    if (type === "ai") author = msg.sender_id || "Bot"
+    return {
+      id: msg.id || String(Date.now()),
+      type,
+      sender_id: msg.sender_id,
+      author,
+      content: msg.content,
+      timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
+      isCode: !!msg.isCode,
+      taskSuggestion: msg.taskSuggestion || undefined,
+    }
   }
-  let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
-  if (type === "ai") author = msg.sender_id || "Bot"    // <--- changed here
-  return {
-    id: msg.id || String(Date.now()),
-    type,
-    sender_id: msg.sender_id,
-    author,
-    content: msg.content,
-    timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
-    isCode: !!msg.isCode,
-    taskSuggestion: msg.taskSuggestion || undefined,
-  }
-}
 
   const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
   const [socket, setSocket] = useState<any>(null)
@@ -149,9 +209,7 @@ const mapBackendMsg = (msg: any) => {
         onDisconnect: () => setSocketConnected(false),
         onNewMessage: (msg: any) => {
           setMessages(prev => {
-            // Remove skeleton when real message arrives
             setIsUserSkeletonVisible(false)
-            // Bind the first AI "Retrieve Project" block for live logs/summary
             if (
               msg.sender_type !== "human" &&
               activeRetrieveProjectId === undefined
@@ -166,7 +224,6 @@ const mapBackendMsg = (msg: any) => {
       setSocket(socketInstance)
     })
 
-    // Cleanup
     return () => {
       cancelled = true
       if (socketApiInstanceRef.current) {
@@ -174,8 +231,7 @@ const mapBackendMsg = (msg: any) => {
       }
       setSocket(null)
     }
-    // eslint-disable-next-line
-  }, [isOpen, taskId, user?.username, activeRetrieveProjectId])
+  }, [isOpen, taskId, user?.username, activeRetrieveProjectId, getToken])
 
   const fetchMessages = useCallback(
     async (taskId: string) => {
@@ -210,13 +266,10 @@ const mapBackendMsg = (msg: any) => {
 
     fetchMessages(taskId)
       .then(apiMessages => {
-        const mapped = apiMessages.map((msg: any) => mapBackendMsg(msg))
+        const mapped = apiMessages.map(mapBackendMsg)
         setMessages(mapped)
-        
-        // Check which messages have files when loading initial messages
         const checkFilesForMessages = async () => {
           const messagesWithFilesSet = new Set<string>()
-          
           for (const msg of mapped) {
             if (msg.type === "ai") {
               try {
@@ -225,14 +278,12 @@ const mapBackendMsg = (msg: any) => {
                   messagesWithFilesSet.add(msg.id)
                 }
               } catch (error) {
-                // Ignore errors for individual messages
+                console.error("Failed to get generated files for message", msg.id, error)
               }
             }
           }
-          
           setMessagesWithFiles(messagesWithFilesSet)
         }
-        
         checkFilesForMessages()
       })
       .catch(() => {
@@ -247,8 +298,7 @@ const mapBackendMsg = (msg: any) => {
         ])
       })
       .finally(() => setLoading(false))
-    // eslint-disable-next-line
-  }, [isOpen, taskId, user?.username, fetchMessages])
+  }, [isOpen, taskId, user?.username, fetchMessages, getGeneratedFiles])
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
@@ -256,19 +306,14 @@ const mapBackendMsg = (msg: any) => {
         getGeneratedFiles(messageId),
         getExecutionLogs(messageId).catch(() => [])
       ])
-
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
-        
-        // Update the messagesWithFiles set
         setMessagesWithFiles(prev => new Set(prev).add(messageId))
       } else {
-        // If no files, close the canvas
         setGeneratedFiles([])
         setShowMonacoCanvas(false)
       }
-
       if (logs.length > 0) {
         setExecutionLogs(logs)
         setExecutionLogsOpen(true)
@@ -281,10 +326,7 @@ const mapBackendMsg = (msg: any) => {
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
-      // Show skeleton immediately for the user message
-      setUserSkeletonMessage(newMessage)
       setIsUserSkeletonVisible(true)
-
       const message = {
         senderType: "human",
         senderId: user?.username || "unknown_user",
@@ -292,18 +334,14 @@ const mapBackendMsg = (msg: any) => {
         timestamp: new Date().toISOString(),
         taskId,
       }
-
       socketApiInstanceRef.current?.sendMessage(message)
-
       const trimmedMessage = newMessage.trim()
       const shouldExecuteTask =
         trimmedMessage.startsWith("@goose") ||
         trimmedMessage.startsWith("@orbital_cli") ||
         trimmedMessage.startsWith("@gemini_cli") ||
         trimmedMessage.startsWith("@claude_code")
-
       if (shouldExecuteTask) {
-        // Reset state when starting new execution
         setGeneratedFiles([])
         setExecutionLogs([])
         setExecutionLogsMessageId(undefined)
@@ -311,12 +349,9 @@ const mapBackendMsg = (msg: any) => {
         setLiveRetrieveProjectLogs([])
         setLiveRetrieveProjectSummary([])
         setLiveAgentOutput([])
-        // Close canvas since files are being reset
         setShowMonacoCanvas(false)
       }
-
       setNewMessage("")
-
       if (shouldExecuteTask && executeTaskRef.current) {
         executeTaskRef.current(newMessage)
       }
@@ -355,7 +390,6 @@ const mapBackendMsg = (msg: any) => {
     setSocketConnected(connected)
   }
 
-  // Auto-close canvas when no generated files
   useEffect(() => {
     if (generatedFiles.length === 0) {
       setShowMonacoCanvas(false)
@@ -387,10 +421,13 @@ const mapBackendMsg = (msg: any) => {
           onClose={onClose}
           onMaximize={handleMaximize}
           onMinimize={handleMinimize}
-          users={mockUsers}
+          users={chatUsers}
+          onAddUser={handleAddUser}
+          onRemoveUser={handleRemoveUser}
+          availableUsers={availableUsers}
         />
 
-<MessagesList
+        <MessagesList
           messages={messages}
           loading={loading}
           isFullPage={isFullPage}
@@ -410,12 +447,11 @@ const mapBackendMsg = (msg: any) => {
           liveRetrieveProjectSummary={liveRetrieveProjectSummary}
           liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
-          messagesWithFiles={messagesWithFiles} // NEW PROP
+          messagesWithFiles={messagesWithFiles}
         />
 
         <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />
       </div>
-
       {isFullPage && (
         <MonacoCanvas
           value={editorValue}

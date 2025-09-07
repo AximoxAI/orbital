@@ -31,7 +31,7 @@ const SignUpSuccess = () => {
 
         const userData: CreateUserDto = {
           auth_id: user.id,
-          name: user.fullName || 'Unknown User',
+          name: user.username || 'Unknown User',
           email: user.primaryEmailAddress?.emailAddress || '',
           avatar: user.imageUrl || undefined,
           status: 'online' as const
