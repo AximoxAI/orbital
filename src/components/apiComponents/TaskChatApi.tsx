@@ -1,8 +1,8 @@
 import { ChatApi, Configuration, TasksApi } from "@/api-client"
 import { io, type Socket } from "socket.io-client"
 
-const CHAT_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/chat`;
-const EXECUTION_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/ws/v1/tasks`;
+const CHAT_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/chat`
+const EXECUTION_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/ws/v1/tasks`
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -51,6 +51,29 @@ export class TaskChatAPI {
     }
   }
 
+  async fetchTask(taskId: string) {
+    try {
+      const response = await this.tasksApi.tasksControllerFindOne(taskId)
+      return response.data // Should be TaskResponseDto
+    } catch (error) {
+      throw new Error("Failed to load task details from server.")
+    }
+  }
+
+ async updateTaskAssignees(taskId: string, assignees: string[]) {
+    try {
+      // Fetch current status so we can send it with assignees
+      const task = await this.fetchTask(taskId)
+      const status = task.status || "to_do" // Fallback to "to_do" or whatever makes sense
+      await this.tasksApi.tasksControllerUpdateStatus(
+        taskId,
+        { status, assignees }
+      )
+    } catch (error) {
+      throw new Error("Failed to update task assignees.")
+    }
+  }
+
   connectChatSocket(
     taskId: string,
     callbacks: {
@@ -60,7 +83,7 @@ export class TaskChatAPI {
     },
   ) {
     if (this.chatSocket) {
-      this.disconnectChatSocket(taskId);
+      this.disconnectChatSocket(taskId)
     }
     this.chatSocket = io(CHAT_SOCKET_URL, {
       transports: ["websocket"],
@@ -119,30 +142,30 @@ export class TaskChatAPI {
     }
   ) {
     if (this.executionSocket) {
-        this.disconnectExecutionSocket();
+      this.disconnectExecutionSocket()
     }
 
     this.executionSocket = io(EXECUTION_SOCKET_URL, {
-        transports: ["websocket"],
-        forceNew: true,
-        auth: {
-            token: this.sessionToken,
-        },
-    });
+      transports: ["websocket"],
+      forceNew: true,
+      auth: {
+        token: this.sessionToken,
+      },
+    })
 
-    this.executionSocket.on("connect", callbacks.onConnect);
-    this.executionSocket.on("disconnect", callbacks.onDisconnect);
-    this.executionSocket.on("connect_error", callbacks.onDisconnect);
-    this.executionSocket.on("execution_result", callbacks.onExecutionResult);
+    this.executionSocket.on("connect", callbacks.onConnect)
+    this.executionSocket.on("disconnect", callbacks.onDisconnect)
+    this.executionSocket.on("connect_error", callbacks.onDisconnect)
+    this.executionSocket.on("execution_result", callbacks.onExecutionResult)
 
-    return this.executionSocket;
+    return this.executionSocket
   }
 
   disconnectExecutionSocket() {
-      if (this.executionSocket) {
-          this.executionSocket.disconnect();
-          this.executionSocket = null;
-      }
+    if (this.executionSocket) {
+      this.executionSocket.disconnect()
+      this.executionSocket = null
+    }
   }
 
   executeTask(payload: {
@@ -151,11 +174,11 @@ export class TaskChatAPI {
     message: string;
     mentions: string[];
   }) {
-      if (this.executionSocket && this.executionSocket.connected) {
-          this.executionSocket.emit("execute", payload);
-      } else {
-          console.error("Execution socket is not connected. Cannot send command.");
-      }
+    if (this.executionSocket && this.executionSocket.connected) {
+      this.executionSocket.emit("execute", payload)
+    } else {
+      console.error("Execution socket is not connected. Cannot send command.")
+    }
   }
 }
 

@@ -9,7 +9,6 @@ import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
 import MessagesList from "./TaskChatMessages/index"
 import { UsersApi, UserResponseDto } from "@/api-client"
 
-// UserType interface
 interface UserType {
   id: string
   name: string
@@ -26,7 +25,6 @@ interface TaskChatProps {
   onCreateTask?: (taskName: string, projectName: string) => void
 }
 
-// Helper to format date/time display
 function formatDateTime(datetime: string) {
   if (!datetime) return ""
   const d = new Date(datetime)
@@ -62,23 +60,15 @@ const TaskChat = ({
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
   const [summary, setSummary] = useState<string[]>([])
   const [agentOutput, setAgentOutput] = useState<string[]>([])
-
   const [executionLogs, setExecutionLogs] = useState<any[]>([])
   const [executionLogsOpen, setExecutionLogsOpen] = useState(true)
   const [executionLogsMessageId, setExecutionLogsMessageId] = useState<string | undefined>()
-
-  // --- LIVE RETRIEVE PROJECT STATE ---
   const [activeRetrieveProjectId, setActiveRetrieveProjectId] = useState<string | undefined>()
   const [liveRetrieveProjectLogs, setLiveRetrieveProjectLogs] = useState<string[]>([])
   const [liveRetrieveProjectSummary, setLiveRetrieveProjectSummary] = useState<string[]>([])
   const [liveAgentOutput, setLiveAgentOutput] = useState<string[]>([])
-
-  // NEW state for skeleton loading
   const [isUserSkeletonVisible, setIsUserSkeletonVisible] = useState(false)
-
-  // NEW state to track which messages have files
   const [messagesWithFiles, setMessagesWithFiles] = useState<Set<string>>(new Set())
-
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
 
@@ -96,65 +86,88 @@ const TaskChat = ({
     taskName = location.state.taskName
   }
 
+  // ---- Fetch all users ----
   useEffect(() => {
     async function fetchAllUsers() {
       try {
-        const sessionToken = await getToken();
-        const api = new UsersApi(undefined, BACKEND_URL, undefined);
+        const sessionToken = await getToken()
+        const api = new UsersApi(undefined, BACKEND_URL, undefined)
         const res = await api.usersControllerFindAll({
           headers: { Authorization: `Bearer ${sessionToken}` }
-        });
-        const users: UserResponseDto[] = res.data;
+        })
+        const users: UserResponseDto[] = res.data
         const mapped: UserType[] = users.map((u) => ({
           id: u.id,
           name: u.name || u.email || u.id,
           avatar: u.avatar,
           isOnline: u.status === "online",
           email: u.email,
-        }));
-        setAvailableUsers(mapped);
-
-        setChatUsers(prev => {
-          if (prev.length > 0) return prev;
-          if (user) {
-            const self = mapped.find(
-              (u) => u.email === user.primaryEmailAddress?.emailAddress || u.id === user.id
-            );
-            if (self) return [self];
-          }
-          if (mapped.length > 0) return [mapped[0]];
-          return [];
-        });
+        }))
+        setAvailableUsers(mapped)
       } catch (err) {
-        if (user) {
-          const fallbackUser: UserType = {
-            id: user.id,
-            name:
-              user.firstName && user.lastName
-                ? `${user.firstName} ${user.lastName}`
-                : user.username || user.id,
-            avatar: user.imageUrl,
-            isOnline: true,
-            email: user.primaryEmailAddress?.emailAddress || user.username,
-          };
-          setAvailableUsers([fallbackUser]);
-          setChatUsers(prev => (prev.length > 0 ? prev : [fallbackUser]));
-        }
+        setAvailableUsers([])
       }
     }
-    fetchAllUsers();
-  }, [user, getToken]);
+    fetchAllUsers()
+  }, [user, getToken])
 
-  const handleAddUser = (userId: string) => {
-    const toAdd = availableUsers.find(u => u.id === userId)
-    if (toAdd && !chatUsers.some(u => u.id === userId)) {
-      setChatUsers(prev => [...prev, toAdd])
+  // ---- Fetch task assignees and show them directly ----
+  useEffect(() => {
+    async function fetchTaskAssignees() {
+      if (!taskId) return
+      try {
+        const sessionToken = await getToken()
+        const api = createTaskChatAPI(sessionToken)
+        const task = await api.fetchTask(taskId)
+        // If already full user objects, just show them
+        if (Array.isArray(task.assignees) && typeof task.assignees[0] === "object") {
+          setChatUsers(task.assignees)
+        } else if (Array.isArray(task.assignees)) {
+          // If only ids, fallback to mapping
+          const mappedAssignees = task.assignees
+            .map((aid: string) => availableUsers.find(u => u.id === aid))
+            .filter(Boolean) as UserType[]
+          setChatUsers(mappedAssignees)
+        } else {
+          setChatUsers([])
+        }
+      } catch (err) {
+        setChatUsers([])
+      }
     }
+    fetchTaskAssignees()
+  }, [taskId, getToken, availableUsers])
+
+  // ---- Add user to chat and update backend ----
+  const handleAddUser = async (userId: string) => {
+    // If user already present, do nothing
+    if (!userId || chatUsers.some(u => u.id === userId)) return
+    const toAdd = availableUsers.find(u => u.id === userId)
+    if (!toAdd) return
+    const updatedUsers = [...chatUsers, toAdd]
+    setChatUsers(updatedUsers)
+    try {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      await api.updateTaskAssignees(
+        taskId,
+        updatedUsers.map(u => u.id)
+      )
+    } catch (err) {}
   }
 
-  const handleRemoveUser = (userId: string) => {
+  const handleRemoveUser = async (userId: string) => {
     if (chatUsers.length <= 1) return
-    setChatUsers(prev => prev.filter(u => u.id !== userId))
+    const updatedUsers = chatUsers.filter(u => u.id !== userId)
+    setChatUsers(updatedUsers)
+    try {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      await api.updateTaskAssignees(
+        taskId,
+        updatedUsers.map(u => u.id)
+      )
+    } catch (err) {}
   }
 
   const handleCloseMonacoCanvas = useCallback(() => {
