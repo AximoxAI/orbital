@@ -156,7 +156,6 @@ const TaskChat = ({
     } catch (err) {}
   }
 
-  // ---- Remove user from chat and update backend ----
   const handleRemoveUser = async (userId: string) => {
     if (chatUsers.length <= 1) return
     const updatedUsers = chatUsers.filter(u => u.id !== userId)
@@ -170,8 +169,6 @@ const TaskChat = ({
       )
     } catch (err) {}
   }
-
-  // ---- Rest of your chat logic (messages, sockets, rendering, etc) ----
 
   const handleCloseMonacoCanvas = useCallback(() => {
     setShowMonacoCanvas(false)
