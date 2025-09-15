@@ -156,19 +156,18 @@ const TaskChat = ({
     } catch (err) {}
   }
 
-  const handleRemoveUser = async (userId: string) => {
-    if (chatUsers.length <= 1) return
-    const updatedUsers = chatUsers.filter(u => u.id !== userId)
-    setChatUsers(updatedUsers)
-    try {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      await api.updateTaskAssignees(
-        taskId,
-        updatedUsers.map(u => u.id)
-      )
-    } catch (err) {}
-  }
+const handleRemoveUser = async (userId: string) => {
+  const updatedUsers = chatUsers.filter(u => u.id !== userId)
+  setChatUsers(updatedUsers)
+  try {
+    const sessionToken = await getToken()
+    const api = createTaskChatAPI(sessionToken)
+    await api.updateTaskAssignees(
+      taskId,
+      updatedUsers.map(u => u.id)
+    )
+  } catch (err) {}
+}
 
   const handleCloseMonacoCanvas = useCallback(() => {
     setShowMonacoCanvas(false)
@@ -463,7 +462,13 @@ const TaskChat = ({
           messagesWithFiles={messagesWithFiles}
         />
 
-        <ChatInput newMessage={newMessage} setNewMessage={setNewMessage} onSendMessage={handleSendMessage} isFullPage={isFullPage} />
+       <ChatInput
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          onSendMessage={handleSendMessage}
+          isFullPage={isFullPage}
+          availableUsers={chatUsers} // <-- only selected users!
+        />
       </div>
       {isFullPage && (
         <MonacoCanvas

@@ -72,18 +72,17 @@ const TaskChatHeader = ({
                     alt={user.name}
                     className="h-10 w-10 rounded-full border-3 border-white object-cover shadow-lg transition-all duration-200 group-hover:shadow-xl"
                   />
-                  {users.length > 1 && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute -top-2 -left-2 h-6 w-6 p-0 bg-white hover:bg-red-100 text-red-500 shadow-md"
-                      onClick={() => onRemoveUser(user.id)}
-                      aria-label="Remove User"
-                      tabIndex={-1}
-                    >
-                      <UserMinus className="h-4 w-4" />
-                    </Button>
-                  )}
+                  {/* Remove button always visible */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute -top-2 -left-2 h-6 w-6 p-0 bg-white hover:bg-red-100 text-red-500 shadow-md"
+                    onClick={() => onRemoveUser(user.id)}
+                    aria-label="Remove User"
+                    tabIndex={-1}
+                  >
+                    <UserMinus className="h-4 w-4" />
+                  </Button>
                 </div>
                 <span className="max-w-[90px] truncate text-center text-sm font-medium text-gray-700 group-hover:text-gray-900">
                   {user.name}
@@ -93,15 +92,19 @@ const TaskChatHeader = ({
             {/* "+" icon with shadcn Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2"
-                  aria-label="Add user"
-                >
-                  <UserPlus className="h-6 w-6 text-gray-500" />
-                </Button>
-              </DropdownMenuTrigger>
+  <button
+    // variant="ghost"
+    // size="icon"
+    className={`
+      h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2
+      focus:outline-none rounded-md
+      
+    `}
+    aria-label="Add user"
+  >
+    <UserPlus className="h-4 w-4 text-gray-500" />
+  </button>
+</DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
                 {usersToAdd.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-500">No users to add</div>

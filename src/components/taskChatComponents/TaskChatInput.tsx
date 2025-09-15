@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
-const availableUsers = ["@James Adams", "@Sam Acer", "@Erin Reyes", "@Holt Andrey"]
 
 const BOT_STYLES = {
   "@goose": {
@@ -64,14 +63,23 @@ const USER_STYLE = {
 
 const getBotStyles = (bot: string) => BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
 
+interface UserType {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+  email?: string
+}
+
 interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
   onSendMessage: () => void
   isFullPage?: boolean
+  availableUsers: UserType[] // only selected users!
 }
 
-const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = false }: ChatInputProps) => {
+const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = false, availableUsers }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
@@ -79,6 +87,9 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
   const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  // Use only selected users for suggestions
+  const userSuggestions = availableUsers.map(u => "@" + (u.name || u.email || u.id));
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
@@ -101,8 +112,8 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
           bot.toLowerCase().includes(textAfterAt.toLowerCase())
         )
         
-        // Check for user matches
-        const filteredUsers = availableUsers.filter((user) => 
+        // Check for user matches (only selected users)
+        const filteredUsers = userSuggestions.filter((user) => 
           user.toLowerCase().includes(textAfterAt.toLowerCase())
         )
         
