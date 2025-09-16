@@ -1,5 +1,6 @@
 export const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
-export const availableUsers = ["@James Adams", "@Sam Acer", "@Erin Reyes", "@Holt Andrey"]
+
+// User-specific styles will be dynamically generated in MessageContent based on user name/id/mention
 
 export const BOT_STYLES = {
   "@goose": {
@@ -45,7 +46,7 @@ export const DEFAULT_BOT_STYLE = {
   borderColor: "border-gray-200",
 }
 
-// User mention styles
+// Default user mention style (if users have no custom color)
 export const USER_MENTION_STYLE = {
   bgColor: "bg-gradient-to-r from-indigo-50 to-blue-50",
   textColor: "text-indigo-800",
@@ -58,7 +59,11 @@ export const USER_MENTION_STYLE = {
 export const getBotStyles = (bot: string) =>
   BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
 
-export const getUserMentionStyle = () => USER_MENTION_STYLE
+export const getUserMentionStyle = (userIdOrName?: string) => {
+  // Optional: you can return custom styles based on user id or name
+  // This is overridden in MessageContent for per-user coloring if needed
+  return USER_MENTION_STYLE
+}
 
-// Helper function to check if a mention is a known user
-export const isKnownUser = (mention: string) => availableUsers.includes(mention)
+// Dummy function, no more static users
+export const isKnownUser = (_mention: string) => false

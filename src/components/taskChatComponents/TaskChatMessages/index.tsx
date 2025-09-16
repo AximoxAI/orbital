@@ -6,6 +6,14 @@ import { MessageContent } from "./MessageContent"
 import { TaskSuggestion } from "./TaskSuggestion"
 import { MessageType, TaskExecutionLog } from "./types"
 
+interface UserType {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+  email?: string
+}
+
 interface MessagesListProps {
   messages: MessageType[]
   loading: boolean
@@ -26,7 +34,8 @@ interface MessagesListProps {
   liveRetrieveProjectSummary?: string[]
   liveAgentOutput?: string[]
   isUserSkeletonVisible?: boolean
-  messagesWithFiles?: Set<string> // NEW PROP
+  messagesWithFiles?: Set<string>
+  chatUsers?: UserType[] // <-- NEW PROP
 }
 
 const UserMessageSkeleton = () => (
@@ -72,7 +81,8 @@ const MessagesList = ({
   liveRetrieveProjectSummary = [],
   liveAgentOutput = [],
   isUserSkeletonVisible = false,
-  messagesWithFiles = new Set(), // NEW PROP
+  messagesWithFiles = new Set(),
+  chatUsers = [], // <-- NEW PROP
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -134,7 +144,8 @@ const MessagesList = ({
               liveRetrieveProjectLogs={liveRetrieveProjectLogs}
               liveRetrieveProjectSummary={liveRetrieveProjectSummary}
               liveAgentOutput={liveAgentOutput}
-              hasFilesForMessage={messagesWithFiles.has(message.id)} // NEW PROP
+              hasFilesForMessage={messagesWithFiles.has(message.id)}
+              chatUsers={chatUsers} // <-- NEW PROP
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -206,6 +217,5 @@ const MessagesList = ({
     </div>
   )
 }
-
 
 export default MessagesList

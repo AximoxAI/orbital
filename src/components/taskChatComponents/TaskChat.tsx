@@ -489,6 +489,7 @@ const TaskChat = ({
           liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
           messagesWithFiles={messagesWithFiles}
+          chatUsers={chatUsers} // <-- Pass chatUsers for mention styling
         />
 
        <ChatInput
