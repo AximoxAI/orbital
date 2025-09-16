@@ -7,10 +7,20 @@ import AgentMCPManager from "../settings/global-settings"
 interface LeftPanelProps {
   collapsed: boolean
   onToggleCollapse: () => void
+  repoUrl?: string | null
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) => {
+const getGithubRepoName = (url?: string | null) => {
+  if (!url) return null
+  // Remove trailing .git if present
+  if (url.endsWith('.git')) url = url.slice(0, -4)
+  const match = url.match(/github\.com\/([^/]+\/[^/]+)/)
+  return match ? match[1] : url
+}
+
+const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse, repoUrl }) => {
   const [showSettings, setShowSettings] = useState(false)
+
 
   return (
     <div className="relative flex flex-col h-full bg-white border-r border-gray-200">
@@ -75,7 +85,11 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse }) =>
 
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
               <Github className="w-5 h-5 text-gray-700 flex-shrink-0" />
-              {!collapsed && <span className="text-sm text-gray-700 truncate min-w-0">AximoxAI/orbital</span>}
+              {!collapsed && (
+                <span className="text-sm text-gray-700 truncate min-w-0">
+                  {repoUrl ? getGithubRepoName(repoUrl) : "No repo linked"}
+                </span>
+              )}
             </div>
           </div>
         </div>

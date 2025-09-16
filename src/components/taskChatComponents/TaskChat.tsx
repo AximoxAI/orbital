@@ -71,6 +71,7 @@ const TaskChat = ({
   const [messagesWithFiles, setMessagesWithFiles] = useState<Set<string>>(new Set())
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
+  const [repoUrl, setRepoUrl] = useState<string | null>(null)
 
   const { user } = useUser()
   const { getToken } = useAuth()
@@ -138,6 +139,30 @@ const TaskChat = ({
     fetchTaskAssignees()
   }, [taskId, getToken, availableUsers])
 
+  // ---- Fetch repoUrl from project ----
+  useEffect(() => {
+    async function fetchRepoUrl() {
+      if (!taskId) {
+        setRepoUrl(null)
+        return
+      }
+      try {
+        const sessionToken = await getToken()
+        const api = createTaskChatAPI(sessionToken)
+        const task = await api.fetchTask(taskId)
+        if (task.project_id) {
+          const project = await api.fetchProject(task.project_id)
+          setRepoUrl(project.repoUrl || null)
+        } else {
+          setRepoUrl(null)
+        }
+      } catch (err) {
+        setRepoUrl(null)
+      }
+    }
+    fetchRepoUrl()
+  }, [taskId, getToken])
+
   // ---- Add user to chat and update backend ----
   const handleAddUser = async (userId: string) => {
     // If user already present, do nothing
@@ -156,18 +181,18 @@ const TaskChat = ({
     } catch (err) {}
   }
 
-const handleRemoveUser = async (userId: string) => {
-  const updatedUsers = chatUsers.filter(u => u.id !== userId)
-  setChatUsers(updatedUsers)
-  try {
-    const sessionToken = await getToken()
-    const api = createTaskChatAPI(sessionToken)
-    await api.updateTaskAssignees(
-      taskId,
-      updatedUsers.map(u => u.id)
-    )
-  } catch (err) {}
-}
+  const handleRemoveUser = async (userId: string) => {
+    const updatedUsers = chatUsers.filter(u => u.id !== userId)
+    setChatUsers(updatedUsers)
+    try {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      await api.updateTaskAssignees(
+        taskId,
+        updatedUsers.map(u => u.id)
+      )
+    } catch (err) {}
+  }
 
   const handleCloseMonacoCanvas = useCallback(() => {
     setShowMonacoCanvas(false)
@@ -424,7 +449,11 @@ const handleRemoveUser = async (userId: string) => {
   return (
     <div className={containerClasses}>
       {isFullPage && (
-        <LeftPanel collapsed={leftPanelCollapsed} onToggleCollapse={() => setLeftPanelCollapsed((c) => !c)} />
+        <LeftPanel
+          collapsed={leftPanelCollapsed}
+          onToggleCollapse={() => setLeftPanelCollapsed((c) => !c)}
+          repoUrl={repoUrl}
+        />
       )}
       <div className={chatWidthClass}>
         <TaskChatHeader
@@ -460,6 +489,7 @@ const handleRemoveUser = async (userId: string) => {
           liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
           messagesWithFiles={messagesWithFiles}
+          chatUsers={chatUsers} // <-- Pass chatUsers for mention styling
         />
 
        <ChatInput
