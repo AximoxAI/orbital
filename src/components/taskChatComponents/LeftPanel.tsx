@@ -10,10 +10,6 @@ interface LeftPanelProps {
   repoUrl?: string | null
 }
 
-const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse, repoUrl }) => {
-  const [showSettings, setShowSettings] = useState(false)
-
-  // Helper to extract "owner/repo" from github url, removing any trailing .git
 const getGithubRepoName = (url?: string | null) => {
   if (!url) return null
   // Remove trailing .git if present
@@ -21,6 +17,10 @@ const getGithubRepoName = (url?: string | null) => {
   const match = url.match(/github\.com\/([^/]+\/[^/]+)/)
   return match ? match[1] : url
 }
+
+const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse, repoUrl }) => {
+  const [showSettings, setShowSettings] = useState(false)
+
 
   return (
     <div className="relative flex flex-col h-full bg-white border-r border-gray-200">

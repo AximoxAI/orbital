@@ -125,7 +125,7 @@ const renderMessageContent = (
       const user = chatUsers.find(
         (u) => "@" + (u.name || u.email || u.id) === part
       )
-      const colorStyle = user ? getUserColorStyle(user.id || user.name || user.email || "")
+      const colorStyle = user ? getUserColorStyle(user.id || user.name || user.email || "unknown")
         : getUserMentionStyle()
       elements.push(
         <span
