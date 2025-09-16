@@ -125,7 +125,7 @@ export const TaskSummaryPanel = React.memo(({
   }
 
   return (
-    <div className="relative  border-slate-200/60 rounded-xl p-5 mt-4 overflow-hidden">
+    <div className="relative bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50 border-t border-slate-200/60 rounded-xl p-5 mt-4 overflow-hidden">
       {/* Subtle background pattern */}
       <div className="absolute inset-0 bg-grid-slate-100/50 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))] pointer-events-none" />
 
@@ -139,7 +139,7 @@ export const TaskSummaryPanel = React.memo(({
               </div>
               <span className="font-semibold text-xs tracking-wide uppercase text-slate-600">Agent Output</span>
             </div>
-            <div className=" backdrop-blur-sm rounded-lg p-4 border-t border-slate-200/50">
+            <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4 border-t border-slate-200/50">
               <div className="prose prose-sm max-w-none ">
                 {stableAgentOutput.map((output, idx) => (
                   <div key={`agent-output-${idx}`} className={idx > 0 ? " border-t border-slate-200/50 mt-4 pt-4" : ""}>
