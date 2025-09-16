@@ -1,4 +1,4 @@
-import { ChatApi, Configuration, TasksApi } from "@/api-client"
+import { ChatApi, Configuration, TasksApi, ProjectsApi } from "@/api-client"
 import { io, type Socket } from "socket.io-client"
 
 const CHAT_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/chat`
@@ -9,6 +9,7 @@ const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 export class TaskChatAPI {
   private chatApi: ChatApi
   private tasksApi: TasksApi
+  private projectsApi: ProjectsApi
   private chatSocket: Socket | null = null
   private executionSocket: Socket | null = null
   private sessionToken?: string
@@ -20,6 +21,7 @@ export class TaskChatAPI {
     })
     this.chatApi = new ChatApi(config)
     this.tasksApi = new TasksApi(config)
+    this.projectsApi = new ProjectsApi(config)
     this.sessionToken = sessionToken
   }
 
@@ -54,13 +56,24 @@ export class TaskChatAPI {
   async fetchTask(taskId: string) {
     try {
       const response = await this.tasksApi.tasksControllerFindOne(taskId)
+      // console.log(response.data.project_id)
       return response.data // Should be TaskResponseDto
     } catch (error) {
       throw new Error("Failed to load task details from server.")
     }
   }
 
- async updateTaskAssignees(taskId: string, assignees: string[]) {
+  // Fetch project details by project_id
+  async fetchProject(projectId: string) {
+    try {
+      const response = await this.projectsApi.projectsControllerFindOne(projectId)
+      return response.data
+    } catch (error) {
+      throw new Error("Failed to load project details from server.")
+    }
+  }
+
+  async updateTaskAssignees(taskId: string, assignees: string[]) {
     try {
       // Fetch current status so we can send it with assignees
       const task = await this.fetchTask(taskId)

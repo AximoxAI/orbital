@@ -156,7 +156,7 @@ export const MessageContent = ({
 
     return (
       <div
-        className="border border-slate-200 rounded-xl w-full max-w-2xl h-[110px] bg-slate-100 shadow-lg p-4"
+        className="border border-slate-200 rounded-xl w-full max-w-2xl h-[110px] bg-slate-100  p-4"
         style={isExpanded ? { height: "auto", minHeight: 120 } : {}}
       >
  <div
@@ -309,7 +309,7 @@ export const MessageContent = ({
   }
 
   return (
-    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto shadow-md">
+    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
       <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
         {renderMessageContent(message.content)}
       </div>

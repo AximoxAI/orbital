@@ -60,7 +60,7 @@ const TaskChatHeader = ({
       {/* Users section */}
       <div className="w-full max-w-[1500px] border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-8 py-2">
         <div className="flex items-center justify-between">
-          <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-2 items-center">
+          <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-2 items-center min-h-[80px]">
             {users.map((user) => (
               <div
                 key={user.id}
@@ -92,19 +92,16 @@ const TaskChatHeader = ({
             {/* "+" icon with shadcn Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-  <button
-    // variant="ghost"
-    // size="icon"
-    className={`
-      h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2
-      focus:outline-none rounded-md
-      
-    `}
-    aria-label="Add user"
-  >
-    <UserPlus className="h-4 w-4 text-gray-500" />
-  </button>
-</DropdownMenuTrigger>
+                <button
+                  className={`
+                    h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2
+                    focus:outline-none rounded-md
+                  `}
+                  aria-label="Add user"
+                >
+                  <UserPlus className="h-4 w-4 text-gray-500" />
+                </button>
+              </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
                 {usersToAdd.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-500">No users to add</div>
