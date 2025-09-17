@@ -11,7 +11,6 @@ import {
   FileText,
   Users,
   Plus,
-  Search,
   Filter,
   MoreHorizontal,
   EllipsisVertical,
@@ -31,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
+import TopBar from "@/components/Topbar";
 
 const avatarMap: { [key: string]: string } = {
   'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
@@ -193,9 +193,9 @@ const ProjectBoard = () => {
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
   const [requirementsProjectId, setRequirementsProjectId] = useState("");
   const [createTaskProjectId, setCreateTaskProjectId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const { user } = useUser();
-  const { signOut } = useClerk();
   const { getToken } = useAuth(); // Add this hook
   const navigate = useNavigate();
 
@@ -272,11 +272,6 @@ const ProjectBoard = () => {
     setShowRequirementsModal(true);
   };
 
-  // Handler for maximizing chat (navigating to fullscreen)
-  const handleMaximizeChat = (taskId: string, taskTitle: string) => {
-    navigate(`/tasks/${taskId}`, { state: { taskName: taskTitle } });
-  };
-
   // Callback for successfully creating a project
   const handleProjectCreated = () => {
     setShowCreateProjectModal(false);
@@ -286,42 +281,22 @@ const ProjectBoard = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Side-panel TaskChat (not fullscreen, just a panel) */}
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
         taskName={selectedTask?.title ?? ""}
         taskId={selectedTask?.id ?? ""}
         onCreateTask={handleCreateTask}
-        // You may want to pass handleMaximizeChat to TaskChat,
-        // or you can add maximize button logic inside TaskChat itself.
       />
 
       <Sidebar />
       <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? '' : ''}`}>
-        <header className="bg-white border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search"
-                  className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                signOut();
-              }}
-            >
-              Log out
-            </Button>
-          </div>
-        </header>
+        <TopBar
+          searchValue={search}
+          setSearchValue={setSearch}
+          placeholder="Search"
+          showLogout={true}
+        />
         <div className="bg-gradient-to-r from-orange-400 to-orange-500 text-white px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -399,9 +374,6 @@ const ProjectBoard = () => {
           onTaskClick={(taskId: string, taskTitle: string) => {
             setSelectedTask({ id: taskId, title: taskTitle });
             setChatOpen(true);
-            // For maximizing to fullscreen, you could call handleMaximizeChat(taskId, taskTitle) here if desired
-            // Or provide a maximize button in TaskChat that calls
-            // navigate(`/tasks/${taskId}`, { state: { taskName: taskTitle } });
           }}
           avatarMap={avatarMap}
           onGenerateRequirements={handleShowRequirementsModal}

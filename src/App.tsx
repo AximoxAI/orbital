@@ -15,7 +15,7 @@ import TaskChat from "./components/taskChatComponents/TaskChat";
 import WaitlistPage from "./pages/Waitlist";
 import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
-
+import Template from "./pages/Template";
 
 // Helper for task chat route
 const TaskChatRoute = () => {
@@ -80,12 +80,13 @@ const App = () => (
               }
             />
             <Route 
-            path="/signup-success" 
-            element={
-              <ProtectedRoute>
-            <SignUpSuccess />
-            </ProtectedRoute>
-            } />
+              path="/signup-success" 
+              element={
+                <ProtectedRoute>
+                  <SignUpSuccess />
+                </ProtectedRoute>
+              } 
+            />
             <Route
               path="/project-board"
               element={
@@ -103,16 +104,25 @@ const App = () => (
               }
             />
             <Route
-  path="/profile"
-  element={
-    <ProtectedRoute>
-      <ProfilePage />
-    </ProtectedRoute>
-  }
-/>
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
             <Route
               path="/waitlist"
               element={<WaitlistPage />}
+            />
+            {/* NEW ROUTE FOR MOCK APIS TEMPLATE */}
+            <Route
+              path="/templates"
+              element={
+                <ProtectedRoute>
+                  <Template />
+                </ProtectedRoute>
+              }
             />
             <Route path="*" element={<NotFound />} />
             <Route path="/sign-in" element={<SignInPage />} />
