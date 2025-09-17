@@ -241,7 +241,7 @@ const Template = () => {
 
         {/* Create New Template Dialog */}
         <Dialog open={showCreateTemplate} onOpenChange={setShowCreateTemplate}>
-          <DialogContent className="max-w-xl overflow-y-scroll w-full h-[500px] p-0">
+          <DialogContent className="max-w-xl overflow-y-scroll w-full max-h-[500px] p-0">
             <form
               onSubmit={handleCreateTemplateSubmit}
             >

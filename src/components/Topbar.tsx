@@ -41,8 +41,8 @@ const TopBar = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              signOut();
+             onClick={async () => {
+              await signOut();
               navigate("/sign-in");
             }}
           >
