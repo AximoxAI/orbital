@@ -12,6 +12,7 @@ import {
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 
+// Updated: Added "Templates" link and "Mock APIs" quick link
 const sidebarLinks = [
   { label: "Home", icon: Home, to: "/project-board" },
   { label: "Profile", icon: Users, to: "/profile" },
@@ -23,7 +24,7 @@ const sidebarLinks = [
 const workspaceLinks = [
   { label: "Project board", icon: null, to: "/project-board", color: "bg-blue-500" },
   { label: "Upcoming", icon: Calendar, to: "#" },
-  { label: "Templates", icon: FileText, to: "#" },
+  { label: "Templates", icon: FileText, to: "/templates" },
   { label: "Views", icon: FileText, to: "#" },
   { label: "Teams", icon: Users, to: "#" }
 ];
