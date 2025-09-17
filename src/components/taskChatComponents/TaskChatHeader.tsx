@@ -38,16 +38,18 @@ const TaskChatHeader = ({
           <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
         </div>
         <div className="flex flex-shrink-0 items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTemplateDialog(true)}
-            className="flex items-center gap-1"
-            aria-label="Open Templates"
-          >
-            <LayoutTemplate className="h-4 w-4" />
-            Templates
-          </Button>
+          {isFullPage && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowTemplateDialog(true)}
+              className="flex items-center gap-1"
+              aria-label="Open Templates"
+            >
+              <LayoutTemplate className="h-4 w-4" />
+              Templates
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="sm"

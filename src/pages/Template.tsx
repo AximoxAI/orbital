@@ -1,4 +1,3 @@
-
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Sidebar from "@/components/Sidebar"
@@ -80,14 +79,18 @@ const Template = () => {
   })
   const navigate = useNavigate()
 
+  // NEW: Separate state for the bottom search bar
+  const [bottomSearch, setBottomSearch] = useState("")
+
   const filteredTemplates = templates.filter((tpl) => {
     const matchesCategory =
       selectedCategory === "all" ||
       tpl.title.toLowerCase().includes(selectedCategory) ||
       tpl.description.toLowerCase().includes(selectedCategory)
+    // Use bottomSearch for filtering instead of `search`
     const matchesSearch =
-      tpl.title.toLowerCase().includes(search.toLowerCase()) ||
-      tpl.description.toLowerCase().includes(search.toLowerCase())
+      tpl.title.toLowerCase().includes(bottomSearch.toLowerCase()) ||
+      tpl.description.toLowerCase().includes(bottomSearch.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
@@ -124,6 +127,7 @@ const Template = () => {
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col">
+        {/* TopBar search should NOT reflect bottomSearch */}
         <TopBar
           searchValue={search}
           setSearchValue={setSearch}
@@ -136,7 +140,7 @@ const Template = () => {
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-gray-900">SDLC Templates</h1>
             <Button
-              className="bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg shadow-sm hover:bg-indigo-700"
+              className="font-semibold px-4 py-2 rounded-lg shadow-sm bg-slate-700 text-white hover:bg-slate-800"
               onClick={() => setShowCreateTemplate(true)}
               data-testid="create-template-btn"
             >
@@ -145,18 +149,19 @@ const Template = () => {
           </div>
           {/* Search bar, category buttons */}
           <div className="flex items-center justify-between mb-8">
+            {/* Bottom search bar - now decoupled from top */}
             <Input
               className="w-72"
               placeholder="Search templates..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              value={bottomSearch}
+              onChange={(e) => setBottomSearch(e.target.value)}
             />
             <div className="flex items-center gap-2">
               {categories.map((cat) => (
                 <Button
                   key={cat.key}
                   variant={selectedCategory === cat.key ? "default" : "outline"}
-                  className={`px-4 py-1 text-sm rounded-full ${selectedCategory === cat.key ? "bg-indigo-600 text-white" : ""}`}
+                  className={`px-4 py-1 text-sm rounded-full ${selectedCategory === cat.key ? "bg-slate-700 text-white hover:bg-slate-800" : ""}`}
                   onClick={() => setSelectedCategory(cat.key)}
                 >
                   {cat.label}
@@ -175,10 +180,10 @@ const Template = () => {
                 <div className="mb-6 text-gray-600 text-sm">{tpl.description}</div>
                 <Button
                   variant="outline"
-                  className="w-full font-medium bg-transparent"
+                  className="w-full font-medium bg-transparent "
                   onClick={() => handleUseTemplate(tpl)}
                 >
-                  Use Template
+                  Edit Template
                 </Button>
               </Card>
             ))}
@@ -196,17 +201,17 @@ const Template = () => {
                   setPopupTemplate(null)
                 }}
               >
-                <DialogHeader className="px-6 pt-6">
+                <DialogHeader className="px-6 pt-8">
                   <DialogTitle className="text-xl font-semibold mb-1">
                     Edit: {popupTemplate.title}
                   </DialogTitle>
-                  <div className="text-sm text-gray-500 mb-2">
+                  <div className="text-sm text-gray-500 mb-2 mt-2">
                     Version {popupTemplate.version}
                   </div>
                 </DialogHeader>
                 <div className="px-6 pb-2">
                   <div className="mb-4">
-                    <div className="font-medium text-sm mb-1">System Prompt</div>
+                    <div className="font-medium text-sm mb-8">System Prompt</div>
                     <Textarea
                       value={systemPrompt}
                       onChange={e => setSystemPrompt(e.target.value)}
@@ -226,11 +231,11 @@ const Template = () => {
                 </div>
                 <DialogFooter className="px-6 pb-6 flex justify-end gap-2">
                   <DialogClose asChild>
-                    <Button type="button" variant="outline">
+                    <Button type="button" variant="outline" className=" text-slate-800">
                       Cancel
                     </Button>
                   </DialogClose>
-                  <Button type="submit" className="bg-indigo-600 text-white hover:bg-indigo-700">
+                  <Button type="submit" className="bg-slate-800 text-white hover:bg-slate-900">
                     Save Changes
                   </Button>
                 </DialogFooter>
@@ -249,13 +254,13 @@ const Template = () => {
                 <DialogTitle className="text-xl font-semibold mb-1">
                   Create New Template
                 </DialogTitle>
-                <div className="text-sm text-gray-500 mb-2">
+                <div className="text-sm text-gray-500 mb-2 mt-2">
                   Fill in the details to create a new template.
                 </div>
               </DialogHeader>
               <div className="px-6 pb-2">
                 <div className="mb-4">
-                  <div className="font-medium text-sm mb-1">Template Name</div>
+                  <div className="font-medium text-sm mb-6">Template Name</div>
                   <Input
                     value={createTemplateFields.title}
                     onChange={e => handleCreateTemplateChange("title", e.target.value)}
@@ -300,11 +305,11 @@ const Template = () => {
               </div>
               <DialogFooter className="px-6 pb-6 flex justify-end gap-2">
                 <DialogClose asChild>
-                  <Button type="button" variant="outline">
+                  <Button type="button" variant="outline" className=" text-slate-800">
                     Cancel
                   </Button>
                 </DialogClose>
-                <Button type="submit" className="bg-indigo-600 text-white hover:bg-indigo-700">
+                <Button type="submit" className="bg-slate-800 text-white hover:bg-slate-900">
                   Create Template
                 </Button>
               </DialogFooter>
