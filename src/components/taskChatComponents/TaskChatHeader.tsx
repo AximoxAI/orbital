@@ -1,4 +1,4 @@
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, LayoutTemplate } from "lucide-react"
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -8,7 +8,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import React, { useState } from "react"
 import VideoCallModal from "./VideoCallModal"
-import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
 
 const TaskChatHeader = ({
   taskName,
@@ -22,7 +21,6 @@ const TaskChatHeader = ({
   availableUsers,
 }) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
-  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
 
   // Users available to add
   const usersToAdd = availableUsers.filter(
@@ -38,18 +36,6 @@ const TaskChatHeader = ({
           <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
         </div>
         <div className="flex flex-shrink-0 items-center space-x-2">
-          {isFullPage && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowTemplateDialog(true)}
-              className="flex items-center gap-1"
-              aria-label="Open Templates"
-            >
-              <LayoutTemplate className="h-4 w-4" />
-              Templates
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="sm"
@@ -70,13 +56,6 @@ const TaskChatHeader = ({
           </Button>
         </div>
       </div>
-
-      {/* Template Dialog */}
-      <TaskChatTemplateDialog
-        open={showTemplateDialog}
-        onOpenChange={setShowTemplateDialog}
-        onSelect={() => setShowTemplateDialog(false)}
-      />
 
       {/* Users section */}
       <div className="w-full max-w-[1500px] border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white px-8 py-2">

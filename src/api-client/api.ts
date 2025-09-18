@@ -219,6 +219,43 @@ export interface CreateTaskDto {
 /**
  * 
  * @export
+ * @interface CreateTemplateDto
+ */
+export interface CreateTemplateDto {
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateTemplateDto
+     */
+    'title': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateTemplateDto
+     */
+    'version': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateTemplateDto
+     */
+    'description': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateTemplateDto
+     */
+    'systemPrompt': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof CreateTemplateDto
+     */
+    'userPrompt': string;
+}
+/**
+ * 
+ * @export
  * @interface CreateUserDto
  */
 export interface CreateUserDto {
@@ -508,6 +545,43 @@ export interface UpdateTaskStatusDto {
      * @memberof UpdateTaskStatusDto
      */
     'due_date'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface UpdateTemplateDto
+ */
+export interface UpdateTemplateDto {
+    /**
+     * 
+     * @type {string}
+     * @memberof UpdateTemplateDto
+     */
+    'title'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UpdateTemplateDto
+     */
+    'version'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UpdateTemplateDto
+     */
+    'description'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UpdateTemplateDto
+     */
+    'systemPrompt'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof UpdateTemplateDto
+     */
+    'userPrompt'?: string;
 }
 /**
  * 
@@ -2519,6 +2593,341 @@ export class TasksApi extends BaseAPI {
      */
     public tasksControllerUpdateStatus(id: string, updateTaskStatusDto: UpdateTaskStatusDto, options?: RawAxiosRequestConfig) {
         return TasksApiFp(this.configuration).tasksControllerUpdateStatus(id, updateTaskStatusDto, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * TemplatesApi - axios parameter creator
+ * @export
+ */
+export const TemplatesApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * 
+         * @summary Create a new template
+         * @param {CreateTemplateDto} createTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerCreate: async (createTemplateDto: CreateTemplateDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'createTemplateDto' is not null or undefined
+            assertParamExists('templatesControllerCreate', 'createTemplateDto', createTemplateDto)
+            const localVarPath = `/api/v1/templates`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(createTemplateDto, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Get all templates
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerFindAll: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            const localVarPath = `/api/v1/templates`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Get a template by ID
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerFindOne: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('templatesControllerFindOne', 'id', id)
+            const localVarPath = `/api/v1/templates/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * 
+         * @summary Update a template by ID
+         * @param {string} id 
+         * @param {UpdateTemplateDto} updateTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerUpdate: async (id: string, updateTemplateDto: UpdateTemplateDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('templatesControllerUpdate', 'id', id)
+            // verify required parameter 'updateTemplateDto' is not null or undefined
+            assertParamExists('templatesControllerUpdate', 'updateTemplateDto', updateTemplateDto)
+            const localVarPath = `/api/v1/templates/{id}`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'PUT', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(updateTemplateDto, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * TemplatesApi - functional programming interface
+ * @export
+ */
+export const TemplatesApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = TemplatesApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * 
+         * @summary Create a new template
+         * @param {CreateTemplateDto} createTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async templatesControllerCreate(createTemplateDto: CreateTemplateDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.templatesControllerCreate(createTemplateDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.templatesControllerCreate']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
+         * @summary Get all templates
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async templatesControllerFindAll(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.templatesControllerFindAll(options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.templatesControllerFindAll']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
+         * @summary Get a template by ID
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async templatesControllerFindOne(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.templatesControllerFindOne(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.templatesControllerFindOne']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * 
+         * @summary Update a template by ID
+         * @param {string} id 
+         * @param {UpdateTemplateDto} updateTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async templatesControllerUpdate(id: string, updateTemplateDto: UpdateTemplateDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<any>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.templatesControllerUpdate(id, updateTemplateDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TemplatesApi.templatesControllerUpdate']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * TemplatesApi - factory interface
+ * @export
+ */
+export const TemplatesApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = TemplatesApiFp(configuration)
+    return {
+        /**
+         * 
+         * @summary Create a new template
+         * @param {CreateTemplateDto} createTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerCreate(createTemplateDto: CreateTemplateDto, options?: RawAxiosRequestConfig): AxiosPromise<any> {
+            return localVarFp.templatesControllerCreate(createTemplateDto, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Get all templates
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerFindAll(options?: RawAxiosRequestConfig): AxiosPromise<any> {
+            return localVarFp.templatesControllerFindAll(options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Get a template by ID
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerFindOne(id: string, options?: RawAxiosRequestConfig): AxiosPromise<any> {
+            return localVarFp.templatesControllerFindOne(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Update a template by ID
+         * @param {string} id 
+         * @param {UpdateTemplateDto} updateTemplateDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        templatesControllerUpdate(id: string, updateTemplateDto: UpdateTemplateDto, options?: RawAxiosRequestConfig): AxiosPromise<any> {
+            return localVarFp.templatesControllerUpdate(id, updateTemplateDto, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * TemplatesApi - object-oriented interface
+ * @export
+ * @class TemplatesApi
+ * @extends {BaseAPI}
+ */
+export class TemplatesApi extends BaseAPI {
+    /**
+     * 
+     * @summary Create a new template
+     * @param {CreateTemplateDto} createTemplateDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TemplatesApi
+     */
+    public templatesControllerCreate(createTemplateDto: CreateTemplateDto, options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).templatesControllerCreate(createTemplateDto, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get all templates
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TemplatesApi
+     */
+    public templatesControllerFindAll(options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).templatesControllerFindAll(options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get a template by ID
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TemplatesApi
+     */
+    public templatesControllerFindOne(id: string, options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).templatesControllerFindOne(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Update a template by ID
+     * @param {string} id 
+     * @param {UpdateTemplateDto} updateTemplateDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TemplatesApi
+     */
+    public templatesControllerUpdate(id: string, updateTemplateDto: UpdateTemplateDto, options?: RawAxiosRequestConfig) {
+        return TemplatesApiFp(this.configuration).templatesControllerUpdate(id, updateTemplateDto, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

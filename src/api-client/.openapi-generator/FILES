@@ -13,6 +13,7 @@ docs/CreateConversationalProjectDto.md
 docs/CreateMessageDto.md
 docs/CreateProjectDto.md
 docs/CreateTaskDto.md
+docs/CreateTemplateDto.md
 docs/CreateUserDto.md
 docs/HealthApi.md
 docs/LiveKitApi.md
@@ -22,7 +23,9 @@ docs/TaskExecutionLog.md
 docs/TaskGeneratedFile.md
 docs/TaskResponseDto.md
 docs/TasksApi.md
+docs/TemplatesApi.md
 docs/UpdateTaskStatusDto.md
+docs/UpdateTemplateDto.md
 docs/UserResponseDto.md
 docs/UsersApi.md
 git_push.sh
