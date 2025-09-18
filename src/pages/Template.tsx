@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import Sidebar from "@/components/Sidebar"
 import { Button } from "@/components/ui/button"
@@ -15,44 +15,23 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
+import { TemplatesApi, Configuration } from "@/api-client"
 
-const templates = [
-  {
-    id: "agile",
-    icon: <RotateCcw className="w-6 h-6 text-indigo-500 bg-indigo-100 rounded-md p-1" />,
-    title: "Agile Sprint Board",
-    description: "Manage tasks through sprints with a Kanban-style board for backlog, in-progress, and completed work.",
-    version: "1.2",
-    systemPrompt: "You are a project manager AI. Structure the following tasks into a sprint plan.",
-    userPrompt: "Tasks for next sprint: User authentication feature, API documentation, fix login bug.",
-  },
-  {
-    id: "waterfall",
-    icon: <FileText className="w-6 h-6 text-blue-500 bg-blue-100 rounded-md p-1" />,
-    title: "Waterfall Project Plan",
-    description: "A sequential project plan for traditional SDLC, covering phases from requirements to deployment.",
-    version: "1.0",
-    systemPrompt: "You are an SDLC assistant AI. Organize requirements through deployment as a waterfall plan.",
-    userPrompt: "Requirements: Login, onboarding, product listing, checkout, deployment.",
-  },
-  {
-    id: "bug",
-    icon: <Bug className="w-6 h-6 text-red-500 bg-red-100 rounded-md p-1" />,
-    title: "Bug Tracking",
-    description: "Prioritize, assign, and track software bugs from report to resolution with this dedicated template.",
-    version: "1.1",
-    systemPrompt: "You are a bug tracking AI. Help triage, assign, and track bugs.",
-    userPrompt: "Bugs: Login fails on Safari, search crashes, missing translations.",
-  },
-  {
-    id: "spec",
-    icon: <FileCode className="w-6 h-6 text-green-600 bg-green-100 rounded-md p-1" />,
-    title: "Technical Specification",
-    description: "Outline the architecture, data models, and implementation details for a new feature or system.",
-    version: "1.0",
-    systemPrompt: "You are a technical spec AI. Outline architecture, data models, and implementation details.",
-    userPrompt: "Feature: Real-time notifications. Stack: React, Node.js, WebSocket.",
-  },
+const BACKEND_API_URL =
+  import.meta.env.VITE_BACKEND_API_KEY 
+
+const ICON_COLORS = [
+  "bg-indigo-100 text-indigo-500",
+  "bg-green-100 text-green-600",
+  "bg-orange-100 text-orange-600",
+  "bg-pink-100 text-pink-500",
+]
+
+const ICONS = [
+  <RotateCcw className="w-5 h-5" />,
+  <FileText className="w-5 h-5" />,
+  <Bug className="w-5 h-5" />,
+  <FileCode className="w-5 h-5" />,
 ]
 
 const categories = [
@@ -66,7 +45,12 @@ const categories = [
 const Template = () => {
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const [popupTemplate, setPopupTemplate] = useState<null | typeof templates[0]>(null)
+
+  const [templates, setTemplates] = useState<Array<any>>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const [popupTemplate, setPopupTemplate] = useState<null | any>(null)
   const [systemPrompt, setSystemPrompt] = useState("")
   const [userPrompt, setUserPrompt] = useState("")
   const [showCreateTemplate, setShowCreateTemplate] = useState(false)
@@ -78,30 +62,39 @@ const Template = () => {
     userPrompt: "",
   })
   const navigate = useNavigate()
-
-  // NEW: Separate state for the bottom search bar
   const [bottomSearch, setBottomSearch] = useState("")
 
+  useEffect(() => {
+    setLoading(true)
+    setError(null)
+    const api = new TemplatesApi(
+      new Configuration({ basePath: BACKEND_API_URL })
+    )
+    api
+      .templatesControllerFindAll()
+      .then(res => setTemplates(res.data))
+      .catch(e => setError(e?.message || "Failed to load templates"))
+      .finally(() => setLoading(false))
+  }, [])
+
   const filteredTemplates = templates.filter((tpl) => {
+    const lowerCat = selectedCategory.toLowerCase()
     const matchesCategory =
       selectedCategory === "all" ||
-      tpl.title.toLowerCase().includes(selectedCategory) ||
-      tpl.description.toLowerCase().includes(selectedCategory)
-    // Use bottomSearch for filtering instead of `search`
+      tpl.title?.toLowerCase().includes(lowerCat) ||
+      tpl.description?.toLowerCase().includes(lowerCat)
     const matchesSearch =
-      tpl.title.toLowerCase().includes(bottomSearch.toLowerCase()) ||
-      tpl.description.toLowerCase().includes(bottomSearch.toLowerCase())
+      tpl.title?.toLowerCase().includes(bottomSearch.toLowerCase()) ||
+      tpl.description?.toLowerCase().includes(bottomSearch.toLowerCase())
     return matchesCategory && matchesSearch
   })
 
-  // Handles opening the popup and sets default values for the prompts
-  const handleUseTemplate = (tpl: typeof templates[0]) => {
+  const handleUseTemplate = (tpl: any) => {
     setPopupTemplate(tpl)
     setSystemPrompt(tpl.systemPrompt)
     setUserPrompt(tpl.userPrompt)
   }
 
-  // Controlled create template dialog field changes
   const handleCreateTemplateChange = (field: string, val: string) => {
     setCreateTemplateFields((prev) => ({
       ...prev,
@@ -109,25 +102,60 @@ const Template = () => {
     }))
   }
 
-  // Simulated API-save for new template (replace with real API later)
-  const handleCreateTemplateSubmit = (e: React.FormEvent) => {
+  const handleCreateTemplateSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setShowCreateTemplate(false)
-    // TODO: call API to save template
-    setCreateTemplateFields({
-      title: "",
-      version: "1.0",
-      description: "",
-      systemPrompt: "",
-      userPrompt: "",
-    })
+    setLoading(true)
+    setError(null)
+    try {
+      const api = new TemplatesApi(
+        new Configuration({ basePath: BACKEND_API_URL })
+      )
+      const payload = { ...createTemplateFields }
+      await api.templatesControllerCreate(payload)
+      const res = await api.templatesControllerFindAll()
+      setTemplates(res.data)
+      setShowCreateTemplate(false)
+      setCreateTemplateFields({
+        title: "",
+        version: "1.0",
+        description: "",
+        systemPrompt: "",
+        userPrompt: "",
+      })
+    } catch (err: any) {
+      setError(err?.message || "Failed to create template")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleEditTemplateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!popupTemplate) return
+    setLoading(true)
+    setError(null)
+    try {
+      const api = new TemplatesApi(
+        new Configuration({ basePath: BACKEND_API_URL })
+      )
+      await api.templatesControllerUpdate(popupTemplate.id, {
+        systemPrompt,
+        userPrompt,
+      })
+      const res = await api.templatesControllerFindAll()
+      setTemplates(res.data)
+      setPopupTemplate(null)
+    } catch (err: any) {
+      setError(err?.message || "Failed to update template")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
       <div className="flex-1 flex flex-col">
-        {/* TopBar search should NOT reflect bottomSearch */}
         <TopBar
           searchValue={search}
           setSearchValue={setSearch}
@@ -136,7 +164,6 @@ const Template = () => {
           className="mb-4"
         />
         <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full pt-4 px-8">
-          {/* Header + Create button in same row */}
           <div className="flex items-center justify-between mb-8">
             <h1 className="text-2xl font-bold text-gray-900">SDLC Templates</h1>
             <Button
@@ -147,9 +174,7 @@ const Template = () => {
               + Create New Template
             </Button>
           </div>
-          {/* Search bar, category buttons */}
           <div className="flex items-center justify-between mb-8">
-            {/* Bottom search bar - now decoupled from top */}
             <Input
               className="w-72"
               placeholder="Search templates..."
@@ -169,38 +194,42 @@ const Template = () => {
               ))}
             </div>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-            {filteredTemplates.map((tpl) => (
-              <Card
-                key={tpl.id}
-                className="px-6 py-7 flex flex-col items-start rounded-xl shadow-sm bg-white hover:shadow-md transition-shadow"
-              >
-                <div className="mb-4">{tpl.icon}</div>
-                <div className="font-semibold text-gray-900 mb-2 text-[17px]">{tpl.title}</div>
-                <div className="mb-6 text-gray-600 text-sm">{tpl.description}</div>
-                <Button
-                  variant="outline"
-                  className="w-full font-medium bg-transparent "
-                  onClick={() => handleUseTemplate(tpl)}
+          {error && <div className="mb-4 text-red-500">{error}</div>}
+          {loading ? (
+            <div className="flex justify-center items-center h-32 text-gray-700">Loading templates...</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+              {filteredTemplates.map((tpl, idx) => (
+                <Card
+                  key={tpl.id}
+                  className="px-6 py-7 flex flex-col items-start rounded-xl shadow-sm bg-white hover:shadow-md transition-shadow"
                 >
-                  Edit Template
-                </Button>
-              </Card>
-            ))}
-          </div>
+                  <div className="mb-4">
+                    {/* Pick icon and color by index, cycles through ICONS and ICON_COLORS arrays */}
+                    <span className={`w-8 h-8 flex items-center justify-center rounded-md shadow-sm text-base ${ICON_COLORS[idx % ICON_COLORS.length]}`}>
+                      {ICONS[idx % ICONS.length]}
+                    </span>
+                  </div>
+                  <div className="font-semibold text-gray-900 mb-2 text-[17px]">{tpl.title}</div>
+                  <div className="mb-6 text-gray-600 text-sm">{tpl.description}</div>
+                  <Button
+                    variant="outline"
+                    className="w-full font-medium bg-transparent "
+                    onClick={() => handleUseTemplate(tpl)}
+                  >
+                    Edit Template
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Edit Template Dialog */}
         <Dialog open={!!popupTemplate} onOpenChange={(open) => !open && setPopupTemplate(null)}>
           <DialogContent className="max-w-xl w-full p-0">
             {popupTemplate && (
-              <form
-                onSubmit={e => {
-                  e.preventDefault()
-                  // handle save here
-                  setPopupTemplate(null)
-                }}
-              >
+              <form onSubmit={handleEditTemplateSubmit}>
                 <DialogHeader className="px-6 pt-8">
                   <DialogTitle className="text-xl font-semibold mb-1">
                     Edit: {popupTemplate.title}
@@ -247,9 +276,7 @@ const Template = () => {
         {/* Create New Template Dialog */}
         <Dialog open={showCreateTemplate} onOpenChange={setShowCreateTemplate}>
           <DialogContent className="max-w-xl overflow-y-scroll w-full max-h-[500px] p-0">
-            <form
-              onSubmit={handleCreateTemplateSubmit}
-            >
+            <form onSubmit={handleCreateTemplateSubmit}>
               <DialogHeader className="px-6 pt-6">
                 <DialogTitle className="text-xl font-semibold mb-1">
                   Create New Template

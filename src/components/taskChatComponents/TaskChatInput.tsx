@@ -1,10 +1,9 @@
-"use client"
-
 import type React from "react"
 import { useRef, useState } from "react"
-import { Send, Bot, User } from "lucide-react"
+import { Send, Bot, User, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
+import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -79,12 +78,19 @@ interface ChatInputProps {
   availableUsers: UserType[] // only selected users!
 }
 
-const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = false, availableUsers }: ChatInputProps) => {
+const ChatInput = ({
+  newMessage,
+  setNewMessage,
+  onSendMessage,
+  isFullPage = false,
+  availableUsers,
+}: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const [mentionStartPos, setMentionStartPos] = useState(0)
   const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -108,18 +114,18 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
       if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         // Check for bot matches first
-        const filteredBots = availableBots.filter((bot) => 
+        const filteredBots = availableBots.filter((bot) =>
           bot.toLowerCase().includes(textAfterAt.toLowerCase())
         )
-        
+
         // Check for user matches (only selected users)
-        const filteredUsers = userSuggestions.filter((user) => 
+        const filteredUsers = userSuggestions.filter((user) =>
           user.toLowerCase().includes(textAfterAt.toLowerCase())
         )
-        
+
         // Combine and prioritize bots first, then users
         const allFiltered = [...filteredBots, ...filteredUsers]
-        
+
         if (allFiltered.length > 0) {
           setFilteredSuggestions(allFiltered)
           setShowSuggestions(true)
@@ -190,65 +196,90 @@ const ChatInput = ({ newMessage, setNewMessage, onSendMessage, isFullPage = fals
     }
   }
 
-  const suggestionsLeftClass = isFullPage ? "left-1/2 transform -translate-x-1/2 w-[80%] max-w-6xl" : "left-6 right-6"
+  const suggestionsLeftClass = isFullPage
+    ? "left-1/2 transform -translate-x-1/2 w-[80%] max-w-6xl"
+    : "left-6 right-6"
 
   const getSuggestionStyles = (suggestion: string, index: number) => {
     const isBot = availableBots.includes(suggestion)
     const styles = isBot ? getBotStyles(suggestion) : USER_STYLE
     const icon = isBot ? Bot : User
-    
+
     return { styles, icon }
   }
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 ${isFullPage ? 'flex justify-center' : ''} border-t border-gray-200 bg-white relative z-20`}>
-      {showSuggestions && (
-        <div className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}>
-          {filteredSuggestions.map((suggestion, index) => {
-            const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
-            return (
-              <div
-                key={suggestion}
-                className={`px-4 py-3 cursor-pointer text-sm font-semibold flex items-center space-x-3 transition-all duration-150 ${
-                  index === selectedSuggestionIndex
-                    ? `${styles.selectedBg} ${styles.selectedText} border-l-4 ${styles.borderColor}`
-                    : `hover:${styles.bgColor} ${styles.textColor}`
-                }`}
-                onClick={() => selectSuggestion(suggestion)}
-              >
-                <IconComponent className={`w-4 h-4 ${styles.iconColor}`} />
-                <span>{suggestion}</span>
-              </div>
-            )
-          })}
-        </div>
-      )}
+    <>
+      <TaskChatTemplateDialog
+        open={showTemplateDialog}
+        onOpenChange={setShowTemplateDialog}
+        onSelect={() => setShowTemplateDialog(false)}
+      />
+      <div
+        className={`fixed bottom-0 left-0 right-0 ${isFullPage ? "flex justify-center" : ""} border-t border-gray-200 bg-white relative z-20`}
+      >
+        {showSuggestions && (
+          <div
+            className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}
+          >
+            {filteredSuggestions.map((suggestion, index) => {
+              const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
+              return (
+                <div
+                  key={suggestion}
+                  className={`px-4 py-3 cursor-pointer text-sm font-semibold flex items-center space-x-3 transition-all duration-150 ${
+                    index === selectedSuggestionIndex
+                      ? `${styles.selectedBg} ${styles.selectedText} border-l-4 ${styles.borderColor}`
+                      : `hover:${styles.bgColor} ${styles.textColor}`
+                  }`}
+                  onClick={() => selectSuggestion(suggestion)}
+                >
+                  <IconComponent className={`w-4 h-4 ${styles.iconColor}`} />
+                  <span>{suggestion}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
 
-      <div className={`${isFullPage ? 'w-[60%]' : 'w-full'} p-4`}>
-        <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
-          <textarea
-            ref={textareaRef}
-            placeholder="Ask about the task or discuss implementation... (Ctrl+Enter or Enter to send)"
-            value={newMessage}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
-            rows={3}
-            style={{ lineHeight: '1.5' }}
-          />
-          <div className="flex items-center h-full">
-            <button
-              onClick={onSendMessage}
-              disabled={!newMessage.trim()}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
-              title="Send message (Ctrl+Enter or Enter)"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+        <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
+            {/* Templates button on the LEFT */}
+            {isFullPage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTemplateDialog(true)}
+                className="flex items-center gap-1"
+                aria-label="Open Templates"
+              >
+                <LayoutTemplate className="h-4 w-4" />
+              </Button>
+            )}
+            <textarea
+              ref={textareaRef}
+              placeholder="Ask about the task or discuss implementation... (Ctrl+Enter or Enter to send)"
+              value={newMessage}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              className="flex-1  resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
+              rows={3}
+              style={{ lineHeight: "1.5" }}
+            />
+            <div className="flex items-center h-full gap-2">
+              <button
+                onClick={onSendMessage}
+                disabled={!newMessage.trim()}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
+                title="Send message (Ctrl+Enter or Enter)"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
 

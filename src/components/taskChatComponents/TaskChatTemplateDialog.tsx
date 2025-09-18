@@ -5,30 +5,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
+import { useEffect, useState } from "react"
+import { TemplatesApi, Configuration } from "@/api-client"
 
-const templates = [
-  {
-    id: "agile",
-    title: "Agile Sprint Board",
-    description: "Manage tasks through sprints with a Kanban-style board.",
-  },
-  {
-    id: "waterfall",
-    title: "Waterfall Project Plan",
-    description: "A sequential project plan for traditional SDLC.",
-  },
-  {
-    id: "bug",
-    title: "Bug Tracking",
-    description: "Prioritize, assign, and track software bugs.",
-  },
-  {
-    id: "spec",
-    title: "Technical Specification",
-    description:
-      "Outline the architecture, data models, and implementation details.",
-  },
-]
+const BACKEND_API_URL =
+  import.meta.env.VITE_BACKEND_API_KEY || "https://your-backend-url.com/api"
 
 /**
  * Props:
@@ -45,6 +26,22 @@ const TaskChatTemplateDialog = ({
   onOpenChange: (open: boolean) => void
   onSelect: (templateId: string) => void
 }) => {
+  const [templates, setTemplates] = useState<Array<any>>([])
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    setError(null)
+    const api = new TemplatesApi(new Configuration({ basePath: BACKEND_API_URL }))
+    api
+      .templatesControllerFindAll()
+      .then((res) => setTemplates(res.data))
+      .catch((err) => setError(err?.message || "Failed to load templates"))
+      .finally(() => setLoading(false))
+  }, [open])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full p-0">
@@ -54,6 +51,21 @@ const TaskChatTemplateDialog = ({
           </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {loading && (
+            <div className="col-span-2 text-gray-500 text-center">
+              Loading templates...
+            </div>
+          )}
+          {error && (
+            <div className="col-span-2 text-red-600 text-center">
+              {error}
+            </div>
+          )}
+          {!loading && !error && templates.length === 0 && (
+            <div className="col-span-2 text-gray-400 text-center">
+              No templates found.
+            </div>
+          )}
           {templates.map((tpl) => (
             <Card
               key={tpl.id}
