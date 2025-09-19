@@ -193,23 +193,28 @@ export const MessageContent = ({
   const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
 
   const handleRefresh = () => {
-    console.log("Refresh clicked")
+
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(message.content)
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content)
+      alert("Copied to clipboard!")
+    } catch (err) {
+      alert("Failed to copy to clipboard.")
+    }
   }
 
   const handleThumbsUp = () => {
-    console.log("Thumbs up clicked")
+
   }
 
   const handleThumbsDown = () => {
-    console.log("Thumbs down clicked")
+
   }
 
   const handleSuggestionClick = (suggestion: string) => {
-    console.log("Suggestion clicked:", suggestion)
+
   }
 
   const suggestionPrompts = [
