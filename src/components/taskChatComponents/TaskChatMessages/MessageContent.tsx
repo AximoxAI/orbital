@@ -172,7 +172,7 @@ export const MessageContent = ({
     ? filterExecutionLogsWithoutSummaryAndAgentOutput(executionLogs)
     : []
 
-  const isRetrieveProjectBlock = message.type === "ai" && message.content === "Generating Project"
+  const isRetrieveProjectBlock = message.type === "ai"
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
   const isTaskComplete = isActiveRetrieveProjectBlock
