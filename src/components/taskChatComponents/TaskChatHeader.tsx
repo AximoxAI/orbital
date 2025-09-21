@@ -1,13 +1,14 @@
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus } from "lucide-react"
+"use client"
+
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "@/components/ui/dropdown-menu"
-import React, { useState } from "react"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { useState } from "react"
 import VideoCallModal from "./VideoCallModal"
+
+// Example tags, you may want to pass these as props or fetch from API in real usage
+const AVAILABLE_TAGS = ["Bug", "Feature", "Urgent", "Blocked", "Frontend", "Backend", "Design", "Research"]
 
 const TaskChatHeader = ({
   taskName,
@@ -21,21 +22,126 @@ const TaskChatHeader = ({
   availableUsers,
 }) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [showTagsPopover, setShowTagsPopover] = useState(false)
 
   // Users available to add
-  const usersToAdd = availableUsers.filter(
-    (u) => !users.some(chatUser => chatUser.id === u.id)
-  )
+  const usersToAdd = availableUsers.filter((u) => !users.some((chatUser) => chatUser.id === u.id))
+
+  // Tags available to pick
+  const tagsToPick = AVAILABLE_TAGS.filter((tag) => !selectedTags.includes(tag))
+
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags((prev) => [...prev, tag])
+  }
+
+  const handleTagRemove = (tag: string) => {
+    setSelectedTags((prev) => prev.filter((t) => t !== tag))
+  }
 
   return (
     <>
       {/* Header */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 px-4 py-4">
         <div className="min-w-0 flex-1">
-          <h3 className="mb-1 truncate text-base font-bold text-gray-900 sm:text-lg">Task Discussion</h3>
+          <h3 className="mb-1 truncate text-base font-bold text-gray-900 sm:text-lg flex items-center gap-2">
+            Task Discussion
+            {/* Render selected tags after Task Discussion */}
+            {selectedTags.length > 0 && (
+              <span className="flex flex-wrap gap-2 ml-2">
+                {selectedTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 border border-slate-200 hover:bg-slate-200 transition-colors"
+                  >
+                    {tag}
+                    <button
+                      className="ml-2 text-xs text-slate-500 hover:text-slate-700 hover:bg-slate-300 rounded-full p-0.5 transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleTagRemove(tag)
+                      }}
+                      tabIndex={-1}
+                      aria-label={`Remove ${tag} tag`}
+                      type="button"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+              </span>
+            )}
+          </h3>
           <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
         </div>
-        <div className="flex flex-shrink-0 items-center space-x-2">
+        {/* Tag Add Button */}
+        <div className="flex items-center gap-2">
+          <Popover open={showTagsPopover} onOpenChange={setShowTagsPopover}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="transition-colors duration-200 hover:bg-gray-100"
+                aria-label="Add tags"
+              >
+                <Tag className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-4">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-slate-900">Select Tags</h4>
+                  <span className="text-xs text-slate-500">{selectedTags.length} selected</span>
+                </div>
+
+                {tagsToPick.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="rounded-full bg-slate-100 p-3 mb-3">
+                      <Check className="h-6 w-6 text-slate-600" />
+                    </div>
+                    <p className="text-sm text-slate-600 font-medium">All tags selected</p>
+                    <p className="text-xs text-slate-500 mt-1">Remove tags to add different ones</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {tagsToPick.map((tag) => (
+                      <button
+                        key={tag}
+                        className="group relative flex items-center justify-center p-3 rounded-lg border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                        onClick={() => {
+                          handleTagSelect(tag)
+                        }}
+                      >
+                        <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
+                        <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="rounded-full bg-slate-600 p-1">
+                            <Plus className="h-3 w-3 text-white" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedTags.length > 0 && (
+                  <div className="pt-3 border-t border-slate-200">
+                    <p className="text-xs text-slate-600 mb-2">Selected tags:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="inline-flex items-center rounded-md bg-slate-600 px-2 py-1 text-xs font-medium text-white"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           <Button
             variant="ghost"
             size="sm"
@@ -62,10 +168,7 @@ const TaskChatHeader = ({
         <div className="flex items-center justify-between">
           <div className="scrollbar-hide flex gap-8 overflow-x-auto pb-2 items-center min-h-[80px]">
             {users.map((user) => (
-              <div
-                key={user.id}
-                className="group min-w-[90px] flex flex-col items-center justify-center relative"
-              >
+              <div key={user.id} className="group min-w-[90px] flex flex-col items-center justify-center relative">
                 <div className="relative mb-3">
                   <img
                     src={user.avatar || "/placeholder.svg"}
@@ -93,10 +196,7 @@ const TaskChatHeader = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className={`
-                    h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2
-                    focus:outline-none rounded-md
-                  `}
+                  className={`h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2 focus:outline-none rounded-md`}
                   aria-label="Add user"
                 >
                   <UserPlus className="h-4 w-4 text-gray-500" />
@@ -106,7 +206,7 @@ const TaskChatHeader = ({
                 {usersToAdd.length === 0 ? (
                   <div className="px-3 py-2 text-sm text-gray-500">No users to add</div>
                 ) : (
-                  usersToAdd.map(u => (
+                  usersToAdd.map((u) => (
                     <DropdownMenuItem
                       key={u.id}
                       onSelect={() => onAddUser(u.id)}
@@ -138,12 +238,7 @@ const TaskChatHeader = ({
         </div>
       </div>
       {/* Video Modal */}
-      {showVideoModal && (
-        <VideoCallModal
-          taskName={taskName}
-          onClose={() => setShowVideoModal(false)}
-        />
-      )}
+      {showVideoModal && <VideoCallModal taskName={taskName} onClose={() => setShowVideoModal(false)} />}
     </>
   )
 }
