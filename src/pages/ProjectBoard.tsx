@@ -18,7 +18,7 @@ import {
 import { useState, useEffect } from "react";
 import TaskChat from "@/components/taskChatComponents/TaskChat";
 import { useClerk, useUser, useAuth } from "@clerk/clerk-react";
-import { Configuration, ProjectsApi } from "@/api-client";
+import { Configuration, ProjectsApi, TasksApi } from "@/api-client";
 import CreateProject from "@/components/apiComponents/CreateProject";
 import GenerateRequirements from "@/components/apiComponents/GenerateRequirements";
 import { CreateTask } from "@/components/apiComponents/CreateTask";
@@ -32,30 +32,12 @@ import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/Topbar";
 
-const avatarMap: { [key: string]: string } = {
-  'JS': 'https://avatars.githubusercontent.com/u/1?v=4',
-  'AW': 'https://avatars.githubusercontent.com/u/2?v=4',
-  'SM': 'https://avatars.githubusercontent.com/u/3?v=4',
-  'JD': "https://randomuser.me/api/portraits/men/11.jpg",
-  'AL': "https://randomuser.me/api/portraits/men/13.jpg",
-  'BK': "https://randomuser.me/api/portraits/women/14.jpg",
-  'CL': "https://randomuser.me/api/portraits/men/15.jpg",
-  'DM': "https://randomuser.me/api/portraits/women/16.jpg",
-  'EF': "https://randomuser.me/api/portraits/men/17.jpg",
-  'GH': "https://randomuser.me/api/portraits/women/18.jpg",
-  'IJ': "https://randomuser.me/api/portraits/men/19.jpg",
-  'KL': "https://randomuser.me/api/portraits/women/20.jpg",
-  'MN': "https://randomuser.me/api/portraits/men/21.jpg",
-  'OP': "https://randomuser.me/api/portraits/women/22.jpg",
-  'QR': "https://randomuser.me/api/portraits/men/23.jpg",
-  'ST': "https://randomuser.me/api/portraits/women/24.jpg",
-  'UV': "https://randomuser.me/api/portraits/men/25.jpg",
-  'WX': "https://randomuser.me/api/portraits/women/26.jpg",
-  'YZ': "https://randomuser.me/api/portraits/men/27.jpg",
-  'AB': "https://randomuser.me/api/portraits/women/28.jpg",
-  'CD': "https://randomuser.me/api/portraits/men/29.jpg",
-  'MB': "https://randomuser.me/api/portraits/men/30.jpg",
-  'AI': "https://randomuser.me/api/portraits/women/31.jpg",
+// Dummy fallback for missing avatars
+const getInitials = (name: string) => {
+  if (!name) return "??";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
 };
 
 const getProgressColor = (progress: number): string => {
@@ -67,7 +49,6 @@ function ProjectsList({
   loading,
   error,
   onTaskClick,
-  avatarMap,
   onGenerateRequirements,
   onShowCreateTaskModal,
 }: any) {
@@ -157,14 +138,23 @@ function ProjectsList({
                           {task.progress}%
                         </span>
                         <div className="flex -space-x-1">
-                          {task.avatars && task.avatars.map((avatar: any, avatarIndex: number) => (
-                            <Avatar key={avatarIndex} className="w-6 h-6 border-2 border-white">
-                              <AvatarImage src={avatarMap[avatar]} alt={avatar} />
-                              <AvatarFallback className="text-xs bg-blue-500 text-white">
-                                {avatar}
-                              </AvatarFallback>
+                          {task.assignees && task.assignees.length > 0 ? (
+                            task.assignees.map((assignee: any, avatarIndex: number) => (
+                              <Avatar key={assignee.id || avatarIndex} className="w-6 h-6 border-2 border-white">
+                                {assignee.avatar ? (
+                                  <AvatarImage src={assignee.avatar} alt={assignee.name || "User"} />
+                                ) : (
+                                  <AvatarFallback className="text-xs bg-blue-500 text-white">
+                                    {getInitials(assignee.name)}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                            ))
+                          ) : (
+                            <Avatar className="w-6 h-6 border-2 border-white">
+                              <AvatarFallback className="text-xs bg-gray-300 text-white">?</AvatarFallback>
                             </Avatar>
-                          ))}
+                          )}
                         </div>
                       </div>
                     </div>
@@ -196,31 +186,76 @@ const ProjectBoard = () => {
   const [search, setSearch] = useState("");
 
   const { user } = useUser();
-  const { getToken } = useAuth(); // Add this hook
+  const { getToken } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchProjectsAndTasks = async () => {
+      setLoading(true);
       try {
         // Get the auth token from Clerk
         const sessionToken = await getToken();
         // Create configuration with auth header
         const configuration = new Configuration({
           basePath: import.meta.env.VITE_BACKEND_API_KEY,
-          accessToken: sessionToken || undefined, // Pass the token
+          accessToken: sessionToken || undefined,
         });
 
         const projectsApi = new ProjectsApi(configuration);
+        const tasksApi = new TasksApi(configuration);
         const response: any = await projectsApi.projectsControllerFindAll();
         const projectsData = response.data || response;
-        const projectsWithAvatars = projectsData.map((project: any) => ({
+
+        // Gather all task IDs
+        const allTaskIds: string[] = [];
+        projectsData.forEach((project: any) => {
+          if (Array.isArray(project.tasks)) {
+            project.tasks.forEach((task: any) => {
+              if (typeof task === "string") {
+                allTaskIds.push(task);
+              } else if (task && task.id) {
+                allTaskIds.push(task.id);
+              }
+            });
+          }
+        });
+
+        // Fetch task data for each task ID (in parallel)
+        const taskFetches: Promise<any>[] = allTaskIds.map((taskId) =>
+          tasksApi.tasksControllerFindOne(taskId).then(res => res.data || res).catch(() => null)
+        );
+        const allTasksData: any[] = await Promise.all(taskFetches);
+
+        // Build a map for quick lookup
+        const taskDataMap: Record<string, any> = {};
+        allTasksData.forEach(task => {
+          if (task && task.id) {
+            taskDataMap[task.id] = task;
+          }
+        });
+
+        // Replace project.tasks with the actual tasks fetched (with assignees as objects)
+        const projectsWithTasks = projectsData.map((project: any) => ({
           ...project,
-          tasks: project.tasks.map((task: any) => ({
-            ...task,
-            avatars: task.avatars && task.avatars.length > 0 ? task.avatars : ['JS', 'AW'],
-          }))
+          tasks: Array.isArray(project.tasks)
+            ? project.tasks
+                .map((task: any) => {
+                  let taskId = typeof task === "string" ? task : (task && task.id ? task.id : null);
+                  if (!taskId) return null;
+                  const realTask = taskDataMap[taskId];
+                  if (!realTask) return null;
+                  // Ensure assignees is always an array of objects
+                  return {
+                    ...realTask,
+                    assignees: Array.isArray(realTask.assignees)
+                      ? realTask.assignees
+                      : [],
+                  };
+                }).filter(Boolean)
+            : [],
         }));
-        setProjects(projectsWithAvatars);
+
+        setProjects(projectsWithTasks);
       } catch (err) {
         setError(err as Error);
       } finally {
@@ -228,8 +263,8 @@ const ProjectBoard = () => {
       }
     };
 
-    fetchProjects();
-  }, [getToken]); // Add getToken to dependencies
+    fetchProjectsAndTasks();
+  }, [getToken]);
 
   const handleCreateTask = (taskName: string, projectName: string) => {
     setProjects(prevProjects => {
@@ -247,9 +282,9 @@ const ProjectBoard = () => {
             due_date: null,
             ai_generated: false,
             ai_confidence: null,
+            assignees: [],
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
-            avatars: ["MB", "AI"]
           };
           return {
             ...project,
@@ -375,7 +410,6 @@ const ProjectBoard = () => {
             setSelectedTask({ id: taskId, title: taskTitle });
             setChatOpen(true);
           }}
-          avatarMap={avatarMap}
           onGenerateRequirements={handleShowRequirementsModal}
           onShowCreateTaskModal={handleShowCreateTaskModal}
         />

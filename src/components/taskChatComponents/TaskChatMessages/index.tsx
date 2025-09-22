@@ -36,6 +36,8 @@ interface MessagesListProps {
   isUserSkeletonVisible?: boolean
   messagesWithFiles?: Set<string>
   chatUsers?: UserType[] // <-- NEW PROP
+  onSuggestionClick: (suggestion: string) => void // <-- NEW PROP
+  onRetryClick?: (parentMessageContent: string) => void // <-- NEW PROP
 }
 
 const UserMessageSkeleton = () => (
@@ -82,7 +84,9 @@ const MessagesList = ({
   liveAgentOutput = [],
   isUserSkeletonVisible = false,
   messagesWithFiles = new Set(),
-  chatUsers = [], // <-- NEW PROP
+  chatUsers = [],
+  onSuggestionClick,
+  onRetryClick // <-- NEW PROP
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -106,6 +110,16 @@ const MessagesList = ({
   const followingBotIdx = allMessages.findIndex(
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
+
+  // Helper to get parent user message content for a bot message
+  function getParentUserMessageContent(idx: number): string | undefined {
+    for (let i = idx - 1; i >= 0; i--) {
+      if (allMessages[i].type === "human") {
+        return allMessages[i].content
+      }
+    }
+    return undefined
+  }
 
   const renderMessage = (message: MessageType, idx: number) => (
     <React.Fragment key={message.id}>
@@ -145,7 +159,10 @@ const MessagesList = ({
               liveRetrieveProjectSummary={liveRetrieveProjectSummary}
               liveAgentOutput={liveAgentOutput}
               hasFilesForMessage={messagesWithFiles.has(message.id)}
-              chatUsers={chatUsers} // <-- NEW PROP
+              chatUsers={chatUsers}
+              onSuggestionClick={onSuggestionClick}
+              onRetryClick={onRetryClick}
+              parentMessageContent={getParentUserMessageContent(idx)}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -162,7 +179,6 @@ const MessagesList = ({
     }
   }, [allMessages.length, loading, isUserSkeletonVisible])
 
-  // Show the skeleton only for a short time if isUserSkeletonVisible changes from false to true
   useEffect(() => {
     if (isUserSkeletonVisible) {
       setRenderedSkeleton(true)

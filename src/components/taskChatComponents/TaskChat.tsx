@@ -433,6 +433,16 @@ const TaskChat = ({
     }
   }, [generatedFiles])
 
+  // ---- Suggestion Click Handler ----
+  const handleSuggestionClick = (suggestionText: string) => {
+    setNewMessage(suggestionText)
+  }
+
+  // ---- Retry Click Handler ----
+  const handleRetryClick = (parentMessageContent: string) => {
+    if (parentMessageContent) setNewMessage(parentMessageContent)
+  }
+
   if (!isOpen) return null
 
   const containerClasses = isFullPage
@@ -489,7 +499,9 @@ const TaskChat = ({
           liveAgentOutput={liveAgentOutput}
           isUserSkeletonVisible={isUserSkeletonVisible}
           messagesWithFiles={messagesWithFiles}
-          chatUsers={availableUsers} 
+          chatUsers={availableUsers}
+          onSuggestionClick={handleSuggestionClick}
+          onRetryClick={handleRetryClick}
         />
 
        <ChatInput
@@ -497,7 +509,7 @@ const TaskChat = ({
           setNewMessage={setNewMessage}
           onSendMessage={handleSendMessage}
           isFullPage={isFullPage}
-          availableUsers={chatUsers} // <-- only selected users!
+          availableUsers={chatUsers}
         />
       </div>
       {isFullPage && (
