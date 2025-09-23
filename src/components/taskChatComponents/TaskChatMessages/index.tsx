@@ -35,9 +35,9 @@ interface MessagesListProps {
   liveAgentOutput?: string[]
   isUserSkeletonVisible?: boolean
   messagesWithFiles?: Set<string>
-  chatUsers?: UserType[] // <-- NEW PROP
-  onSuggestionClick: (suggestion: string) => void // <-- NEW PROP
-  onRetryClick?: (parentMessageContent: string) => void // <-- NEW PROP
+  chatUsers?: UserType[]
+  onSuggestionClick: (suggestion: string) => void
+  onRetryClick?: (parentMessageContent: string) => void
 }
 
 const UserMessageSkeleton = () => (
@@ -46,12 +46,8 @@ const UserMessageSkeleton = () => (
       <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-slate-300 animate-pulse" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center space-x-2 mb-1">
-          <span className="text-sm font-semibold text-slate-900 font-inter">
-
-          </span>
-          <span className="text-xs text-slate-400 font-medium font-inter">
-
-          </span>
+          <span className="text-sm font-semibold text-slate-900 font-inter"></span>
+          <span className="text-xs text-slate-400 font-medium font-inter"></span>
         </div>
         <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto">
           <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
@@ -62,6 +58,20 @@ const UserMessageSkeleton = () => (
     </div>
   </div>
 )
+
+function preprocessMessagesWithParentContent(messages: MessageType[]) {
+  // Returns a new array where each "ai" message has a parentMessageContent field containing the previous "human" message.
+  let lastHumanContent: string | undefined = undefined
+  return messages.map((msg) => {
+    if (msg.type === "human") {
+      lastHumanContent = msg.content
+      return { ...msg }
+    } else if (msg.type === "ai") {
+      return { ...msg, parentMessageContent: lastHumanContent }
+    }
+    return { ...msg }
+  })
+}
 
 const MessagesList = ({
   messages,
@@ -86,7 +96,7 @@ const MessagesList = ({
   messagesWithFiles = new Set(),
   chatUsers = [],
   onSuggestionClick,
-  onRetryClick // <-- NEW PROP
+  onRetryClick
 }: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -111,15 +121,8 @@ const MessagesList = ({
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
 
-  // Helper to get parent user message content for a bot message
-  function getParentUserMessageContent(idx: number): string | undefined {
-    for (let i = idx - 1; i >= 0; i--) {
-      if (allMessages[i].type === "human") {
-        return allMessages[i].content
-      }
-    }
-    return undefined
-  }
+  // Preprocess messages to attach parentMessageContent to each ai message
+  const processedMessages = preprocessMessagesWithParentContent(allMessages)
 
   const renderMessage = (message: MessageType, idx: number) => (
     <React.Fragment key={message.id}>
@@ -162,7 +165,7 @@ const MessagesList = ({
               chatUsers={chatUsers}
               onSuggestionClick={onSuggestionClick}
               onRetryClick={onRetryClick}
-              parentMessageContent={getParentUserMessageContent(idx)}
+              parentMessageContent={message.parentMessageContent}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -199,7 +202,7 @@ const MessagesList = ({
               </div>
             ) : (
               <>
-                {allMessages.map(renderMessage)}
+                {processedMessages.map(renderMessage)}
                 {isUserSkeletonVisible && renderedSkeleton && (
                   <UserMessageSkeleton />
                 )}
@@ -222,7 +225,7 @@ const MessagesList = ({
             </div>
           ) : (
             <>
-              {allMessages.map(renderMessage)}
+              {processedMessages.map(renderMessage)}
               {isUserSkeletonVisible && renderedSkeleton && (
                 <UserMessageSkeleton />
               )}
