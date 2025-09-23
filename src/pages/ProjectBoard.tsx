@@ -196,7 +196,6 @@ const ProjectBoard = () => {
               try {
                 const res = await tasksApi.tasksControllerFindAllByProject(project.id, "");
                 tasksByProject[project.id] = res.data || res || [];
-                console.log(res)
               } catch {
                 tasksByProject[project.id] = [];
               }
@@ -204,7 +203,6 @@ const ProjectBoard = () => {
           })
         );
 
-        // Attach tasks to projects
         const projectsWithTasks = projectsData.map((project: any) => ({
           ...project,
           tasks: tasksByProject[project.id] || [],
