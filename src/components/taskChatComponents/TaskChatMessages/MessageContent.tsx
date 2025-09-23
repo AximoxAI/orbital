@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useMemo, useState, useEffect } from "react"
-import { Code, RotateCcw, Copy, ThumbsUp, ThumbsDown } from "lucide-react"
+import { Code } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
@@ -10,6 +10,7 @@ import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
 import { Button } from "@/components/ui/button"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
+import { MessageActions } from "./MessageActions"
 
 const configuration = new OpenApiConfiguration({
    basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -181,9 +182,6 @@ export const MessageContent = ({
   onRetryClick,
   parentMessageContent
 }: MessageContentProps) => {
-  const [likeState, setLikeState] = useState<"none" | "liked" | "disliked">("none")
-  const [likeAnim, setLikeAnim] = useState(false)
-  const [dislikeAnim, setDislikeAnim] = useState(false)
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
 
   const isLatestHumanMessage = latestHumanIdx === messageIndex
@@ -208,8 +206,8 @@ export const MessageContent = ({
         const logs = await fetchExecutionLogs(message.id)
         const found = logs.some(
           (log) =>
-            (log.type?.toLowerCase?.() === "summary" || log.type === TaskExecutionLogTypeEnum.Summary) &&
-            (log.status?.toLowerCase?.() === "agent" || log.status === TaskExecutionLogStatusEnum.Agent)
+            ( log.type === TaskExecutionLogTypeEnum.Summary) &&
+            (log.status === TaskExecutionLogStatusEnum.Agent)
         )
         if (!ignore) setHasAgentSummary(found)
       }
@@ -220,55 +218,14 @@ export const MessageContent = ({
     }
   }, [isFollowingBotMessage, message.id])
 
-  const hasAnyAgentOutputOrSummary =
-    (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) ||
-    (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0) ||
-    (Array.isArray(agentOutput) && agentOutput.length > 0) ||
-    (Array.isArray(summary) && summary.length > 0) ||
-    (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) ||
-    (Array.isArray(executionSummary) && executionSummary.length > 0);
-
   const shouldShowActions =
     !isFollowingBotMessage ||
-    (isFollowingBotMessage && (hasAgentSummary || hasAnyAgentOutputOrSummary))
+    (isFollowingBotMessage && (hasAgentSummary))
 
   const shouldShowSuggestions =
-    isFollowingBotMessage && (hasAgentSummary || hasAnyAgentOutputOrSummary)
+    isFollowingBotMessage && (hasAgentSummary )
 
   const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
-
-  const handleThumbsUp = () => {
-    if (likeState === "liked") return
-    setLikeState("liked")
-    setLikeAnim(true)
-    setTimeout(() => setLikeAnim(false), 400)
-    if (likeState === "disliked") setDislikeAnim(false)
-  }
-
-  const handleThumbsDown = () => {
-    if (likeState === "disliked") return
-    setLikeState("disliked")
-    setDislikeAnim(true)
-    setTimeout(() => setDislikeAnim(false), 400)
-    if (likeState === "liked") setLikeAnim(false)
-  }
-
-  const handleRefresh = () => {
-    if (onRetryClick && parentMessageContent) {
-      onRetryClick(parentMessageContent)
-    }
-  }
-
-  const handleCopy = async () => {
-      const textToCopy = parentMessageContent || message.content
-      await navigator.clipboard.writeText(textToCopy)
-  }
-
-  const suggestionPrompts = [
-    "Review the codebase structure",
-    "Understand key workflows and data flow",
-    "Clarify requirements with the team"
-  ]
 
   if (message.isCode) {
     return (
@@ -422,89 +379,14 @@ export const MessageContent = ({
             </>
           )}
         </div>
-        <div>
-          {shouldShowActions && (
-            <div className="flex items-center justify-start gap-2 mt-3 mb-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleCopy}
-                className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleThumbsUp}
-                className={`h-8 w-8 p-0 hover:text-slate-700 hover:bg-slate-100 transition-transform ${
-                  likeAnim ? "scale-125 duration-300" : ""
-                }`}
-                style={{
-                  backgroundColor: likeState === "liked" ? "#64748b" : undefined,
-                  color: likeState === "liked" ? "#fff" : "#64748b",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >
-                <ThumbsUp
-                  className="h-4 w-4"
-                  style={{
-                    backgroundColor: likeState === "liked" ? "#64748b" : "transparent",
-                    color: likeState === "liked" ? "#fff" : "#64748b",
-                  }}
-                />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleThumbsDown}
-                className={`h-8 w-8 p-0 hover:text-slate-700 hover:bg-slate-100 transition-transform ${
-                  dislikeAnim ? "scale-125 duration-300" : ""
-                }`}
-                style={{
-                  backgroundColor: likeState === "disliked" ? "#64748b" : undefined,
-                  color: likeState === "disliked" ? "#fff" : "#64748b",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center"
-                }}
-              >
-                <ThumbsDown
-                  className="h-4 w-4"
-                  style={{
-                    backgroundColor: likeState === "disliked" ? "#64748b" : "transparent",
-                    color: likeState === "disliked" ? "#fff" : "#64748b",
-                  }}
-                />
-              </Button>
-            </div>
-          )}
-          {shouldShowSuggestions && (
-            <div className="flex flex-wrap gap-2">
-              {suggestionPrompts.map((prompt, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onSuggestionClick(prompt)}
-                  className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
-                >
-                  {prompt}
-                </Button>
-              ))}
-            </div>
-          )}
-        </div>
+        <MessageActions
+          shouldShowActions={shouldShowActions}
+          shouldShowSuggestions={shouldShowSuggestions}
+          parentMessageContent={parentMessageContent}
+          messageContent={message.content}
+          onSuggestionClick={onSuggestionClick}
+          onRetryClick={onRetryClick}
+        />
       </div>
     )
   }

@@ -3,21 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Home,
-  Bell,
-  Inbox,
-  CheckSquare,
-  Calendar,
-  FileText,
-  Users,
-  Plus,
-  Filter,
-  MoreHorizontal,
   EllipsisVertical,
+  Filter,
+  FileText,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import TaskChat from "@/components/taskChatComponents/TaskChat";
-import { useClerk, useUser, useAuth } from "@clerk/clerk-react";
+import { useUser, useAuth } from "@clerk/clerk-react";
 import { Configuration, ProjectsApi, TasksApi } from "@/api-client";
 import CreateProject from "@/components/apiComponents/CreateProject";
 import GenerateRequirements from "@/components/apiComponents/GenerateRequirements";
@@ -28,7 +20,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { useNavigate } from "react-router-dom";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/Topbar";
 
@@ -40,9 +31,7 @@ const getInitials = (name: string) => {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 };
 
-const getProgressColor = (progress: number): string => {
-  return 'text-green-300';
-};
+const getProgressColor = (progress: number): string => 'text-green-300';
 
 function ProjectsList({
   projects,
@@ -84,27 +73,25 @@ function ProjectsList({
                     <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                     <CardTitle className="text-sm font-medium">{project.name}</CardTitle>
                   </div>
-                  <div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <EllipsisVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => onShowCreateTaskModal(project.id)}
-                        >
-                           New task
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onGenerateRequirements(project.id)}
-                        >
-                          Generate Tasks
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0">
+                        <EllipsisVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => onShowCreateTaskModal(project.id)}
+                      >
+                        New task
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => onGenerateRequirements(project.id)}
+                      >
+                        Generate Tasks
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="flex items-center justify-between text-sm text-gray-500">
                   <div className="flex items-center space-x-2">
@@ -171,7 +158,6 @@ function ProjectsList({
   );
 }
 
-// --- Main ProjectBoard Component ---
 const ProjectBoard = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<{ id: string, title: string } | null>(null);
@@ -187,15 +173,12 @@ const ProjectBoard = () => {
 
   const { user } = useUser();
   const { getToken } = useAuth();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProjectsAndTasks = async () => {
       setLoading(true);
       try {
-        // Get the auth token from Clerk
         const sessionToken = await getToken();
-        // Create configuration with auth header
         const configuration = new Configuration({
           basePath: import.meta.env.VITE_BACKEND_API_KEY,
           accessToken: sessionToken || undefined,
@@ -206,53 +189,25 @@ const ProjectBoard = () => {
         const response: any = await projectsApi.projectsControllerFindAll();
         const projectsData = response.data || response;
 
-        // Gather all task IDs
-        const allTaskIds: string[] = [];
-        projectsData.forEach((project: any) => {
-          if (Array.isArray(project.tasks)) {
-            project.tasks.forEach((task: any) => {
-              if (typeof task === "string") {
-                allTaskIds.push(task);
-              } else if (task && task.id) {
-                allTaskIds.push(task.id);
+        const tasksByProject: Record<string, any[]> = {};
+        await Promise.all(
+          projectsData.map(async (project: any) => {
+            if (project.id) {
+              try {
+                const res = await tasksApi.tasksControllerFindAllByProject(project.id, "");
+                tasksByProject[project.id] = res.data || res || [];
+                console.log(res)
+              } catch {
+                tasksByProject[project.id] = [];
               }
-            });
-          }
-        });
-
-        // Fetch task data for each task ID (in parallel)
-        const taskFetches: Promise<any>[] = allTaskIds.map((taskId) =>
-          tasksApi.tasksControllerFindOne(taskId).then(res => res.data || res).catch(() => null)
+            }
+          })
         );
-        const allTasksData: any[] = await Promise.all(taskFetches);
 
-        // Build a map for quick lookup
-        const taskDataMap: Record<string, any> = {};
-        allTasksData.forEach(task => {
-          if (task && task.id) {
-            taskDataMap[task.id] = task;
-          }
-        });
-
-        // Replace project.tasks with the actual tasks fetched (with assignees as objects)
+        // Attach tasks to projects
         const projectsWithTasks = projectsData.map((project: any) => ({
           ...project,
-          tasks: Array.isArray(project.tasks)
-            ? project.tasks
-                .map((task: any) => {
-                  let taskId = typeof task === "string" ? task : (task && task.id ? task.id : null);
-                  if (!taskId) return null;
-                  const realTask = taskDataMap[taskId];
-                  if (!realTask) return null;
-                  // Ensure assignees is always an array of objects
-                  return {
-                    ...realTask,
-                    assignees: Array.isArray(realTask.assignees)
-                      ? realTask.assignees
-                      : [],
-                  };
-                }).filter(Boolean)
-            : [],
+          tasks: tasksByProject[project.id] || [],
         }));
 
         setProjects(projectsWithTasks);
@@ -307,11 +262,8 @@ const ProjectBoard = () => {
     setShowRequirementsModal(true);
   };
 
-  // Callback for successfully creating a project
   const handleProjectCreated = () => {
     setShowCreateProjectModal(false);
-    // Reload handled in CreateProject, but you could also reload here if needed
-    // window.location.reload();
   };
 
   return (
@@ -325,7 +277,7 @@ const ProjectBoard = () => {
       />
 
       <Sidebar />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${chatOpen ? '' : ''}`}>
+      <div className="flex-1 flex flex-col">
         <TopBar
           searchValue={search}
           setSearchValue={setSearch}
@@ -367,7 +319,6 @@ const ProjectBoard = () => {
                 </div>
               </div>
             </Card>
-
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
                 setChatOpen(true);
