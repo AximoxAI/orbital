@@ -1,13 +1,21 @@
 "use client"
 import type React from "react"
-import { useMemo } from "react"
-import { Code, RotateCcw, Copy, ThumbsUp, ThumbsDown } from "lucide-react"
+import { useMemo, useState, useEffect } from "react"
+import { Code } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
 import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client"
 import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
 import { Button } from "@/components/ui/button"
+import { TasksApi } from "@/api-client/api"
+import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
+import { MessageActions } from "./MessageActions"
+
+const configuration = new OpenApiConfiguration({
+   basePath: import.meta.env.VITE_BACKEND_API_KEY,
+})
+const tasksApi = new TasksApi(configuration)
 
 interface MessageContentProps {
   message: MessageType
@@ -32,6 +40,9 @@ interface MessageContentProps {
   liveAgentOutput?: string[]
   hasFilesForMessage?: boolean
   chatUsers?: { id: string; name: string; email?: string }[]
+  onSuggestionClick: (suggestion: string) => void
+  onRetryClick?: (parentMessageContent: string) => void
+  parentMessageContent?: string
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -96,7 +107,6 @@ const renderMessageContent = (
   }
   const escapedMentions = allKnownMentions.map((mention) => escapeRegExp(mention))
   const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
-
   const parts = content.split(mentionRegex)
   const elements: React.ReactNode[] = []
 
@@ -136,6 +146,15 @@ const renderMessageContent = (
   return <>{elements}</>
 }
 
+async function fetchExecutionLogs(messageId: string): Promise<TaskExecutionLog[]> {
+  try {
+    const res = await tasksApi.tasksControllerGetExecutionLogs(messageId)
+    return Array.isArray(res.data) ? res.data : [res.data]
+  } catch (err) {
+    return []
+  }
+}
+
 export const MessageContent = ({
   message,
   isFullPage,
@@ -159,7 +178,12 @@ export const MessageContent = ({
   liveAgentOutput = [],
   hasFilesForMessage = false,
   chatUsers,
+  onSuggestionClick,
+  onRetryClick,
+  parentMessageContent
 }: MessageContentProps) => {
+  const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
+
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
   const hasConsoleLogs = isLatestHumanMessage && logs.length > 0
@@ -175,53 +199,33 @@ export const MessageContent = ({
   const isRetrieveProjectBlock = message.type === "ai"
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
-  const isTaskComplete = isActiveRetrieveProjectBlock
-    ? (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) ||
-      (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)
-    : (Array.isArray(agentOutput) && agentOutput.length > 0) ||
-      (Array.isArray(summary) && summary.length > 0) ||
-      (hasExecutionLogsForThisMessage &&
-        ((Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) ||
-          (Array.isArray(executionSummary) && executionSummary.length > 0)))
+  useEffect(() => {
+    let ignore = false
+    async function checkAgentSummary() {
+      if (isFollowingBotMessage && message.id) {
+        const logs = await fetchExecutionLogs(message.id)
+        const found = logs.some(
+          (log) =>
+            ( log.type === TaskExecutionLogTypeEnum.Summary) &&
+            (log.status === TaskExecutionLogStatusEnum.Agent)
+        )
+        if (!ignore) setHasAgentSummary(found)
+      }
+    }
+    checkAgentSummary()
+    return () => {
+      ignore = true
+    }
+  }, [isFollowingBotMessage, message.id])
 
   const shouldShowActions =
-    !isFollowingBotMessage || (isFollowingBotMessage && isTaskComplete)
+    !isFollowingBotMessage ||
+    (isFollowingBotMessage && (hasAgentSummary))
 
   const shouldShowSuggestions =
-    isFollowingBotMessage && isTaskComplete
+    isFollowingBotMessage && (hasAgentSummary )
 
   const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
-
-  const handleRefresh = () => {
-
-  }
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.content)
-      alert("Copied to clipboard!")
-    } catch (err) {
-      alert("Failed to copy to clipboard.")
-    }
-  }
-
-  const handleThumbsUp = () => {
-
-  }
-
-  const handleThumbsDown = () => {
-
-  }
-
-  const handleSuggestionClick = (suggestion: string) => {
-
-  }
-
-  const suggestionPrompts = [
-    "Review the codebase structure",
-    "Understand key workflows and data flow",
-    "Clarify requirements with the team"
-  ]
 
   if (message.isCode) {
     return (
@@ -375,57 +379,14 @@ export const MessageContent = ({
             </>
           )}
         </div>
-        {shouldShowActions && (
-          <div className="flex items-center justify-start gap-2 mt-3 mb-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-            >
-              <RotateCcw className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleCopy}
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleThumbsUp}
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-            >
-              <ThumbsUp className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleThumbsDown}
-              className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
-            >
-              <ThumbsDown className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        {shouldShowSuggestions && (
-          <div className="flex flex-wrap gap-2">
-            {suggestionPrompts.map((prompt, index) => (
-              <Button
-                key={index}
-                variant="outline"
-                size="sm"
-                onClick={() => handleSuggestionClick(prompt)}
-                className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
-              >
-                {prompt}
-              </Button>
-            ))}
-          </div>
-        )}
+        <MessageActions
+          shouldShowActions={shouldShowActions}
+          shouldShowSuggestions={shouldShowSuggestions}
+          parentMessageContent={parentMessageContent}
+          messageContent={message.content}
+          onSuggestionClick={onSuggestionClick}
+          onRetryClick={onRetryClick}
+        />
       </div>
     )
   }

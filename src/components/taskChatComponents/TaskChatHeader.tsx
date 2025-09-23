@@ -104,24 +104,23 @@ const TaskChatHeader = ({
                     <p className="text-xs text-slate-500 mt-1">Remove tags to add different ones</p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {tagsToPick.map((tag) => (
-                      <button
-                        key={tag}
-                        className="group relative flex items-center justify-center p-3 rounded-lg border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-                        onClick={() => {
-                          handleTagSelect(tag)
-                        }}
-                      >
-                        <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
-                        <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="rounded-full bg-slate-600 p-1">
-                            <Plus className="h-3 w-3 text-white" />
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+<div className="grid grid-cols-3 gap-2">
+  {tagsToPick.map((tag) => (
+    <button
+      key={tag}
+      className="group relative flex items-center justify-center rounded border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+      style={{ minWidth: 64, minHeight: 26, padding: 0, width: 90, height: 20, maxWidth: 200 }}
+      onClick={() => handleTagSelect(tag)}
+    >
+      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
+      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="rounded-full bg-slate-600 p-0.5">
+          <Plus className="h-2 w-2 text-white" />
+        </div>
+      </div>
+    </button>
+  ))}
+</div>
                 )}
 
                 {selectedTags.length > 0 && (
@@ -196,7 +195,8 @@ const TaskChatHeader = ({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
-                  className={`h-10 w-10 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2 focus:outline-none rounded-md`}
+                  className={`h-8 w-8 flex items-center justify-center border-2 border-dashed border-gray-300 hover:bg-gray-100 ml-2 focus:outline-none rounded-md`}
+                  style={{ fontSize: 14, minWidth: 32, minHeight: 32 }}
                   aria-label="Add user"
                 >
                   <UserPlus className="h-4 w-4 text-gray-500" />
@@ -210,10 +210,11 @@ const TaskChatHeader = ({
                     <DropdownMenuItem
                       key={u.id}
                       onSelect={() => onAddUser(u.id)}
-                      className="flex items-center gap-2 cursor-pointer"
+                      className="flex items-center gap-2 cursor-pointer py-1 px-2"
+                      style={{ minHeight: 28 }}
                     >
-                      <img src={u.avatar || "/placeholder.svg"} alt={u.name} className="h-7 w-7 rounded-full" />
-                      <span className="text-sm">{u.name}</span>
+                      <img src={u.avatar || "/placeholder.svg"} alt={u.name} className="h-6 w-6 rounded-full" />
+                      <span className="text-xs">{u.name}</span>
                     </DropdownMenuItem>
                   ))
                 )}
