@@ -4,16 +4,19 @@ import { Button } from "@/components/ui/button";
 
 interface MessageActionsProps {
   parentMessageContent?: string;
+  parentAgentName?: string; 
   messageContent: string;
-  onSuggestionClick: (suggestion: string) => void;
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void; 
   onRetryClick?: (parentMessageContent: string) => void;
   shouldShowActions: boolean;
   shouldShowSuggestions: boolean;
   suggestionPrompts?: string[];
+  agentOutputText?: string;
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({
   parentMessageContent,
+  parentAgentName, // ADD THIS
   messageContent,
   onSuggestionClick,
   onRetryClick,
@@ -23,7 +26,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
     "Review the codebase structure",
     "Understand key workflows and data flow",
     "Clarify requirements with the team"
-  ]
+  ],
+  agentOutputText
 }) => {
   const [likeState, setLikeState] = useState<"none" | "liked" | "disliked">("none");
   const [likeAnim, setLikeAnim] = useState(false);
@@ -52,7 +56,11 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   const handleCopy = async () => {
-    const textToCopy = parentMessageContent || messageContent;
+    const textToCopy = agentOutputText?.trim()
+      ? agentOutputText
+      : parentMessageContent?.trim()
+        ? parentMessageContent
+        : messageContent;
     await navigator.clipboard.writeText(textToCopy);
   };
 
@@ -131,7 +139,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
               key={index}
               variant="outline"
               size="sm"
-              onClick={() => onSuggestionClick(prompt)}
+              // FIX IS HERE: pass both prompt and parentAgentName!
+              onClick={() => onSuggestionClick(prompt, parentAgentName)}
               className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
             >
               {prompt}

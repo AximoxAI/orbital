@@ -36,7 +36,7 @@ interface MessagesListProps {
   isUserSkeletonVisible?: boolean
   messagesWithFiles?: Set<string>
   chatUsers?: UserType[]
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void
   onRetryClick?: (parentMessageContent: string) => void
 }
 
@@ -60,14 +60,16 @@ const UserMessageSkeleton = () => (
 )
 
 function preprocessMessagesWithParentContent(messages: MessageType[]) {
-  // Returns a new array where each "ai" message has a parentMessageContent field containing the previous "human" message.
   let lastHumanContent: string | undefined = undefined
-  return messages.map((msg) => {
+  let lastHumanIdx: number | undefined = undefined
+  return messages.map((msg, idx) => {
     if (msg.type === "human") {
       lastHumanContent = msg.content
+      lastHumanIdx = idx
       return { ...msg }
     } else if (msg.type === "ai") {
-      return { ...msg, parentMessageContent: lastHumanContent }
+      let parentAgentName: string | undefined = msg.author
+      return { ...msg, parentMessageContent: lastHumanContent, parentAgentName }
     }
     return { ...msg }
   })
@@ -121,16 +123,14 @@ const MessagesList = ({
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
 
-  // Preprocess messages to attach parentMessageContent to each ai message
+  // Preprocess messages to attach parentMessageContent and parentAgentName to each ai message
   const processedMessages = preprocessMessagesWithParentContent(allMessages)
 
   const renderMessage = (message: MessageType, idx: number) => (
     <React.Fragment key={message.id}>
       <div className="flex justify-center w-full animate-slide-in">
         <div className="flex gap-3 w-full max-w-4xl">
-          <MessageAvatar 
-          //@ts-ignore
-          type={message.type} />
+          <MessageAvatar type={message.type} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-sm font-semibold text-slate-900 font-inter">
@@ -163,9 +163,11 @@ const MessagesList = ({
               liveAgentOutput={liveAgentOutput}
               hasFilesForMessage={messagesWithFiles.has(message.id)}
               chatUsers={chatUsers}
+              // THIS IS THE FIX: pass the right handler with both arguments
               onSuggestionClick={onSuggestionClick}
               onRetryClick={onRetryClick}
               parentMessageContent={message.parentMessageContent}
+              parentAgentName={message.parentAgentName}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />

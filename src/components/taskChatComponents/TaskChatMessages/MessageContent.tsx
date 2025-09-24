@@ -40,9 +40,10 @@ interface MessageContentProps {
   liveAgentOutput?: string[]
   hasFilesForMessage?: boolean
   chatUsers?: { id: string; name: string; email?: string }[]
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void
   onRetryClick?: (parentMessageContent: string) => void
   parentMessageContent?: string
+  parentAgentName?: string
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -180,7 +181,8 @@ export const MessageContent = ({
   chatUsers,
   onSuggestionClick,
   onRetryClick,
-  parentMessageContent
+  parentMessageContent,
+  parentAgentName
 }: MessageContentProps) => {
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
 
@@ -383,6 +385,7 @@ export const MessageContent = ({
           shouldShowActions={shouldShowActions}
           shouldShowSuggestions={shouldShowSuggestions}
           parentMessageContent={parentMessageContent}
+          parentAgentName={parentAgentName}
           messageContent={message.content}
           onSuggestionClick={onSuggestionClick}
           onRetryClick={onRetryClick}
