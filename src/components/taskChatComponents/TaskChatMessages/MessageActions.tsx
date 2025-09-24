@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { RotateCcw, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
 
 interface MessageActionsProps {
   parentMessageContent?: string;
-  parentAgentName?: string; 
+  parentAgentName?: string;
   messageContent: string;
-  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void; 
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void;
   onRetryClick?: (parentMessageContent: string) => void;
   shouldShowActions: boolean;
   shouldShowSuggestions: boolean;
@@ -16,7 +17,7 @@ interface MessageActionsProps {
 
 export const MessageActions: React.FC<MessageActionsProps> = ({
   parentMessageContent,
-  parentAgentName, // ADD THIS
+  parentAgentName,
   messageContent,
   onSuggestionClick,
   onRetryClick,
@@ -32,6 +33,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   const [likeState, setLikeState] = useState<"none" | "liked" | "disliked">("none");
   const [likeAnim, setLikeAnim] = useState(false);
   const [dislikeAnim, setDislikeAnim] = useState(false);
+
+  const { toast } = useToast();
 
   const handleThumbsUp = () => {
     if (likeState === "liked") return;
@@ -56,12 +59,52 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   const handleCopy = async () => {
-    const textToCopy = agentOutputText?.trim()
-      ? agentOutputText
-      : parentMessageContent?.trim()
-        ? parentMessageContent
-        : messageContent;
-    await navigator.clipboard.writeText(textToCopy);
+    // Only copy if agentOutputText is available and not empty/whitespace
+    if (!agentOutputText || !agentOutputText.trim()) {
+      toast({
+        title: "No output to copy",
+        description: "There is no agent output available to copy.",
+        duration: 2000,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const textToCopy = agentOutputText;
+
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      toast({
+        title: "Copied!",
+        description: "Content has been copied to clipboard.",
+        duration: 2000,
+      });
+    } catch (error) {
+      console.error("Failed to copy text:", error);
+      // Fallback for older browsers
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+        toast({
+          title: "Copied!",
+          description: "Content has been copied to clipboard.",
+          duration: 2000,
+        });
+      } catch (fallbackError) {
+        console.error("Fallback copy failed:", fallbackError);
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy content to clipboard.",
+          variant: "destructive",
+          duration: 2000,
+        });
+      }
+      document.body.removeChild(textArea);
+    }
   };
 
   return (
@@ -139,7 +182,6 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
               key={index}
               variant="outline"
               size="sm"
-              // FIX IS HERE: pass both prompt and parentAgentName!
               onClick={() => onSuggestionClick(prompt, parentAgentName)}
               className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
             >

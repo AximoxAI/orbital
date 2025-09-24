@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState, useCallback } from "react"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 
 import { MessageAvatar } from "./MessageAvatar"
@@ -103,6 +103,8 @@ const MessagesList = ({
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [renderedSkeleton, setRenderedSkeleton] = useState(false)
+  const shouldAutoScrollRef = useRef(true)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
@@ -125,6 +127,41 @@ const MessagesList = ({
 
   // Preprocess messages to attach parentMessageContent and parentAgentName to each ai message
   const processedMessages = preprocessMessagesWithParentContent(allMessages)
+
+  // Smooth scroll to bottom function
+  const scrollToBottom = useCallback((force = false) => {
+    if (!scrollRef.current) return
+
+    const container = scrollRef.current
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
+
+    if (force || isNearBottom || shouldAutoScrollRef.current) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [])
+
+  // Debounced scroll handler for when content height changes
+  const handleContentHeightChange = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    
+    scrollTimeoutRef.current = setTimeout(() => {
+      scrollToBottom()
+    }, 150) // Slightly longer delay to ensure DOM updates are complete
+  }, [scrollToBottom])
+
+  // Handle manual scrolling to determine if user scrolled up
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return
+    
+    const container = scrollRef.current
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
+    shouldAutoScrollRef.current = isNearBottom
+  }, [])
 
   const renderMessage = (message: MessageType, idx: number) => (
     <React.Fragment key={message.id}>
@@ -163,11 +200,11 @@ const MessagesList = ({
               liveAgentOutput={liveAgentOutput}
               hasFilesForMessage={messagesWithFiles.has(message.id)}
               chatUsers={chatUsers}
-              // THIS IS THE FIX: pass the right handler with both arguments
               onSuggestionClick={onSuggestionClick}
               onRetryClick={onRetryClick}
               parentMessageContent={message.parentMessageContent}
               parentAgentName={message.parentAgentName}
+              onContentHeightChange={handleContentHeightChange}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -178,12 +215,23 @@ const MessagesList = ({
     </React.Fragment>
   )
 
+  // Auto-scroll when messages change (force scroll)
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
-    }
-  }, [allMessages.length, loading, isUserSkeletonVisible])
+    scrollToBottom(true)
+  }, [allMessages.length, scrollToBottom])
 
+  // Auto-scroll when loading state changes or skeleton appears
+  useEffect(() => {
+    if (!loading || isUserSkeletonVisible) {
+      // Small delay to let animations complete
+      const timer = setTimeout(() => {
+        scrollToBottom(true)
+      }, 100)
+      return () => clearTimeout(timer)
+    }
+  }, [loading, isUserSkeletonVisible, scrollToBottom])
+
+  // Handle skeleton visibility
   useEffect(() => {
     if (isUserSkeletonVisible) {
       setRenderedSkeleton(true)
@@ -192,9 +240,22 @@ const MessagesList = ({
     }
   }, [isUserSkeletonVisible])
 
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
   if (isFullPage) {
     return (
-      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+      <div 
+        className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" 
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         <div className="flex flex-col items-center w-full h-full">
           <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
             {loading ? (
@@ -217,7 +278,11 @@ const MessagesList = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+    <div 
+      className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" 
+      ref={scrollRef}
+      onScroll={handleScroll}
+    >
       <div className="flex flex-col items-center w-full">
         <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
           {loading ? (

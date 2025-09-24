@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
 import { Code } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
@@ -44,6 +44,7 @@ interface MessageContentProps {
   onRetryClick?: (parentMessageContent: string) => void
   parentMessageContent?: string
   parentAgentName?: string
+  onContentHeightChange?: () => void // Add callback for height changes
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -182,9 +183,13 @@ export const MessageContent = ({
   onSuggestionClick,
   onRetryClick,
   parentMessageContent,
-  parentAgentName
+  parentAgentName,
+  onContentHeightChange
 }: MessageContentProps) => {
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
+  const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevHeightRef = useRef<number>(0)
 
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -201,17 +206,37 @@ export const MessageContent = ({
   const isRetrieveProjectBlock = message.type === "ai"
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
+  const getAgentOutputText = () => {
+    if (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) {
+      return liveAgentOutput.join('\n')
+    }
+    if (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) {
+      return executionAgentOutput.join('\n')
+    }
+    if (Array.isArray(agentOutput) && agentOutput.length > 0) {
+      return agentOutput.join('\n')
+    }
+    return ""
+  }
+
+  const agentOutputText = getAgentOutputText()
+
+  // Check for agent summary and trigger scroll when content changes
   useEffect(() => {
     let ignore = false
     async function checkAgentSummary() {
       if (isFollowingBotMessage && message.id) {
+        setIsLoadingAgentSummary(true)
         const logs = await fetchExecutionLogs(message.id)
         const found = logs.some(
           (log) =>
             ( log.type === TaskExecutionLogTypeEnum.Summary) &&
             (log.status === TaskExecutionLogStatusEnum.Agent)
         )
-        if (!ignore) setHasAgentSummary(found)
+        if (!ignore) {
+          setHasAgentSummary(found)
+          setIsLoadingAgentSummary(false)
+        }
       }
     }
     checkAgentSummary()
@@ -219,6 +244,29 @@ export const MessageContent = ({
       ignore = true
     }
   }, [isFollowingBotMessage, message.id])
+
+  // Monitor height changes and trigger scroll
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      const currentHeight = containerRef.current.offsetHeight
+      if (currentHeight !== prevHeightRef.current && prevHeightRef.current > 0) {
+        // Height has changed, trigger scroll callback
+        onContentHeightChange?.()
+      }
+      prevHeightRef.current = currentHeight
+    }
+  })
+
+  // Additional effect to trigger scroll when hasAgentSummary changes
+  useEffect(() => {
+    if (hasAgentSummary && !isLoadingAgentSummary) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        onContentHeightChange?.()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [hasAgentSummary, isLoadingAgentSummary, onContentHeightChange])
 
   const shouldShowActions =
     !isFollowingBotMessage ||
@@ -231,7 +279,7 @@ export const MessageContent = ({
 
   if (message.isCode) {
     return (
-      <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 ">
+      <div ref={containerRef} className="bg-slate-100 border border-slate-200 rounded-xl p-3 ">
         <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
           <Code className="w-4 h-4 text-slate-600" />
           <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">
@@ -260,7 +308,7 @@ export const MessageContent = ({
     const hasGeneratedFiles = hasFilesForMessage
 
     return (
-      <div className="w-full max-w-2xl">
+      <div ref={containerRef} className="w-full max-w-2xl">
         <div
           className="border border-slate-200 rounded-xl bg-slate-100 p-4"
           style={isExpanded ? { height: "auto", minHeight: 120 } : { height: 110 }}
@@ -387,6 +435,7 @@ export const MessageContent = ({
           parentMessageContent={parentMessageContent}
           parentAgentName={parentAgentName}
           messageContent={message.content}
+          agentOutputText={agentOutputText}
           onSuggestionClick={onSuggestionClick}
           onRetryClick={onRetryClick}
         />
@@ -395,9 +444,11 @@ export const MessageContent = ({
   }
 
   return (
-    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
-      <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
-        {renderedContent}
+    <div ref={containerRef} className="w-full">
+      <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
+        <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+          {renderedContent}
+        </div>
       </div>
     </div>
   )
