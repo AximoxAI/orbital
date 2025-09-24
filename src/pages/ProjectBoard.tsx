@@ -121,27 +121,16 @@ function ProjectsList({
                         <span className="text-sm text-gray-700">{task.title}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className={`text-xs font-medium ${getProgressColor(task.progress)}`}>
-                          {task.progress}%
-                        </span>
-                        <div className="flex -space-x-1">
-                          {task.assignees && task.assignees.length > 0 ? (
-                            task.assignees.map((assignee: any, avatarIndex: number) => (
-                              <Avatar key={assignee.id || avatarIndex} className="w-6 h-6 border-2 border-white">
-                                {assignee.avatar ? (
+                        <div className="flex justify-end flex-row-reverse min-w-[70px]">
+                          {task.assignees && task.assignees.length > 0 && task.assignees.some((assignee: any) => assignee.avatar) ? (
+                            task.assignees.map((assignee: any, avatarIndex: number) =>
+                              assignee.avatar ? (
+                                <Avatar key={assignee.id || avatarIndex} className="w-6 h-6 border-2 border-white -ml-2">
                                   <AvatarImage src={assignee.avatar} alt={assignee.name || "User"} />
-                                ) : (
-                                  <AvatarFallback className="text-xs bg-blue-500 text-white">
-                                    {getInitials(assignee.name)}
-                                  </AvatarFallback>
-                                )}
-                              </Avatar>
-                            ))
-                          ) : (
-                            <Avatar className="w-6 h-6 border-2 border-white">
-                              <AvatarFallback className="text-xs bg-gray-300 text-white">?</AvatarFallback>
-                            </Avatar>
-                          )}
+                                </Avatar>
+                              ) : null
+                            )
+                          ) : null}
                         </div>
                       </div>
                     </div>
