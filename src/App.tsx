@@ -16,6 +16,7 @@ import WaitlistPage from "./pages/Waitlist";
 import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
 import Template from "./pages/Template";
+import UserTasks from "./pages/UserTasks";
 
 // Helper for task chat route
 const TaskChatRoute = () => {
@@ -121,6 +122,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Template />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/tasks"
+              element={
+                <ProtectedRoute>
+                  <UserTasks />
                 </ProtectedRoute>
               }
             />

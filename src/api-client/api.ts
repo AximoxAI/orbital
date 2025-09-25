@@ -453,6 +453,12 @@ export interface TaskResponseDto {
      * @type {string}
      * @memberof TaskResponseDto
      */
+    'project_name'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof TaskResponseDto
+     */
     'title': string;
     /**
      * 
@@ -3051,6 +3057,44 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * 
+         * @summary Get all tasks assigned to a user
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        usersControllerGetUserTasks: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('usersControllerGetUserTasks', 'id', id)
+            const localVarPath = `/api/v1/users/{id}/tasks`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -3099,6 +3143,19 @@ export const UsersApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['UsersApi.usersControllerFindOne']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * 
+         * @summary Get all tasks assigned to a user
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async usersControllerGetUserTasks(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<TaskResponseDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.usersControllerGetUserTasks(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UsersApi.usersControllerGetUserTasks']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -3137,6 +3194,16 @@ export const UsersApiFactory = function (configuration?: Configuration, basePath
          */
         usersControllerFindOne(id: string, options?: RawAxiosRequestConfig): AxiosPromise<UserResponseDto> {
             return localVarFp.usersControllerFindOne(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * 
+         * @summary Get all tasks assigned to a user
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        usersControllerGetUserTasks(id: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<TaskResponseDto>> {
+            return localVarFp.usersControllerGetUserTasks(id, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -3181,6 +3248,18 @@ export class UsersApi extends BaseAPI {
      */
     public usersControllerFindOne(id: string, options?: RawAxiosRequestConfig) {
         return UsersApiFp(this.configuration).usersControllerFindOne(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * 
+     * @summary Get all tasks assigned to a user
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UsersApi
+     */
+    public usersControllerGetUserTasks(id: string, options?: RawAxiosRequestConfig) {
+        return UsersApiFp(this.configuration).usersControllerGetUserTasks(id, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
