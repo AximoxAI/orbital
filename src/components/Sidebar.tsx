@@ -18,7 +18,7 @@ const sidebarLinks = [
   { label: "Profile", icon: Users, to: "/profile" },
   { label: "Updates", icon: Bell, to: "#" },
   { label: "Inbox", icon: Inbox, to: "#" },
-  { label: "Your tasks", icon: CheckSquare, to: "#" }
+  { label: "Your tasks", icon: CheckSquare, to: "/tasks" }
 ];
 
 const workspaceLinks = [
