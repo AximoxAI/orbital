@@ -7,13 +7,12 @@ import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
 import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client"
 import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
-import { Button } from "@/components/ui/button"
+import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
-import { MessageActions } from "./MessageActions"
 
 const configuration = new OpenApiConfiguration({
-   basePath: import.meta.env.VITE_BACKEND_API_KEY,
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
 })
 const tasksApi = new TasksApi(configuration)
 
@@ -44,7 +43,7 @@ interface MessageContentProps {
   onRetryClick?: (parentMessageContent: string) => void
   parentMessageContent?: string
   parentAgentName?: string
-  onContentHeightChange?: () => void // Add callback for height changes
+  onContentHeightChange?: () => void
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -221,7 +220,24 @@ export const MessageContent = ({
 
   const agentOutputText = getAgentOutputText()
 
-  // Check for agent summary and trigger scroll when content changes
+  const handleCopyAgentOutput = async () => {
+    try {
+      const logs = await fetchExecutionLogs(message.id)
+      const agentOutputLogs = logs.filter(
+        (log) =>
+          log.type === TaskExecutionLogTypeEnum.AgentOutput &&
+          log.status === TaskExecutionLogStatusEnum.Agent &&
+          log.content
+      )
+      if (agentOutputLogs.length > 0) {
+        return agentOutputLogs[agentOutputLogs.length - 1].content || ""
+      }
+      return ""
+    } catch (err) {
+      return ""
+    }
+  }
+
   useEffect(() => {
     let ignore = false
     async function checkAgentSummary() {
@@ -245,22 +261,18 @@ export const MessageContent = ({
     }
   }, [isFollowingBotMessage, message.id])
 
-  // Monitor height changes and trigger scroll
   useLayoutEffect(() => {
     if (containerRef.current) {
       const currentHeight = containerRef.current.offsetHeight
       if (currentHeight !== prevHeightRef.current && prevHeightRef.current > 0) {
-        // Height has changed, trigger scroll callback
         onContentHeightChange?.()
       }
       prevHeightRef.current = currentHeight
     }
   })
 
-  // Additional effect to trigger scroll when hasAgentSummary changes
   useEffect(() => {
     if (hasAgentSummary && !isLoadingAgentSummary) {
-      // Small delay to ensure DOM has updated
       const timer = setTimeout(() => {
         onContentHeightChange?.()
       }, 50)
@@ -430,6 +442,7 @@ export const MessageContent = ({
           )}
         </div>
         <MessageActions
+          messageId={message.id}
           shouldShowActions={shouldShowActions}
           shouldShowSuggestions={shouldShowSuggestions}
           parentMessageContent={parentMessageContent}
@@ -438,6 +451,7 @@ export const MessageContent = ({
           agentOutputText={agentOutputText}
           onSuggestionClick={onSuggestionClick}
           onRetryClick={onRetryClick}
+          onCopyAgentOutput={handleCopyAgentOutput}
         />
       </div>
     )

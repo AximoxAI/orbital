@@ -125,16 +125,12 @@ const MessagesList = ({
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
 
-  // Preprocess messages to attach parentMessageContent and parentAgentName to each ai message
   const processedMessages = preprocessMessagesWithParentContent(allMessages)
 
-  // Smooth scroll to bottom function
   const scrollToBottom = useCallback((force = false) => {
     if (!scrollRef.current) return
-
     const container = scrollRef.current
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
-
     if (force || isNearBottom || shouldAutoScrollRef.current) {
       container.scrollTo({
         top: container.scrollHeight,
@@ -143,21 +139,17 @@ const MessagesList = ({
     }
   }, [])
 
-  // Debounced scroll handler for when content height changes
   const handleContentHeightChange = useCallback(() => {
     if (scrollTimeoutRef.current) {
       clearTimeout(scrollTimeoutRef.current)
     }
-    
     scrollTimeoutRef.current = setTimeout(() => {
       scrollToBottom()
-    }, 150) // Slightly longer delay to ensure DOM updates are complete
+    }, 150)
   }, [scrollToBottom])
 
-  // Handle manual scrolling to determine if user scrolled up
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return
-    
     const container = scrollRef.current
     const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
     shouldAutoScrollRef.current = isNearBottom
@@ -215,15 +207,12 @@ const MessagesList = ({
     </React.Fragment>
   )
 
-  // Auto-scroll when messages change (force scroll)
   useEffect(() => {
     scrollToBottom(true)
   }, [allMessages.length, scrollToBottom])
 
-  // Auto-scroll when loading state changes or skeleton appears
   useEffect(() => {
     if (!loading || isUserSkeletonVisible) {
-      // Small delay to let animations complete
       const timer = setTimeout(() => {
         scrollToBottom(true)
       }, 100)
@@ -231,7 +220,6 @@ const MessagesList = ({
     }
   }, [loading, isUserSkeletonVisible, scrollToBottom])
 
-  // Handle skeleton visibility
   useEffect(() => {
     if (isUserSkeletonVisible) {
       setRenderedSkeleton(true)
@@ -240,7 +228,6 @@ const MessagesList = ({
     }
   }, [isUserSkeletonVisible])
 
-  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) {
