@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react"
+import React, { useRef, useEffect, useState, useCallback } from "react"
 import { useAutoAnimate } from "@formkit/auto-animate/react"
 
 import { MessageAvatar } from "./MessageAvatar"
@@ -36,7 +36,7 @@ interface MessagesListProps {
   isUserSkeletonVisible?: boolean
   messagesWithFiles?: Set<string>
   chatUsers?: UserType[]
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void
   onRetryClick?: (parentMessageContent: string) => void
 }
 
@@ -60,14 +60,16 @@ const UserMessageSkeleton = () => (
 )
 
 function preprocessMessagesWithParentContent(messages: MessageType[]) {
-  // Returns a new array where each "ai" message has a parentMessageContent field containing the previous "human" message.
   let lastHumanContent: string | undefined = undefined
-  return messages.map((msg) => {
+  let lastHumanIdx: number | undefined = undefined
+  return messages.map((msg, idx) => {
     if (msg.type === "human") {
       lastHumanContent = msg.content
+      lastHumanIdx = idx
       return { ...msg }
     } else if (msg.type === "ai") {
-      return { ...msg, parentMessageContent: lastHumanContent }
+      let parentAgentName: string | undefined = msg.author
+      return { ...msg, parentMessageContent: lastHumanContent, parentAgentName }
     }
     return { ...msg }
   })
@@ -101,6 +103,8 @@ const MessagesList = ({
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [renderedSkeleton, setRenderedSkeleton] = useState(false)
+  const shouldAutoScrollRef = useRef(true)
+  const scrollTimeoutRef = useRef<NodeJS.Timeout>()
 
   const allMessages = messages
     .filter((msg) => !msg.status && msg.type !== "system")
@@ -121,16 +125,41 @@ const MessagesList = ({
     (msg, idx) => latestHumanIdx !== undefined && idx > latestHumanIdx && msg.type === "ai",
   )
 
-  // Preprocess messages to attach parentMessageContent to each ai message
   const processedMessages = preprocessMessagesWithParentContent(allMessages)
+
+  const scrollToBottom = useCallback((force = false) => {
+    if (!scrollRef.current) return
+    const container = scrollRef.current
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
+    if (force || isNearBottom || shouldAutoScrollRef.current) {
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: 'smooth'
+      })
+    }
+  }, [])
+
+  const handleContentHeightChange = useCallback(() => {
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current)
+    }
+    scrollTimeoutRef.current = setTimeout(() => {
+      scrollToBottom()
+    }, 150)
+  }, [scrollToBottom])
+
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return
+    const container = scrollRef.current
+    const isNearBottom = container.scrollTop + container.clientHeight >= container.scrollHeight - 100
+    shouldAutoScrollRef.current = isNearBottom
+  }, [])
 
   const renderMessage = (message: MessageType, idx: number) => (
     <React.Fragment key={message.id}>
       <div className="flex justify-center w-full animate-slide-in">
         <div className="flex gap-3 w-full max-w-4xl">
-          <MessageAvatar 
-          //@ts-ignore
-          type={message.type} />
+          <MessageAvatar type={message.type} />
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-sm font-semibold text-slate-900 font-inter">
@@ -166,6 +195,8 @@ const MessagesList = ({
               onSuggestionClick={onSuggestionClick}
               onRetryClick={onRetryClick}
               parentMessageContent={message.parentMessageContent}
+              parentAgentName={message.parentAgentName}
+              onContentHeightChange={handleContentHeightChange}
             />
             {message.taskSuggestion && (
               <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
@@ -177,10 +208,17 @@ const MessagesList = ({
   )
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
+    scrollToBottom(true)
+  }, [allMessages.length, scrollToBottom])
+
+  useEffect(() => {
+    if (!loading || isUserSkeletonVisible) {
+      const timer = setTimeout(() => {
+        scrollToBottom(true)
+      }, 100)
+      return () => clearTimeout(timer)
     }
-  }, [allMessages.length, loading, isUserSkeletonVisible])
+  }, [loading, isUserSkeletonVisible, scrollToBottom])
 
   useEffect(() => {
     if (isUserSkeletonVisible) {
@@ -190,9 +228,21 @@ const MessagesList = ({
     }
   }, [isUserSkeletonVisible])
 
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current)
+      }
+    }
+  }, [])
+
   if (isFullPage) {
     return (
-      <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+      <div 
+        className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" 
+        ref={scrollRef}
+        onScroll={handleScroll}
+      >
         <div className="flex flex-col items-center w-full h-full">
           <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
             {loading ? (
@@ -215,7 +265,11 @@ const MessagesList = ({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" ref={scrollRef}>
+    <div 
+      className="flex-1 overflow-y-auto bg-slate-50 scrollbar-thin font-inter" 
+      ref={scrollRef}
+      onScroll={handleScroll}
+    >
       <div className="flex flex-col items-center w-full">
         <div className="w-full max-w-4xl px-6 py-5 space-y-4" ref={parent}>
           {loading ? (

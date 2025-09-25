@@ -165,7 +165,6 @@ const TaskChat = ({
 
   // ---- Add user to chat and update backend ----
   const handleAddUser = async (userId: string) => {
-    // If user already present, do nothing
     if (!userId || chatUsers.some(u => u.id === userId)) return
     const toAdd = availableUsers.find(u => u.id === userId)
     if (!toAdd) return
@@ -434,11 +433,14 @@ const TaskChat = ({
   }, [generatedFiles])
 
   // ---- Suggestion Click Handler ----
-  const handleSuggestionClick = (suggestionText: string) => {
-    setNewMessage(suggestionText)
+  const handleSuggestionClick = (suggestionText: string, parentAgentName?: string) => {
+    if (parentAgentName && parentAgentName !== "Bot") {
+      setNewMessage(`@${parentAgentName} ${suggestionText}`)
+    } else {
+      setNewMessage(suggestionText)
+    }
   }
 
-  // ---- Retry Click Handler ----
   const handleRetryClick = (parentMessageContent: string) => {
     if (parentMessageContent) setNewMessage(parentMessageContent)
   }

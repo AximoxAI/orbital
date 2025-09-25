@@ -1,19 +1,18 @@
 "use client"
 import type React from "react"
-import { useMemo, useState, useEffect } from "react"
+import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
 import { Code } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
 import { TaskExecutionLogStatusEnum, TaskExecutionLogTypeEnum } from "@/api-client"
 import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
-import { Button } from "@/components/ui/button"
+import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
-import { MessageActions } from "./MessageActions"
 
 const configuration = new OpenApiConfiguration({
-   basePath: import.meta.env.VITE_BACKEND_API_KEY,
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
 })
 const tasksApi = new TasksApi(configuration)
 
@@ -40,9 +39,11 @@ interface MessageContentProps {
   liveAgentOutput?: string[]
   hasFilesForMessage?: boolean
   chatUsers?: { id: string; name: string; email?: string }[]
-  onSuggestionClick: (suggestion: string) => void
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void
   onRetryClick?: (parentMessageContent: string) => void
   parentMessageContent?: string
+  parentAgentName?: string
+  onContentHeightChange?: () => void
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -180,9 +181,14 @@ export const MessageContent = ({
   chatUsers,
   onSuggestionClick,
   onRetryClick,
-  parentMessageContent
+  parentMessageContent,
+  parentAgentName,
+  onContentHeightChange
 }: MessageContentProps) => {
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
+  const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const prevHeightRef = useRef<number>(0)
 
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -199,17 +205,54 @@ export const MessageContent = ({
   const isRetrieveProjectBlock = message.type === "ai"
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
+  const getAgentOutputText = () => {
+    if (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) {
+      return liveAgentOutput.join('\n')
+    }
+    if (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) {
+      return executionAgentOutput.join('\n')
+    }
+    if (Array.isArray(agentOutput) && agentOutput.length > 0) {
+      return agentOutput.join('\n')
+    }
+    return ""
+  }
+
+  const agentOutputText = getAgentOutputText()
+
+  const handleCopyAgentOutput = async () => {
+    try {
+      const logs = await fetchExecutionLogs(message.id)
+      const agentOutputLogs = logs.filter(
+        (log) =>
+          log.type === TaskExecutionLogTypeEnum.AgentOutput &&
+          log.status === TaskExecutionLogStatusEnum.Agent &&
+          log.content
+      )
+      if (agentOutputLogs.length > 0) {
+        return agentOutputLogs[agentOutputLogs.length - 1].content || ""
+      }
+      return ""
+    } catch (err) {
+      return ""
+    }
+  }
+
   useEffect(() => {
     let ignore = false
     async function checkAgentSummary() {
       if (isFollowingBotMessage && message.id) {
+        setIsLoadingAgentSummary(true)
         const logs = await fetchExecutionLogs(message.id)
         const found = logs.some(
           (log) =>
             ( log.type === TaskExecutionLogTypeEnum.Summary) &&
             (log.status === TaskExecutionLogStatusEnum.Agent)
         )
-        if (!ignore) setHasAgentSummary(found)
+        if (!ignore) {
+          setHasAgentSummary(found)
+          setIsLoadingAgentSummary(false)
+        }
       }
     }
     checkAgentSummary()
@@ -217,6 +260,25 @@ export const MessageContent = ({
       ignore = true
     }
   }, [isFollowingBotMessage, message.id])
+
+  useLayoutEffect(() => {
+    if (containerRef.current) {
+      const currentHeight = containerRef.current.offsetHeight
+      if (currentHeight !== prevHeightRef.current && prevHeightRef.current > 0) {
+        onContentHeightChange?.()
+      }
+      prevHeightRef.current = currentHeight
+    }
+  })
+
+  useEffect(() => {
+    if (hasAgentSummary && !isLoadingAgentSummary) {
+      const timer = setTimeout(() => {
+        onContentHeightChange?.()
+      }, 50)
+      return () => clearTimeout(timer)
+    }
+  }, [hasAgentSummary, isLoadingAgentSummary, onContentHeightChange])
 
   const shouldShowActions =
     !isFollowingBotMessage ||
@@ -229,7 +291,7 @@ export const MessageContent = ({
 
   if (message.isCode) {
     return (
-      <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 ">
+      <div ref={containerRef} className="bg-slate-100 border border-slate-200 rounded-xl p-3 ">
         <div className="flex items-center space-x-2 mb-3 pb-2 border-b border-slate-200">
           <Code className="w-4 h-4 text-slate-600" />
           <span className="text-xs text-slate-600 font-semibold uppercase tracking-wide font-inter">
@@ -258,7 +320,7 @@ export const MessageContent = ({
     const hasGeneratedFiles = hasFilesForMessage
 
     return (
-      <div className="w-full max-w-2xl">
+      <div ref={containerRef} className="w-full max-w-2xl">
         <div
           className="border border-slate-200 rounded-xl bg-slate-100 p-4"
           style={isExpanded ? { height: "auto", minHeight: 120 } : { height: 110 }}
@@ -380,21 +442,27 @@ export const MessageContent = ({
           )}
         </div>
         <MessageActions
+          messageId={message.id}
           shouldShowActions={shouldShowActions}
           shouldShowSuggestions={shouldShowSuggestions}
           parentMessageContent={parentMessageContent}
+          parentAgentName={parentAgentName}
           messageContent={message.content}
+          agentOutputText={agentOutputText}
           onSuggestionClick={onSuggestionClick}
           onRetryClick={onRetryClick}
+          onCopyAgentOutput={handleCopyAgentOutput}
         />
       </div>
     )
   }
 
   return (
-    <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
-      <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
-        {renderedContent}
+    <div ref={containerRef} className="w-full">
+      <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
+        <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+          {renderedContent}
+        </div>
       </div>
     </div>
   )

@@ -1,11 +1,22 @@
 import React, { useState } from "react";
 import { RotateCcw, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { TasksApi } from "@/api-client/api";
+import { Configuration as OpenApiConfiguration } from "@/api-client/configuration";
+import { TaskExecutionLogTypeEnum, TaskExecutionLogStatusEnum } from "@/api-client";
+
+const configuration = new OpenApiConfiguration({
+  basePath: import.meta.env.VITE_BACKEND_API_KEY,
+});
+const tasksApi = new TasksApi(configuration);
 
 interface MessageActionsProps {
+  messageId: string;
   parentMessageContent?: string;
+  parentAgentName?: string;
   messageContent: string;
-  onSuggestionClick: (suggestion: string) => void;
+  onSuggestionClick: (suggestion: string, parentAgentName?: string) => void;
   onRetryClick?: (parentMessageContent: string) => void;
   shouldShowActions: boolean;
   shouldShowSuggestions: boolean;
@@ -13,7 +24,9 @@ interface MessageActionsProps {
 }
 
 export const MessageActions: React.FC<MessageActionsProps> = ({
+  messageId,
   parentMessageContent,
+  parentAgentName,
   messageContent,
   onSuggestionClick,
   onRetryClick,
@@ -28,6 +41,8 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   const [likeState, setLikeState] = useState<"none" | "liked" | "disliked">("none");
   const [likeAnim, setLikeAnim] = useState(false);
   const [dislikeAnim, setDislikeAnim] = useState(false);
+  const [isCopying, setIsCopying] = useState(false);
+  const { toast } = useToast();
 
   const handleThumbsUp = () => {
     if (likeState === "liked") return;
@@ -52,8 +67,51 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
   };
 
   const handleCopy = async () => {
-    const textToCopy = parentMessageContent || messageContent;
-    await navigator.clipboard.writeText(textToCopy);
+    setIsCopying(true);
+    let agentOutput = "";
+    try {
+      const res = await tasksApi.tasksControllerGetExecutionLogs(messageId);
+      const logs = Array.isArray(res.data) ? res.data : [res.data];
+      const agentOutputLogs = logs.filter(
+        (log) =>
+          log.type === TaskExecutionLogTypeEnum.AgentOutput &&
+          log.status === TaskExecutionLogStatusEnum.Agent &&
+          log.content
+      );
+      if (agentOutputLogs.length > 0) {
+        agentOutput = agentOutputLogs[agentOutputLogs.length - 1].content || "";
+      }
+    } catch (e) {
+      agentOutput = "";
+    }
+
+    if (!agentOutput.trim()) {
+      toast({
+        title: "No output to copy",
+        description: "There is no agent output available to copy.",
+        duration: 2000,
+        variant: "destructive",
+      });
+      setIsCopying(false);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(agentOutput);
+      toast({
+        title: "Copied!",
+        description: "Content has been copied to clipboard.",
+        duration: 2000,
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to copy",
+        description: "Could not copy content to clipboard.",
+        variant: "destructive",
+        duration: 2000,
+      });
+    }
+    setIsCopying(false);
   };
 
   return (
@@ -72,6 +130,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleCopy}
+            disabled={isCopying}
             className="h-8 w-8 p-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100"
           >
             <Copy className="h-4 w-4" />
@@ -131,7 +190,7 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
               key={index}
               variant="outline"
               size="sm"
-              onClick={() => onSuggestionClick(prompt)}
+              onClick={() => onSuggestionClick(prompt, parentAgentName)}
               className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
             >
               {prompt}
