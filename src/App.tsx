@@ -17,12 +17,11 @@ import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
 import Template from "./pages/Template";
 import UserTasks from "./pages/UserTasks";
+import Inbox from "./pages/Inbox"; // <-- added
 
-// Helper for task chat route
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const location = useLocation();
-  // Use taskName from route state if available, else fallback to Task #id or "Task"
   const taskName = location.state?.taskName || (taskId ? `Task #${taskId}` : "Task");
   return (
     <TaskChat
@@ -38,7 +37,6 @@ const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 const queryClient = new QueryClient();
 
-// Redirect to /project-board if already logged in and on /
 const HomeRedirectIfSignedIn = () => {
   const { isSignedIn } = useAuth();
   const navigate = useNavigate();
@@ -116,7 +114,6 @@ const App = () => (
               path="/waitlist"
               element={<WaitlistPage />}
             />
-            {/* NEW ROUTE FOR MOCK APIS TEMPLATE */}
             <Route
               path="/templates"
               element={
@@ -130,6 +127,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <UserTasks />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inbox"
+              element={
+                <ProtectedRoute>
+                  <Inbox />
                 </ProtectedRoute>
               }
             />
