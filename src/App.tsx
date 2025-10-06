@@ -17,7 +17,7 @@ import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
 import Template from "./pages/Template";
 import UserTasks from "./pages/UserTasks";
-import Inbox from "./pages/Inbox"; // <-- added
+import Inbox from "./pages/Inbox"; 
 
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
