@@ -12,12 +12,10 @@ import {
 import { useUser } from "@clerk/clerk-react";
 import { useNavigate } from "react-router-dom";
 
-// Updated: Added "Templates" link and "Mock APIs" quick link
 const sidebarLinks = [
   { label: "Home", icon: Home, to: "/project-board" },
   { label: "Profile", icon: Users, to: "/profile" },
-  { label: "Updates", icon: Bell, to: "#" },
-  { label: "Inbox", icon: Inbox, to: "#" },
+  { label: "Inbox", icon: Inbox, to: "/inbox" }, 
   { label: "Your tasks", icon: CheckSquare, to: "/tasks" }
 ];
 
