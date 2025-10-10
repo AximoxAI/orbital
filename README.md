@@ -84,6 +84,33 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
    ```
 
 
+## 🐳 Docker Setup
+
+Run Orbital using Docker for easy deployment and containerization.
+
+### Prerequisites
+- **Docker** installed on your system ([Get Docker](https://docs.docker.com/get-docker/))
+
+### Quick Start with Docker
+
+1. **Build the Docker image:**
+   ```bash
+   docker build -t orbital .
+   ```
+
+2. **Run the container:**
+   ```bash
+   docker run -d -p 3000:4173 --name orbital-app orbital
+   ```
+
+3. **Access the application:**
+   Open your browser and navigate to:
+   ```
+   http://localhost:3000
+   ```
+
+
+
 ### Key Components
 
 #### TaskChat System
