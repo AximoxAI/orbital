@@ -93,22 +93,22 @@ Run Orbital using Docker for easy deployment and containerization.
 
 ### Quick Start with Docker
 
-1. **Build the Docker image:**
-   ```bash
-   docker build -t orbital .
-   ```
+### Build & Run
 
-2. **Run the container:**
-   ```bash
-   docker run -d -p 3000:4173 --name orbital-app orbital
-   ```
+```bash
+# Build specific service
+docker-compose build react-app-dev
+docker-compose build react-app-prod
 
-3. **Access the application:**
-   Open your browser and navigate to:
-   ```
-   http://localhost:3000
-   ```
+# Rebuild without cache (after dependency changes)
+docker-compose build --no-cache react-app-dev
 
+# Build and start in one command
+docker-compose up --build react-app-dev
+
+# Run in background (detached mode)
+docker-compose up -d react-app-dev
+```
 
 
 ### Key Components
