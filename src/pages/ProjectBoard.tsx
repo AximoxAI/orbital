@@ -115,10 +115,11 @@ function ProjectsList({
                       key={task.id}
                       className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
                       onClick={() => onTaskClick(task.id, task.title)}
+                      style={{ cursor: "pointer" }}
                     >
-                      <div className="flex items-center space-x-3 flex-1">
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
                         <div className="w-4 h-4 border-2 border-gray-300 rounded"></div>
-                        <span className="text-sm text-gray-700">{task.title}</span>
+                        <span className="text-sm text-gray-700 truncate max-w-[180px] block">{task.title}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="flex justify-end flex-row-reverse min-w-[70px]">
