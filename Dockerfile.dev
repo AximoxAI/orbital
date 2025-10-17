@@ -1,12 +1,27 @@
+ARG USERNAME=user123
+ARG USER_UID=1001
+ARG USER_GID=$USER_UID
+
 FROM node:24.6-alpine
+
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
+
+RUN addgroup -g ${USER_GID} -S ${USERNAME} && \
+    adduser -S ${USERNAME} -u ${USER_UID} -G ${USERNAME}
 
 WORKDIR /app
 
-COPY package*.json ./
+RUN chown ${USERNAME}:${USERNAME} /app
 
-RUN npm install
+COPY --chown=${USERNAME}:${USERNAME} package*.json ./
 
-COPY . .
+USER ${USERNAME}
+
+RUN npm install 
+
+COPY --chown=${USERNAME}:${USERNAME} . .
 
 EXPOSE 8080
 
