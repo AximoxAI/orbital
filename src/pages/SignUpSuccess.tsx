@@ -38,10 +38,14 @@ const SignUpSuccess = () => {
         };
 
         const response = await usersApi.usersControllerCreate(userData);
+
+        if (response.data && response.data.id) {
+          localStorage.setItem("userId", String(response.data.id));
+        }
+
         navigate('/project-board');
-        
       } catch (error: any) {
-        console.error('❌ Error:', error);
+        console.error(' Error:', error);
         setError('Failed to create user profile');
         setTimeout(() => navigate('/project-board'), 3000);
       } finally {

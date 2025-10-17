@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom"
 import Sidebar from "@/components/Sidebar"
 import TopBar from "@/components/Topbar"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { UsersApi, Configuration, TaskResponseDto, UserResponseDto } from "@/api-client"
+import { UsersApi, Configuration, TaskResponseDto } from "@/api-client"
 import { useUser, useAuth } from "@clerk/clerk-react"
 
 const statusOptions = [
@@ -59,6 +59,12 @@ export default function YourTasks() {
           setLoading(false)
           return
         }
+        const userId = localStorage.getItem("userId")
+        if (!userId) {
+          setTasks([])
+          setLoading(false)
+          return
+        }
         const sessionToken = await getToken()
         if (!sessionToken) {
           setError("Session token not found")
@@ -71,19 +77,8 @@ export default function YourTasks() {
           accessToken: sessionToken,
         })
         const api = new UsersApi(config)
-        const usersResp = await api.usersControllerFindAll()
-        const matchedUser: UserResponseDto | undefined = usersResp.data.find(
-          (u: UserResponseDto) => u.auth_id === user.id
-        )
-
-        if (!matchedUser) {
-          setError("User not found in backend")
-          setTasks([])
-          setLoading(false)
-          return
-        }
-
-        const resp = await api.usersControllerGetUserTasks(matchedUser.id)
+        
+        const resp = await api.usersControllerGetUserTasks(userId)
         setTasks(Array.isArray(resp.data) ? resp.data : [])
       } catch (err: any) {
         setError("Failed to load tasks. " + (err.message || ""))
@@ -103,8 +98,6 @@ export default function YourTasks() {
       selectedStatus === "all" || (task.status && task.status.toLowerCase() === selectedStatus)
     return matchesSearch && matchesStatus
   })
-
-  console.log(filteredTasks)
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -183,8 +176,6 @@ export default function YourTasks() {
                         key={task.id}
                         className="hover:bg-gray-50 transition-colors cursor-pointer"
                         onClick={() => navigate(`/tasks/${task.id}`, { state: { taskName: task.title } })}
-
-
                         style={{ cursor: "pointer" }}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">

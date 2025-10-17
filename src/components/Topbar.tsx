@@ -22,6 +22,12 @@ const TopBar = ({
   const { signOut } = useClerk();
   const navigate = useNavigate();
 
+  const handleLogout = async () => {
+    localStorage.removeItem("userId");
+    await signOut();
+    navigate("/sign-in");
+  };
+
   return (
     <header className={`bg-white border-b border-gray-200 px-6 py-4 ${className}`}>
       <div className="flex items-center justify-between">
@@ -41,10 +47,7 @@ const TopBar = ({
           <Button
             variant="outline"
             size="sm"
-             onClick={async () => {
-              await signOut();
-              navigate("/sign-in");
-            }}
+            onClick={handleLogout}
           >
             Log out
           </Button>
