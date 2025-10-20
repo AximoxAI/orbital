@@ -1,0 +1,47 @@
+ARG USERNAME=user123
+ARG USER_UID=1001
+ARG USER_GID=$USER_UID
+
+FROM node:24.6-alpine AS build
+
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
+
+RUN addgroup -g ${USER_GID} -S ${USERNAME} && \
+    adduser -S -u ${USER_UID} -G ${USERNAME} ${USERNAME}
+
+WORKDIR /app
+
+RUN chown ${USERNAME}:${USERNAME} /app
+
+COPY --chown=${USERNAME}:${USERNAME} package*.json ./
+
+USER ${USERNAME}
+
+RUN npm install
+
+COPY --chown=${USERNAME}:${USERNAME} . .
+
+RUN npm run build
+
+FROM nginx:1.29.0-alpine AS prod
+
+ARG USERNAME
+ARG USER_UID
+ARG USER_GID
+
+RUN addgroup -g ${USER_GID} -S ${USERNAME} && \
+    adduser -S -u ${USER_UID} -G ${USERNAME} ${USERNAME}
+
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+RUN touch /var/run/nginx.pid && \
+    chown -R ${USERNAME}:${USERNAME} /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /var/run/nginx.pid
+
+USER ${USERNAME}
+
+EXPOSE 8080
+
+CMD ["nginx", "-g", "daemon off;"]

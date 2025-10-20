@@ -84,6 +84,33 @@ Orbital offers a comprehensive workspace for software engineering teams, featuri
    ```
 
 
+## 🐳 Docker Setup
+
+Run Orbital using Docker for easy deployment and containerization.
+
+### Prerequisites
+- **Docker** installed on your system ([Get Docker](https://docs.docker.com/get-docker/))
+
+### Quick Start with Docker
+
+### Build & Run
+
+```bash
+# Build specific service
+docker-compose build react-app-dev
+docker-compose build react-app-prod
+
+# Rebuild without cache (after dependency changes)
+docker-compose build --no-cache react-app-dev
+
+# Build and start in one command
+docker-compose up --build react-app-dev
+
+# Run in background (detached mode)
+docker-compose up -d react-app-dev
+```
+
+
 ### Key Components
 
 #### TaskChat System
