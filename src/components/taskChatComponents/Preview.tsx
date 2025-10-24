@@ -18,9 +18,6 @@ const OrbitalRepoGraph = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  const [issuesCount, setIssuesCount] = useState(0);
-  const [prsCount, setPrsCount] = useState(0);
-
   useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js';
@@ -612,9 +609,6 @@ const OrbitalRepoGraph = () => {
               cy.add({ data: { source: contribId, target: prId, label: 'OPENED' } });
             }
           }
-
-          setIssuesCount(pureIssues.length);
-          setPrsCount(purePRs.length);
 
           // Re-run layout to place new nodes nicely
           cy.layout({
