@@ -13,7 +13,8 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
   const {
     value, setValue, taskId, executeTaskRef, isVisible, onSocketConnected,
     filesFromApi = [], onLogsUpdate, onSummaryUpdate, onAgentOutputUpdate,
-    onClose, inputMessage, onFilesGenerated
+    onClose, inputMessage, onFilesGenerated,
+    customPreview, showCustomPreview, 
   } = props;
   const [api, setApi] = useState<TaskChatAPI | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -128,6 +129,9 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
   const statusColor = connected ? "#28a745" : "#dc3545";
   const statusText = connected ? "Connected" : "Disconnected";
 
+  const isCustomPreview = !!customPreview && !!showCustomPreview;
+  const effectivePreview = isCustomPreview || showPreview;
+
   return (
     <>
       <div ref={resizeRef} className="w-1 bg-gray-200 hover:bg-blue-400 cursor-col-resize transition-colors duration-150 relative group" onMouseDown={handleMouseDown}>
@@ -147,25 +151,31 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
           </div>
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm" onClick={handleTogglePreview} className="flex items-center space-x-1">
-              {showPreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span className="text-xs">{showPreview ? 'Hide' : 'Preview'}</span>
+              {effectivePreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="text-xs">{effectivePreview ? 'Hide' : 'Preview'}</span>
             </Button>
             {onClose && <Button variant="ghost" size="sm" onClick={onClose} className="flex items-center space-x-1" aria-label="Close MonacoCanvas"><X className="w-4 h-4" /></Button>}
           </div>
         </div>
         <div className="flex-1 rounded-lg border border-gray-200 overflow-hidden m-2 flex">
-          {files.length > 0 && !showPreview && (
+          {files.length > 0 && !effectivePreview && (
             <div className="w-48 bg-gray-50 border-r border-gray-200 flex flex-col">
               <div className="text-xs text-gray-600 font-medium p-2 border-b border-gray-200 bg-white">Files ({files.length})</div>
               <div className="flex-1 overflow-y-auto"><FileTree tree={fileTree} selectedFile={selectedFile} onFileSelect={handleFileSelect} /></div>
             </div>
           )}
           <div className="flex-1">
-            {showPreview ? (
-              <div className="h-full flex flex-col">
-                <div className="bg-gray-100 px-3 py-1 text-xs text-gray-600 border-b border-gray-200">Preview: {currentFileName}</div>
-                <iframe srcDoc={previewContent} className="flex-1 w-full border-0" sandbox="allow-scripts allow-same-origin" title="HTML Preview" />
-              </div>
+            {effectivePreview ? (
+              isCustomPreview ? (
+                <div className="h-full w-full overflow-auto bg-[#0B0F1A]">
+                  {customPreview}
+                </div>
+              ) : (
+                <div className="h-full flex flex-col">
+                  <div className="bg-gray-100 px-3 py-1 text-xs text-gray-600 border-b border-gray-200">Preview: {currentFileName}</div>
+                  <iframe srcDoc={previewContent} className="flex-1 w-full border-0" sandbox="allow-scripts allow-same-origin" title="HTML Preview" />
+                </div>
+              )
             ) : (
               <Editor
                 height="100%"

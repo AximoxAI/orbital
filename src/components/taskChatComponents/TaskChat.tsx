@@ -8,6 +8,7 @@ import ChatInput from "./TaskChatInput"
 import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
 import MessagesList from "./TaskChatMessages/index"
 import { UsersApi, UserResponseDto } from "@/api-client"
+import Preview from "./Preview"
 
 interface UserType {
   id: string
@@ -72,6 +73,8 @@ const TaskChat = ({
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
   const [repoUrl, setRepoUrl] = useState<string | null>(null)
+
+  const [showRepoGraphPreview, setShowRepoGraphPreview] = useState(false)
 
   const { user } = useUser()
   const { getToken } = useAuth()
@@ -195,13 +198,16 @@ const TaskChat = ({
 
   const handleCloseMonacoCanvas = useCallback(() => {
     setShowMonacoCanvas(false)
+    setShowRepoGraphPreview(false) 
   }, [])
 
   const handleFilesGenerated = useCallback((files: any[]) => {
     if (files && files.length > 0) {
       setGeneratedFiles(files)
+      setShowRepoGraphPreview(false) 
       setShowMonacoCanvas(true)
     } else {
+      setGeneratedFiles([])
       setShowMonacoCanvas(false)
     }
   }, [])
@@ -342,6 +348,7 @@ const TaskChat = ({
         getGeneratedFiles(messageId),
         getExecutionLogs(messageId).catch(() => [])
       ])
+      setShowRepoGraphPreview(false) 
       if (files.length > 0) {
         setGeneratedFiles(files)
         setShowMonacoCanvas(true)
@@ -385,6 +392,7 @@ const TaskChat = ({
         setLiveRetrieveProjectLogs([])
         setLiveRetrieveProjectSummary([])
         setLiveAgentOutput([])
+        setShowRepoGraphPreview(false) 
         setShowMonacoCanvas(false)
       }
       setNewMessage("")
@@ -427,10 +435,10 @@ const TaskChat = ({
   }
 
   useEffect(() => {
-    if (generatedFiles.length === 0) {
+    if (generatedFiles.length === 0 && !showRepoGraphPreview) {
       setShowMonacoCanvas(false)
     }
-  }, [generatedFiles])
+  }, [generatedFiles, showRepoGraphPreview])
 
   // ---- Suggestion Click Handler ----
   const handleSuggestionClick = (suggestionText: string, parentAgentName?: string) => {
@@ -443,6 +451,14 @@ const TaskChat = ({
 
   const handleRetryClick = (parentMessageContent: string) => {
     if (parentMessageContent) setNewMessage(parentMessageContent)
+  }
+
+  const handleOpenRepoGraph = () => {
+    setGeneratedFiles([])
+    setExecutionLogs([])
+    setExecutionLogsMessageId(undefined)
+    setShowRepoGraphPreview(true)
+    setShowMonacoCanvas(true)
   }
 
   if (!isOpen) return null
@@ -478,6 +494,7 @@ const TaskChat = ({
           onAddUser={handleAddUser}
           onRemoveUser={handleRemoveUser}
           availableUsers={availableUsers}
+          onOpenRepoGraph={handleOpenRepoGraph}
         />
 
         <MessagesList
@@ -523,12 +540,14 @@ const TaskChat = ({
           isVisible={showMonacoCanvas}
           onSocketConnected={handleSocketConnected}
           filesFromApi={generatedFiles}
-          onLogsUpdate={handleLogsUpdate}
-          onSummaryUpdate={handleSummaryUpdate}
-          onAgentOutputUpdate={handleAgentOutputUpdate}
+          onLogsUpdate={handleLogsUpdate}         
+          onSummaryUpdate={handleSummaryUpdate}   
+          onAgentOutputUpdate={handleAgentOutputUpdate} 
           onClose={handleCloseMonacoCanvas}
           inputMessage={currentInputMessage}
           onFilesGenerated={handleFilesGenerated}
+          customPreview={<Preview />}
+          showCustomPreview={showRepoGraphPreview}
         />
       )}
     </div>

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 export interface MonacoCanvasProps {
     value: string;
     setValue: (val: string) => void;
@@ -12,6 +14,8 @@ export interface MonacoCanvasProps {
     onClose?: () => void;
     inputMessage?: string;
     onFilesGenerated?: (files: FileItem[]) => void;
+    customPreview?: ReactNode;
+    showCustomPreview?: boolean;
   }
   
   export interface FileItem {

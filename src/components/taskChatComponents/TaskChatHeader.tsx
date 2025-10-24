@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check } from "lucide-react"
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -20,6 +20,7 @@ const TaskChatHeader = ({
   onAddUser,
   onRemoveUser,
   availableUsers,
+  onOpenRepoGraph, 
 }) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -74,8 +75,19 @@ const TaskChatHeader = ({
           </h3>
           <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
         </div>
-        {/* Tag Add Button */}
         <div className="flex items-center gap-2">
+          {isFullPage && (
+            <Button
+              variant="secondary"
+              size="sm"
+              className="flex-shrink-0"
+              onClick={onOpenRepoGraph}
+              aria-label="Open Repo Graph"
+            >
+              <GitBranch className="mr-2 h-4 w-4" />
+              Repo Graph
+            </Button>
+          )}
           <Popover open={showTagsPopover} onOpenChange={setShowTagsPopover}>
             <PopoverTrigger asChild>
               <Button
@@ -104,23 +116,23 @@ const TaskChatHeader = ({
                     <p className="text-xs text-slate-500 mt-1">Remove tags to add different ones</p>
                   </div>
                 ) : (
-<div className="grid grid-cols-3 gap-2">
-  {tagsToPick.map((tag) => (
-    <button
-      key={tag}
-      className="group relative flex items-center justify-center rounded border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-      style={{ minWidth: 64, minHeight: 26, padding: 0, width: 90, height: 20, maxWidth: 200 }}
-      onClick={() => handleTagSelect(tag)}
-    >
-      <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
-      <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="rounded-full bg-slate-600 p-0.5">
-          <Plus className="h-2 w-2 text-white" />
-        </div>
-      </div>
-    </button>
-  ))}
-</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {tagsToPick.map((tag) => (
+                      <button
+                        key={tag}
+                        className="group relative flex items-center justify-center rounded border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                        style={{ minWidth: 64, minHeight: 26, padding: 0, width: 90, height: 20, maxWidth: 200 }}
+                        onClick={() => handleTagSelect(tag)}
+                      >
+                        <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
+                        <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="rounded-full bg-slate-600 p-0.5">
+                            <Plus className="h-2 w-2 text-white" />
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
 
                 {selectedTags.length > 0 && (
@@ -222,12 +234,11 @@ const TaskChatHeader = ({
             </DropdownMenu>
           </div>
           <div className="flex items-center gap-3">
-            {/* Only show Join Call button in full screen mode */}
             {isFullPage && (
               <Button
                 variant="default"
                 size="sm"
-                className="ml-4 flex-shrink-0 bg-slate-600 text-white shadow-sm hover:bg-slate-700"
+                className="ml-2 flex-shrink-0 bg-slate-600 text-white shadow-sm hover:bg-slate-700"
                 onClick={() => setShowVideoModal(true)}
                 aria-label="Start Video Call"
               >
