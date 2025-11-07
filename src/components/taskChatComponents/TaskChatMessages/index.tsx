@@ -163,7 +163,7 @@ const MessagesList = ({
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2 mb-1">
               <span className="text-sm font-semibold text-slate-900 font-inter">
-                {message.type === "human" ? "You" : message.author}
+                {message.type === "human" ? "" : message.author}
               </span>
               <span className="text-xs text-slate-400 font-medium font-inter">
                 {message.timestamp}
