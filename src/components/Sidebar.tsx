@@ -1,7 +1,6 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Home,
-  Bell,
   Inbox,
   CheckSquare,
   Calendar,
@@ -33,7 +32,6 @@ const spaceLinks = [
   { label: "AI Engineer", color: "bg-blue-500" }
 ];
 
-// Use this as <Sidebar />
 const Sidebar = () => {
   const { user } = useUser();
   const navigate = useNavigate();
@@ -133,8 +131,8 @@ const Sidebar = () => {
       <div className="p-4 border-t border-gray-200">
         <div className="flex items-center space-x-3">
           <Avatar>
-            <AvatarImage src="https://randomuser.me/api/portraits/men/40.jpg" alt="Louis Nguyen" />
-            <AvatarFallback className="bg-orange-500 text-white">LN</AvatarFallback>
+            <AvatarImage src={user?.imageUrl || ""} alt={user?.username || "User"} />
+            <AvatarFallback />
           </Avatar>
           <div className="flex-1">
             <p className="text-sm font-medium text-gray-900">{user?.username || "Unknown User"}</p>
