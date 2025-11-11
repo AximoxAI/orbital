@@ -1,4 +1,4 @@
-import { UsersApiFactory, CreateUserDto, Configuration } from "@/api-client";
+import { UsersApiFactory, UserDto, Configuration } from "@/api-client";
 import { useUser, useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -29,7 +29,7 @@ const SignUpSuccess = () => {
 
         const usersApi = UsersApiFactory(configuration);
 
-        const userData: CreateUserDto = {
+        const userData: UserDto = {
           auth_id: user.id,
           name: user.username || 'Unknown User',
           email: user.primaryEmailAddress?.emailAddress || '',
