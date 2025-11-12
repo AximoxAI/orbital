@@ -7,8 +7,30 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { useState } from "react"
 import VideoCallModal from "./VideoCallModal"
 
-// Example tags, you may want to pass these as props or fetch from API in real usage
 const AVAILABLE_TAGS = ["Bug", "Feature", "Urgent", "Blocked", "Frontend", "Backend", "Design", "Research"]
+
+interface User {
+  id: string
+  name: string
+  avatar: string
+  isOnline: boolean
+  email?: string
+}
+
+interface TaskChatHeaderProps {
+  taskName: string
+  isFullPage: boolean
+  onClose: () => void
+  onMaximize: () => void
+  onMinimize: () => void
+  users: User[]
+  onAddUser: (userId: string) => void
+  onRemoveUser: (userId: string) => void
+  availableUsers: User[]
+  onOpenRepoGraph: () => void
+  onCallStart?: () => void
+  onCallEnd?: () => void
+}
 
 const TaskChatHeader = ({
   taskName,
@@ -20,8 +42,10 @@ const TaskChatHeader = ({
   onAddUser,
   onRemoveUser,
   availableUsers,
-  onOpenRepoGraph, 
-}) => {
+  onOpenRepoGraph,
+  onCallStart,
+  onCallEnd,
+}: TaskChatHeaderProps) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [showTagsPopover, setShowTagsPopover] = useState(false)
@@ -38,6 +62,10 @@ const TaskChatHeader = ({
 
   const handleTagRemove = (tag: string) => {
     setSelectedTags((prev) => prev.filter((t) => t !== tag))
+  }
+
+  const handleCloseVideoModal = () => {
+    setShowVideoModal(false)
   }
 
   return (
@@ -250,7 +278,19 @@ const TaskChatHeader = ({
         </div>
       </div>
       {/* Video Modal */}
-      {showVideoModal && <VideoCallModal taskName={taskName} onClose={() => setShowVideoModal(false)} />}
+      {showVideoModal && (
+        <VideoCallModal
+          taskName={taskName}
+          onClose={handleCloseVideoModal}
+          onCallStart={() => {
+            onCallStart?.()
+          }}
+          onCallEnd={() => {
+            onCallEnd?.()
+            handleCloseVideoModal()
+          }}
+        />
+      )}
     </>
   )
 }

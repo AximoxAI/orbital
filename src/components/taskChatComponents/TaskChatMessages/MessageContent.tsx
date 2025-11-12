@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
-import { Code } from "lucide-react"
+import { Code, Phone, PhoneOff } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
@@ -202,7 +202,7 @@ export const MessageContent = ({
     ? filterExecutionLogsWithoutSummaryAndAgentOutput(executionLogs)
     : []
 
-  const isRetrieveProjectBlock = message.type === "ai"
+  const isRetrieveProjectBlock = message.type === "ai" && !message.isCallEvent
   const isActiveRetrieveProjectBlock = activeRetrieveProjectId && message.id === activeRetrieveProjectId
 
   const getAgentOutputText = () => {
@@ -288,6 +288,34 @@ export const MessageContent = ({
     isFollowingBotMessage && (hasAgentSummary )
 
   const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
+
+  if (message.isCallEvent) {
+    const isCallStarted = message.callEventType === "started"
+    const Icon = isCallStarted ? Phone : PhoneOff
+    const bgColor = isCallStarted ? "bg-emerald-50" : "bg-slate-50"
+    const iconColor = isCallStarted ? "text-emerald-600" : "text-slate-600"
+    const textColor = isCallStarted ? "text-emerald-900" : "text-slate-900"
+    const borderColor = isCallStarted ? "border-emerald-200" : "border-slate-200"
+    const timestampColor = isCallStarted ? "text-emerald-700" : "text-slate-700"
+
+    return (
+      <div ref={containerRef} className="w-full flex justify-center my-2">
+        <div className={`flex flex-col items-center gap-1 px-4 py-2 rounded-2xl ${bgColor} border ${borderColor} shadow-sm`}>
+          <div className="flex items-center gap-2">
+            <Icon className={`w-4 h-4 ${iconColor}`} />
+            <span className={`text-xs font-medium ${textColor}`}>
+              {isCallStarted ? "Video call started" : "Video call ended"}
+            </span>
+          </div>
+          {message.timestamp && (
+            <span className={`text-[10px] font-normal ${timestampColor} opacity-70`}>
+              {message.timestamp}
+            </span>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   if (message.isCode) {
     return (
