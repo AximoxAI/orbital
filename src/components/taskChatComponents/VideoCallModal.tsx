@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useUser } from "@clerk/clerk-react"
 import {
   LiveKitRoom,
@@ -22,10 +22,9 @@ import {
   useCreateLayoutContext,
   useChat,
   TrackRefContext,
-  useTrackRefContext,
   useRoomContext,
 } from "@livekit/components-react"
-import { Track, ParticipantKind } from "livekit-client"
+import { Track } from "livekit-client"
 import "@livekit/components-styles"
 import { LiveKitApiFactory, Configuration } from "@/api-client"
 
@@ -45,6 +44,8 @@ const getLiveKitToken = async (roomName: string, identity: string, name?: string
 interface VideoCallModalProps {
   taskName?: string
   onClose: () => void
+  onCallStart?: () => void
+  onCallEnd?: (duration: number) => void
 }
 
 function EnhancedChat() {
@@ -69,7 +70,6 @@ function EnhancedChat() {
 
   return (
     <Card className="h-full flex flex-col bg-gradient-to-b from-slate-50 to-white border-l-2 border-slate-100 shadow-lg">
-      {/* Chat Header */}
       <CardHeader className="pb-3 border-b bg-white/80 backdrop-blur-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -94,7 +94,6 @@ function EnhancedChat() {
 
       {isExpanded && (
         <>
-          {/* Messages Area */}
           <CardContent className="flex-1 p-0 overflow-hidden">
             <div className="h-full overflow-y-auto p-4 space-y-3 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent">
               {chatMessages.length === 0 ? (
@@ -109,12 +108,9 @@ function EnhancedChat() {
                 chatMessages.map((msg, index) => (
                   <div key={index} className="group">
                     <div className="flex items-start gap-3">
-                      {/* Avatar */}
                       <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-slate-500 to-purple-600 rounded-full flex items-center justify-center">
                         <User className="h-4 w-4 text-white" />
                       </div>
-
-                      {/* Message Content */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-sm font-semibold text-gray-900 truncate">
@@ -124,8 +120,6 @@ function EnhancedChat() {
                             {formatTime(msg.timestamp)}
                           </span>
                         </div>
-
-                        {/* Message Bubble */}
                         <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm hover:shadow-md transition-shadow">
                           <p className="text-sm text-gray-800 leading-relaxed break-words">{msg.message}</p>
                         </div>
@@ -137,7 +131,6 @@ function EnhancedChat() {
             </div>
           </CardContent>
 
-          {/* Message Input */}
           <div className="border-t bg-white/90 backdrop-blur-sm p-4">
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <div className="flex-1 relative">
@@ -168,7 +161,6 @@ function EnhancedChat() {
   )
 }
 
-// Custom ParticipantTile wrapper with proper props
 function CustomParticipantTile({ trackRef, disableSpeakingIndicator = false, ...props }: any) {
   return (
     <ParticipantTile
@@ -184,12 +176,19 @@ function CustomParticipantTile({ trackRef, disableSpeakingIndicator = false, ...
   )
 }
 
-// Custom Video Conference with proper layout and controls
-function MyVideoConference({ onLeave }: { onLeave: () => void }) {
+function MyVideoConference({ 
+  onLeave, 
+  onCallStart, 
+  onCallEnd 
+}: { 
+  onLeave: () => void
+  onCallStart?: () => void
+  onCallEnd?: (duration: number) => void 
+}) {
   const layoutContext = useCreateLayoutContext()
-  const participants = useParticipants()
+  const callStartedRef = useRef(false)
+  const callStartTimeRef = useRef<number | null>(null)
 
-  // Get all tracks for camera and screen share with proper options
   const tracks = useTracks(
     [
       { source: Track.Source.Camera, withPlaceholder: true },
@@ -201,47 +200,66 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
     },
   )
 
-  // Separate screen share and camera tracks
   const screenShareTracks = tracks.filter((track) => track.source === Track.Source.ScreenShare)
   const cameraTracks = tracks.filter((track) => track.source === Track.Source.Camera)
 
-  // Determine which layout to use
   const hasScreenShare = screenShareTracks.length > 0
   const focusTrack = hasScreenShare ? screenShareTracks[0] : null
 
-  // Listen for room disconnect event to trigger onLeave
   const room = useRoomContext?.()
+  
   useEffect(() => {
     if (!room) return
+
+    const handleConnected = () => {
+      if (!callStartedRef.current) {
+        callStartedRef.current = true
+        callStartTimeRef.current = Date.now()
+        onCallStart?.()
+      }
+    }
+
+    if (room.state === "connected") {
+      handleConnected()
+    }
+
     const handleDisconnected = () => {
+      if (callStartedRef.current) {
+        callStartedRef.current = false
+        
+        const callDuration = callStartTimeRef.current 
+          ? Math.floor((Date.now() - callStartTimeRef.current) / 1000)
+          : 0
+        
+        onCallEnd?.(callDuration)
+        callStartTimeRef.current = null
+      }
       onLeave()
     }
+
+    room.on("connected", handleConnected)
     room.on("disconnected", handleDisconnected)
     return () => {
+      room.off("connected", handleConnected)
       room.off("disconnected", handleDisconnected)
     }
-  }, [room, onLeave])
+  }, [room, onLeave, onCallStart, onCallEnd])
 
   return (
     <LayoutContextProvider value={layoutContext}>
       <div className="h-full flex flex-col relative">
         <RoomAudioRenderer />
 
-        {/* Main content area */}
         <div className="flex-1 flex min-h-0">
-          {/* Video area */}
           <div className="flex-1 relative bg-gray-900">
             {hasScreenShare && focusTrack ? (
-              // Screen share layout with focus on screen share
               <div className="h-full flex flex-col">
-                {/* Main screen share area */}
                 <div className="flex-1 relative">
                   <FocusLayout trackRef={focusTrack}>
                     <CustomParticipantTile />
                   </FocusLayout>
                 </div>
                 
-                {/* Camera thumbnails at bottom */}
                 {cameraTracks.length > 0 && (
                   <div className="h-32 flex gap-2 p-2 bg-black/20">
                     {cameraTracks.map((track, index) => (
@@ -258,20 +276,17 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
                 )}
               </div>
             ) : (
-              // Grid layout for camera feeds only
               <GridLayout tracks={cameraTracks}>
                 <CustomParticipantTile />
               </GridLayout>
             )}
           </div>
 
-          {/* Chat sidebar */}
           <div className="w-80 flex-shrink-0">
             <EnhancedChat />
           </div>
         </div>
 
-        {/* Control bar - fixed at bottom with proper z-index */}
         <div
           className="relative z-50 bg-white border-t border-gray-200"
           style={{
@@ -288,7 +303,7 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
                 controls={{
                   microphone: true,
                   camera: true,
-                  chat: false, // Disabled since we have custom chat
+                  chat: false,
                   screenShare: true,
                   leave: true,
                 }}
@@ -310,7 +325,7 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
   )
 }
 
-const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) => {
+const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose, onCallStart, onCallEnd }) => {
   const { user, isLoaded } = useUser()
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -320,11 +335,9 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
   const [name, setName] = useState("")
   const [metadata, setMetadata] = useState("")
 
-  // Auto-populate user identity from Clerk when user data is loaded
   useEffect(() => {
     if (isLoaded && user) {
       setIdentity(user.username || user.id)
-      // Removed auto-filling of display name
     }
   }, [isLoaded, user])
 
@@ -462,7 +475,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
           style={{ minHeight: 500 }}
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Modal Header */}
           <div className="flex items-center justify-between border-b bg-gray-50/50 p-6 flex-shrink-0">
             <div className="flex items-center gap-3">
               <div className="rounded-lg bg-slate-100 p-2">
@@ -484,7 +496,6 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
             </Button>
           </div>
 
-          {/* Modal Content */}
           <div className="flex flex-1 flex-col overflow-hidden min-h-0">
             <div className="relative flex-1 bg-gray-100 min-h-0">
               <LiveKitRoom
@@ -529,7 +540,11 @@ const VideoCallModal: React.FC<VideoCallModalProps> = ({ taskName, onClose }) =>
                   },
                 }}
               >
-                <MyVideoConference onLeave={handleClose} />
+                <MyVideoConference 
+                  onLeave={handleClose} 
+                  onCallStart={onCallStart}
+                  onCallEnd={onCallEnd}
+                />
               </LiveKitRoom>
             </div>
           </div>

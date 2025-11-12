@@ -107,7 +107,7 @@ const MessagesList = ({
   const scrollTimeoutRef = useRef<NodeJS.Timeout>()
 
   const allMessages = messages
-    .filter((msg) => !msg.status && msg.type !== "system")
+    .filter((msg) => !msg.status)
     .sort((a, b) => {
       const timeA =
         a.timestamp && a.timestamp !== "Just now" ? new Date(a.timestamp).getTime() : Number(a.id.split(".")[0])
@@ -155,57 +155,95 @@ const MessagesList = ({
     shouldAutoScrollRef.current = isNearBottom
   }, [])
 
-  const renderMessage = (message: MessageType, idx: number) => (
-    <React.Fragment key={message.id}>
-      <div className="flex justify-center w-full animate-slide-in">
-        <div className="flex gap-3 w-full max-w-4xl">
-          <MessageAvatar type={message.type} />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 mb-1">
-              <span className="text-sm font-semibold text-slate-900 font-inter">
-                  {message.sender_id}              
-             </span>
-              <span className="text-xs text-slate-400 font-medium font-inter">
-                {message.timestamp}
-              </span>
+  const renderMessage = (message: MessageType, idx: number) => {
+    if (message.isCallEvent) {
+      return (
+        <React.Fragment key={message.id}>
+          <MessageContent
+            message={message}
+            isFullPage={isFullPage}
+            onShowGeneratedFiles={onShowGeneratedFiles}
+            messageIndex={idx}
+            latestHumanIdx={latestHumanIdx}
+            followingBotIdx={followingBotIdx}
+            logs={logs}
+            logsOpen={logsOpen}
+            setLogsOpen={setLogsOpen}
+            showMonacoCanvas={showMonacoCanvas}
+            summary={summary}
+            agentOutput={agentOutput}
+            executionLogs={executionLogs}
+            executionLogsOpen={executionLogsOpen}
+            setExecutionLogsOpen={setExecutionLogsOpen}
+            executionLogsMessageId={executionLogsMessageId}
+            activeRetrieveProjectId={activeRetrieveProjectId}
+            liveRetrieveProjectLogs={liveRetrieveProjectLogs}
+            liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+            liveAgentOutput={liveAgentOutput}
+            hasFilesForMessage={messagesWithFiles.has(message.id)}
+            chatUsers={chatUsers}
+            onSuggestionClick={onSuggestionClick}
+            onRetryClick={onRetryClick}
+            parentMessageContent={message.parentMessageContent}
+            parentAgentName={message.parentAgentName}
+            onContentHeightChange={handleContentHeightChange}
+          />
+        </React.Fragment>
+      )
+    }
+
+    return (
+      <React.Fragment key={message.id}>
+        <div className="flex justify-center w-full animate-slide-in">
+          <div className="flex gap-3 w-full max-w-4xl">
+            <MessageAvatar type={message.type} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-2 mb-1">
+                <span className="text-sm font-semibold text-slate-900 font-inter">
+                    {message.sender_id}              
+               </span>
+                <span className="text-xs text-slate-400 font-medium font-inter">
+                  {message.timestamp}
+                </span>
+              </div>
+              <MessageContent
+                message={message}
+                isFullPage={isFullPage}
+                onShowGeneratedFiles={onShowGeneratedFiles}
+                messageIndex={idx}
+                latestHumanIdx={latestHumanIdx}
+                followingBotIdx={followingBotIdx}
+                logs={logs}
+                logsOpen={logsOpen}
+                setLogsOpen={setLogsOpen}
+                showMonacoCanvas={showMonacoCanvas}
+                summary={summary}
+                agentOutput={agentOutput}
+                executionLogs={executionLogs}
+                executionLogsOpen={executionLogsOpen}
+                setExecutionLogsOpen={setExecutionLogsOpen}
+                executionLogsMessageId={executionLogsMessageId}
+                activeRetrieveProjectId={activeRetrieveProjectId}
+                liveRetrieveProjectLogs={liveRetrieveProjectLogs}
+                liveRetrieveProjectSummary={liveRetrieveProjectSummary}
+                liveAgentOutput={liveAgentOutput}
+                hasFilesForMessage={messagesWithFiles.has(message.id)}
+                chatUsers={chatUsers}
+                onSuggestionClick={onSuggestionClick}
+                onRetryClick={onRetryClick}
+                parentMessageContent={message.parentMessageContent}
+                parentAgentName={message.parentAgentName}
+                onContentHeightChange={handleContentHeightChange}
+              />
+              {message.taskSuggestion && (
+                <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
+              )}
             </div>
-            <MessageContent
-              message={message}
-              isFullPage={isFullPage}
-              onShowGeneratedFiles={onShowGeneratedFiles}
-              messageIndex={idx}
-              latestHumanIdx={latestHumanIdx}
-              followingBotIdx={followingBotIdx}
-              logs={logs}
-              logsOpen={logsOpen}
-              setLogsOpen={setLogsOpen}
-              showMonacoCanvas={showMonacoCanvas}
-              summary={summary}
-              agentOutput={agentOutput}
-              executionLogs={executionLogs}
-              executionLogsOpen={executionLogsOpen}
-              setExecutionLogsOpen={setExecutionLogsOpen}
-              executionLogsMessageId={executionLogsMessageId}
-              activeRetrieveProjectId={activeRetrieveProjectId}
-              liveRetrieveProjectLogs={liveRetrieveProjectLogs}
-              liveRetrieveProjectSummary={liveRetrieveProjectSummary}
-              liveAgentOutput={liveAgentOutput}
-              hasFilesForMessage={messagesWithFiles.has(message.id)}
-              chatUsers={chatUsers}
-              onSuggestionClick={onSuggestionClick}
-              onRetryClick={onRetryClick}
-              parentMessageContent={message.parentMessageContent}
-              parentAgentName={message.parentAgentName}
-              onContentHeightChange={handleContentHeightChange}
-            />
-            {message.taskSuggestion && (
-              <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />
-            )}
           </div>
         </div>
-      </div>
-    </React.Fragment>
-  )
+      </React.Fragment>
+    )
+  }
 
   useEffect(() => {
     scrollToBottom(true)

@@ -24,6 +24,8 @@ interface TaskChatProps {
   taskName: string
   taskId: string
   onCreateTask?: (taskName: string, projectName: string) => void
+  onCallStart?: (taskId: string) => void
+  onCallEnd?: (taskId: string) => void
 }
 
 function formatDateTime(datetime: string) {
@@ -47,6 +49,8 @@ const TaskChat = ({
   taskName: propTaskName,
   taskId,
   onCreateTask,
+  onCallStart,
+  onCallEnd,
 }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -89,6 +93,20 @@ const TaskChat = ({
   if (isFullPage && location.state?.taskName) {
     taskName = location.state.taskName
   }
+
+  const addCallEventMessage = useCallback((eventType: "started" | "ended") => {
+    const content = eventType === "started" ? "Video call started" : "Video call ended"
+
+    if (socketApiInstanceRef.current) {
+      socketApiInstanceRef.current.sendMessage({
+        senderType: "system",
+        senderId: "system",
+        content,
+        timestamp: new Date().toISOString(),
+        taskId,
+      })
+    }
+  }, [taskId])
 
   // ---- Fetch all users ----
   useEffect(() => {
@@ -213,16 +231,24 @@ const TaskChat = ({
   }, [])
 
   const mapBackendMsg = (msg: any) => {
-    let type: "ai" | "human"
+    let type: "ai" | "human" | "system"
     if (msg.sender_type) {
-      type = msg.sender_type === "human" ? "human" : "ai"
+      type = msg.sender_type === "human" ? "human" : msg.sender_type === "system" ? "system" : "ai"
     } else if (msg.type) {
-      type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : "ai"
+      type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : msg.type === "system" ? "system" : "ai"
     } else {
       type = "ai"
     }
     let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
     if (type === "ai") author = msg.sender_id || "Bot"
+    
+    const isSystemMessage = msg.sender_type === "system" && msg.sender_id === "system"
+    const isCallStartMessage = isSystemMessage && msg.content === "Video call started"
+    const isCallEndMessage = isSystemMessage && (
+      msg.content === "Video call ended" || 
+      msg.content?.startsWith("Video call ended")
+    )
+    
     return {
       id: msg.id || String(Date.now()),
       type,
@@ -232,6 +258,8 @@ const TaskChat = ({
       timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
       isCode: !!msg.isCode,
       taskSuggestion: msg.taskSuggestion || undefined,
+      isCallEvent:  isCallStartMessage || isCallEndMessage,
+      callEventType: (isCallStartMessage ? "started" : isCallEndMessage ? "ended" : undefined),
     }
   }
 
@@ -495,6 +523,14 @@ const TaskChat = ({
           onRemoveUser={handleRemoveUser}
           availableUsers={availableUsers}
           onOpenRepoGraph={handleOpenRepoGraph}
+          onCallStart={() => {
+            addCallEventMessage("started")
+            onCallStart?.(taskId)
+          }}
+          onCallEnd={() => {
+            addCallEventMessage("ended")
+            onCallEnd?.(taskId)
+          }}
         />
 
         <MessagesList
