@@ -227,6 +227,10 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
       }
     }
 
+    if (room.state === "connected") {
+    handleConnected()
+    }
+
     const handleDisconnected = () => {
       if (callStartedRef.current) {
         callStartedRef.current = false
