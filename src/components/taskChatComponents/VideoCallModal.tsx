@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useUser } from "@clerk/clerk-react"
 import {
   LiveKitRoom,
@@ -28,6 +28,8 @@ import {
 import { Track, ParticipantKind } from "livekit-client"
 import "@livekit/components-styles"
 import { LiveKitApiFactory, Configuration } from "@/api-client"
+
+import { useToast } from "@/components/ui/use-toast"
 
 const WS_URL = import.meta.env.VITE_LIVEKIT_URL
 
@@ -188,6 +190,9 @@ function CustomParticipantTile({ trackRef, disableSpeakingIndicator = false, ...
 function MyVideoConference({ onLeave }: { onLeave: () => void }) {
   const layoutContext = useCreateLayoutContext()
   const participants = useParticipants()
+  
+  const { toast } = useToast()
+  const callStartedRef = useRef(false)
 
   // Get all tracks for camera and screen share with proper options
   const tracks = useTracks(
@@ -211,16 +216,32 @@ function MyVideoConference({ onLeave }: { onLeave: () => void }) {
 
   // Listen for room disconnect event to trigger onLeave
   const room = useRoomContext?.()
+  
   useEffect(() => {
     if (!room) return
+
+    const handleConnected = () => {
+      if (!callStartedRef.current) {
+        callStartedRef.current = true
+        toast({ title: "Video Call Started", description: "You have joined the call." })
+      }
+    }
+
     const handleDisconnected = () => {
+      if (callStartedRef.current) {
+        callStartedRef.current = false
+        toast({ title: "Video Call Ended", description: "You have left the call." })
+      }
       onLeave()
     }
+
+    room.on("connected", handleConnected)
     room.on("disconnected", handleDisconnected)
     return () => {
+      room.off("connected", handleConnected)
       room.off("disconnected", handleDisconnected)
     }
-  }, [room, onLeave])
+  }, [room, onLeave, toast])
 
   return (
     <LayoutContextProvider value={layoutContext}>
