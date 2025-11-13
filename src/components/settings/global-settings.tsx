@@ -1,7 +1,5 @@
-"use client"
-
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { ChevronDown, Settings, ChevronRight, Edit3, Plus, X } from "lucide-react"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
@@ -20,12 +18,34 @@ interface ModelConfig {
   version: string
 }
 
+interface AgentConfig {
+  id: number
+  name: string
+  icon: React.ReactNode
+  color: string
+  expanded: boolean
+  servers: {
+    deepwiki: { enabled: boolean; tools: number }
+    github: { enabled: boolean; tools: number }
+    gmail: { enabled: boolean; tools: number }
+    postgres: { enabled: boolean; tools: number }
+    mongodb: { enabled: boolean; tools: number }
+    azure: { enabled: boolean; tools: number }
+    neo4j: { enabled: boolean; tools: number }
+  }
+}
+
 const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<"agents" | "settings">("agents")
   const [selectedModel, setSelectedModel] = useState<string>("chatgpt")
+  const [selectedAgent, setSelectedAgent] = useState<number>(1)
   const [hasChanges, setHasChanges] = useState(false)
 
-  const [agents, setAgents] = useState([
+  useEffect(() => {
+    setHasChanges(false)
+  }, [selectedModel])
+
+  const [agents, setAgents] = useState<AgentConfig[]>([
     {
       id: 1,
       name: "Orbital CLI",
@@ -181,24 +201,24 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
     )
   }
 
-  const updateModelConfig = (
+  const updateModelConfig = <K extends keyof Omit<ModelConfig, "id" | "name" | "icon" | "color">>(
     modelId: string,
-    field: keyof Omit<ModelConfig, "id" | "name" | "icon" | "color">,
-    value: any,
+    field: K,
+    value: ModelConfig[K],
   ) => {
     setHasChanges(true)
     setModels((models) => models.map((model) => (model.id === modelId ? { ...model, [field]: value } : model)))
   }
 
-  const getEnabledCount = (agent: (typeof agents)[0]) => {
-    return Object.values(agent.servers).filter((server: any) => server.enabled).length
+  const getEnabledCount = (agent: AgentConfig) => {
+    return Object.values(agent.servers).filter((server: { enabled: boolean; tools: number }) => server.enabled).length
   }
 
   const currentModel = models.find((model) => model.id === selectedModel)
+  const currentAgent = agents.find((agent) => agent.id === selectedAgent)
 
   const handleApplyChanges = () => {
     setHasChanges(false)
-    console.log("Changes applied for model:", selectedModel)
   }
 
   return (
@@ -312,7 +332,26 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
             <h2 className="text-base font-medium text-gray-900">Model Configuration</h2>
           </div>
 
-          <div className="px-4 py-3 border-b bg-white flex-shrink-0">
+          <div className="px-4 pt-3 pb-3 border-b bg-white flex-shrink-0">
+            <label className="block text-xs font-medium text-gray-700 mb-2">Select Agent</label>
+            <Select value={String(selectedAgent)} onValueChange={v => setSelectedAgent(Number(v))}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select an agent" />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.map(agent => (
+                  <SelectItem value={String(agent.id)} key={agent.id}>
+                    <div className="flex items-center space-x-2">
+                      <span className="w-7 h-6">{agent.icon}</span>
+                      <span>{agent.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="px-4 py-6 border-b bg-white flex-shrink-0">
             <label className="block text-xs font-medium text-gray-700 mb-2">Select Model</label>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-full">
@@ -347,8 +386,17 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-700">Temperature</label>
-                      <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">
+                      <label
+                        className="text-xs font-medium text-gray-700"
+                        id="temperature-label"
+                      >
+                        Temperature
+                      </label>
+                      <span
+                        className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
                         {currentModel.temperature.toFixed(2)}
                       </span>
                     </div>
@@ -358,10 +406,11 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                       max="2"
                       step="0.1"
                       value={currentModel.temperature}
+                      aria-labelledby="temperature-label"
                       onChange={(e) =>
                         updateModelConfig(currentModel.id, "temperature", Number.parseFloat(e.target.value))
                       }
-                      className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer "
+                      className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
                     />
                     <div className="text-xs text-gray-500 mt-2">
                       Controls randomness: 0 is deterministic, 2 is maximum random
@@ -369,8 +418,17 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-xs font-medium text-gray-700">Top P (Nucleus Sampling)</label>
-                      <span className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded">
+                      <label
+                        className="text-xs font-medium text-gray-700"
+                        id="top-p-label"
+                      >
+                        Top P (Nucleus Sampling)
+                      </label>
+                      <span
+                        className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded"
+                        aria-live="polite"
+                        aria-atomic="true"
+                      >
                         {currentModel.topP.toFixed(2)}
                       </span>
                     </div>
@@ -380,6 +438,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                       max="1"
                       step="0.05"
                       value={currentModel.topP}
+                      aria-labelledby="top-p-label"
                       onChange={(e) => updateModelConfig(currentModel.id, "topP", Number.parseFloat(e.target.value))}
                       className="w-full h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer"
                     />
@@ -391,10 +450,12 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                     <label className="block text-xs font-medium text-gray-700 mb-2">Max Tokens</label>
                     <input
                       type="number"
+                      min="1"
                       value={currentModel.maxTokens}
-                      onChange={(e) =>
-                        updateModelConfig(currentModel.id, "maxTokens", Number.parseInt(e.target.value) || 0)
-                      }
+                      onChange={(e) => {
+                        const value = Number.parseInt(e.target.value)
+                        updateModelConfig(currentModel.id, "maxTokens", value > 0 ? value : 1)
+                      }}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="e.g., 2048"
                     />
