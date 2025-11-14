@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef } from "react";
 import Editor from "@monaco-editor/react";
-import { Eye, EyeOff, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Eye, EyeOff, ChevronLeft, ChevronRight, X, Github } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@clerk/clerk-react";
 import { TaskChatAPI, createTaskChatAPI } from "../apiComponents/TaskChatApi";
@@ -15,6 +15,7 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
     filesFromApi = [], onLogsUpdate, onSummaryUpdate, onAgentOutputUpdate,
     onClose, inputMessage, onFilesGenerated,
     customPreview, showCustomPreview, 
+    onSyncWithGitHub
   } = props;
   const [api, setApi] = useState<TaskChatAPI | null>(null);
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -77,7 +78,7 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
         const mentions = extractBotMentions(messageToSend);
         const mentionAgent = mentions.length > 0 ? mentions[0].replace(/^@/, "") : DEFAULT_AGENT_ID;
         api.executeTask({ taskId, agentId: mentionAgent, message: messageToSend, mentions });
-      } catch (error) { console.error("Error executing task:", error); }
+      } catch (error) { }
     };
     if (connected) executeAfterConnection();
     else setTimeout(executeAfterConnection, 1000);
@@ -125,10 +126,15 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
     if (showPreview) setPreviewContent(currentFileContent);
   }, [currentFileContent, showPreview]);
 
+  const handleSyncWithGitHub = useCallback(() => {
+    if (onSyncWithGitHub) {
+      onSyncWithGitHub();
+    }
+  }, [onSyncWithGitHub]);
+
   if (!isVisible) return null;
   const statusColor = connected ? "#28a745" : "#dc3545";
   const statusText = connected ? "Connected" : "Disconnected";
-
   const isCustomPreview = !!customPreview && !!showCustomPreview;
   const effectivePreview = isCustomPreview || showPreview;
 
@@ -150,6 +156,16 @@ const MonacoCanvas = forwardRef((props: MonacoCanvasProps, _ref) => {
             {files.length > 0 && <span className="text-xs text-gray-500">({files.length} files)</span>}
           </div>
           <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSyncWithGitHub}
+              className="flex items-center space-x-1"
+              aria-label="Sync with GitHub"
+            >
+              <Github className="w-4 h-4" />
+              <span className="text-xs">Sync</span>
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleTogglePreview} className="flex items-center space-x-1">
               {effectivePreview ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               <span className="text-xs">{effectivePreview ? 'Hide' : 'Preview'}</span>
