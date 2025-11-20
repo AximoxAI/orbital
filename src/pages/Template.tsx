@@ -45,12 +45,13 @@ const categories = [
 const Template = () => {
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
-
   const [templates, setTemplates] = useState<Array<any>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const [popupTemplate, setPopupTemplate] = useState<null | any>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editVersion, setEditVersion] = useState("1.0")
+  const [editDescription, setEditDescription] = useState("")
   const [systemPrompt, setSystemPrompt] = useState("")
   const [userPrompt, setUserPrompt] = useState("")
   const [editTags, setEditTags] = useState<string[]>([])
@@ -87,6 +88,9 @@ const Template = () => {
       setEditTagsInput("")
       setSystemPrompt(popupTemplate.systemPrompt)
       setUserPrompt(popupTemplate.userPrompt)
+      setEditTitle(popupTemplate.title || "")
+      setEditVersion(popupTemplate.version || "1.0")
+      setEditDescription(popupTemplate.description || "")
     }
   }, [popupTemplate])
 
@@ -181,6 +185,9 @@ const Template = () => {
         new Configuration({ basePath: BACKEND_API_URL })
       )
       await api.templatesControllerUpdate(popupTemplate.id, {
+        title: editTitle,
+        version: editVersion,
+        description: editDescription,
         systemPrompt,
         userPrompt,
         tags: editTags,
@@ -274,7 +281,7 @@ const Template = () => {
           )}
         </div>
         <Dialog open={!!popupTemplate} onOpenChange={(open) => !open && setPopupTemplate(null)}>
-          <DialogContent className="max-w-xl w-full p-0">
+          <DialogContent className="max-w-xl w-full p-0 max-h-[500px] overflow-y-scroll">
             {popupTemplate && (
               <form onSubmit={handleEditTemplateSubmit}>
                 <DialogHeader className="px-6 pt-8">
@@ -286,6 +293,31 @@ const Template = () => {
                   </div>
                 </DialogHeader>
                 <div className="px-6 pb-2">
+                  <div className="mb-4">
+                    <div className="font-medium text-sm mb-1">Template Name</div>
+                    <Input
+                      value={editTitle}
+                      onChange={e => setEditTitle(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <div className="font-medium text-sm mb-1">Version</div>
+                    <Input
+                      value={editVersion}
+                      onChange={e => setEditVersion(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="mb-4">
+                    <div className="font-medium text-sm mb-1">Description</div>
+                    <Textarea
+                      value={editDescription}
+                      onChange={e => setEditDescription(e.target.value)}
+                      rows={2}
+                      required
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-1 mb-4">
                     {editTags.map((tag) => (
                       <span key={tag} className="bg-gray-200 px-2 py-1 rounded flex items-center text-sm">
