@@ -97,7 +97,6 @@ const FileUploadDialog: React.FC<FileUploadDialogProps> = ({ open, onOpenChange,
                     Browse
                 </Button>
                 </p>
-                <p className="text-xs text-gray-400">Supports TXT, MARKDOWN, MDX, PDF, HTML, XLSX, XLS, DOC, DOCX, CSV, EML, MSG, PPTX, XML, EPUB, PPT, MD, HTM. Max 15MB each.</p>
             </div>
           </div>
           {files.length > 0 && (
