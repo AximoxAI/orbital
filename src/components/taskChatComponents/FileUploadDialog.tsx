@@ -62,15 +62,6 @@ const FileUploadDialog: React.FC<FileUploadDialogProps> = ({ open, onOpenChange,
     setFiles([]);
   };
   
-  const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return '📄';
-      case 'pptx': return '📊';
-      case 'docx': return '📝';
-      default: return '📄';
-    }
-  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -107,9 +98,9 @@ const FileUploadDialog: React.FC<FileUploadDialogProps> = ({ open, onOpenChange,
               {files.map((file, index) => (
                 <div key={index} className="flex items-center justify-between p-2 border rounded-md bg-gray-50">
                    <div className="flex items-center space-x-2">
-                        <span className="text-xl">{getFileIcon(file.name)}</span>
-                        <div>
-                            <p className="text-sm font-medium">{file.name}</p>
+
+                        <div className='ml-5 '>
+                            <p className="text-sm font-medium text-slate-600">{file.name}</p>
                             <p className="text-xs text-gray-500">{(file.size / 1024 / 1024).toFixed(2)}MB</p>
                         </div>
                    </div>
