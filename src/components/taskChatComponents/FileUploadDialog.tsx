@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { UploadCloud, File as FileIcon, X } from 'lucide-react';
+import { UploadCloud, X } from 'lucide-react';
 
 interface FileUploadDialogProps {
   open: boolean;
@@ -13,11 +13,19 @@ const FileUploadDialog: React.FC<FileUploadDialogProps> = ({ open, onOpenChange,
   const [files, setFiles] = useState<File[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFileChange = (selectedFiles: FileList | null) => {
+  const handleFileChange = useCallback((selectedFiles: FileList | null) => {
     if (selectedFiles) {
-      setFiles(prev => [...prev, ...Array.from(selectedFiles)]);
+            setFiles(prev => {
+        const prevFiles = prev;
+        const newFiles = Array.from(selectedFiles).filter(
+          file => !prevFiles.some(
+            f => f.name === file.name && f.size === file.size
+          )
+        );
+        return [...prevFiles, ...newFiles];
+      });
     }
-  };
+  }, []);
 
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();

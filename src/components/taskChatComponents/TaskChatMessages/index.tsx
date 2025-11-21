@@ -101,7 +101,7 @@ const MessagesList = ({
   onSuggestionClick,
   onRetryClick,
   onFileClick
-}: MessagesListProps)=> {
+}: MessagesListProps) => {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [renderedSkeleton, setRenderedSkeleton] = useState(false)

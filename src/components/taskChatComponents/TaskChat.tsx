@@ -386,7 +386,7 @@ const TaskChat = ({
         ])
       })
       .finally(() => setLoading(false))
-  }, [isOpen, taskId, fetchMessages, getGeneratedFiles, mapBackendMsg])
+  }, [isOpen, taskId, fetchMessages, getGeneratedFiles, mapBackendMsg, user?.username])
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
@@ -429,6 +429,7 @@ const TaskChat = ({
   }, [])
 
   const handleSendMessage = () => {
+    setIsUserSkeletonVisible(true);
     if (newMessage.trim() || attachedFiles.length > 0) {
       const dummyFiles = attachedFiles.length > 0 ? attachedFiles.map(file => ({
         name: file.name,
