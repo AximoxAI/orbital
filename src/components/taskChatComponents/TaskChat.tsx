@@ -315,7 +315,7 @@ const TaskChat = ({
       }
       setSocket(null)
     }
-  }, [isOpen, taskId, getToken])
+  }, [isOpen, taskId, getToken, user?.username, activeRetrieveProjectId, mapBackendMsg])
 
   const fetchMessages = useCallback(
     async (taskId: string) => {
