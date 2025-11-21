@@ -38,6 +38,7 @@ interface MessagesListProps {
   chatUsers?: UserType[]
   onSuggestionClick: (suggestion: string, parentAgentName?: string) => void
   onRetryClick?: (parentMessageContent: string) => void
+  onFileClick?: (file: any) => void
 }
 
 const UserMessageSkeleton = () => (
@@ -98,8 +99,9 @@ const MessagesList = ({
   messagesWithFiles = new Set(),
   chatUsers = [],
   onSuggestionClick,
-  onRetryClick
-}: MessagesListProps) => {
+  onRetryClick,
+  onFileClick
+}: MessagesListProps)=> {
   const [parent] = useAutoAnimate<HTMLDivElement>()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [renderedSkeleton, setRenderedSkeleton] = useState(false)
@@ -187,6 +189,7 @@ const MessagesList = ({
             parentMessageContent={message.parentMessageContent}
             parentAgentName={message.parentAgentName}
             onContentHeightChange={handleContentHeightChange}
+            onFileClick={onFileClick}
           />
         </React.Fragment>
       )
@@ -234,6 +237,7 @@ const MessagesList = ({
                 parentMessageContent={message.parentMessageContent}
                 parentAgentName={message.parentAgentName}
                 onContentHeightChange={handleContentHeightChange}
+                onFileClick={onFileClick}
               />
               {message.taskSuggestion && (
                 <TaskSuggestion taskSuggestion={message.taskSuggestion} isFullPage={isFullPage} />

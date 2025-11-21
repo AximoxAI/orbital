@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
-import { Code, Phone, PhoneOff } from "lucide-react"
+import { Code, Phone, PhoneOff, File } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
@@ -16,8 +16,14 @@ const configuration = new OpenApiConfiguration({
 })
 const tasksApi = new TasksApi(configuration)
 
+interface AttachedFile {
+  name: string
+  size: number
+  type: string
+}
+
 interface MessageContentProps {
-  message: MessageType
+  message: MessageType & { attachedFiles?: AttachedFile[] }
   isFullPage: boolean
   onShowGeneratedFiles: (id: string) => void
   messageIndex: number
@@ -44,6 +50,7 @@ interface MessageContentProps {
   parentMessageContent?: string
   parentAgentName?: string
   onContentHeightChange?: () => void
+  onFileClick?: (file: AttachedFile) => void
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -183,7 +190,8 @@ export const MessageContent = ({
   onRetryClick,
   parentMessageContent,
   parentAgentName,
-  onContentHeightChange
+  onContentHeightChange,
+  onFileClick
 }: MessageContentProps) => {
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
   const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
@@ -487,11 +495,28 @@ export const MessageContent = ({
 
   return (
     <div ref={containerRef} className="w-full">
-      <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
-        <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
-          {renderedContent}
+      {message.attachedFiles && message.attachedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {message.attachedFiles.map((file: AttachedFile, index: number) => (
+            <div
+              key={index}
+              onClick={() => onFileClick?.(file)}
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-200 hover:shadow-sm transition-all cursor-pointer active:scale-95"
+            >
+              <File className="w-3.5 h-3.5 text-slate-500" />
+              <span className="truncate max-w-[200px]">{file.name}</span>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+      
+      {message.content && message.content.trim() && (
+        <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
+          <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+            {renderedContent}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

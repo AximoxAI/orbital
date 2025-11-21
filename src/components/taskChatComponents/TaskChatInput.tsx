@@ -1,9 +1,9 @@
 import type React from "react"
 import { useRef, useState } from "react"
-import { Send, Bot, User, LayoutTemplate } from "lucide-react"
+import { Send, Bot, User, LayoutTemplate, Paperclip, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
+import FileUploadDialog from "./FileUploadDialog"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -75,7 +75,9 @@ interface ChatInputProps {
   setNewMessage: (message: string) => void
   onSendMessage: () => void
   isFullPage?: boolean
-  availableUsers: UserType[] // only selected users!
+  availableUsers: UserType[]
+  attachedFiles: File[]
+  setAttachedFiles: (files: File[]) => void
 }
 
 const ChatInput = ({
@@ -84,6 +86,8 @@ const ChatInput = ({
   onSendMessage,
   isFullPage = false,
   availableUsers,
+  attachedFiles,
+  setAttachedFiles,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
@@ -91,18 +95,30 @@ const ChatInput = ({
   const [mentionStartPos, setMentionStartPos] = useState(0)
   const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
+  const [showFileUploadDialog, setShowFileUploadDialog] = useState(false)
+  const [isRemoving, setIsRemoving] = useState<number | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Use only selected users for suggestions
   const userSuggestions = availableUsers.map(u => "@" + (u.name || u.email || u.id));
+
+  const handleFilesSelect = (files: File[]) => {
+    setAttachedFiles(files)
+  }
+
+  const removeAttachedFile = (index: number) => {
+    setIsRemoving(index)
+    setTimeout(() => {
+      setAttachedFiles(attachedFiles.filter((_, i) => i !== index))
+      setIsRemoving(null)
+    }, 150)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value
     const cursorPos = e.target.selectionStart
     setNewMessage(value)
 
-    // Auto-resize textarea with a higher maximum height for multiline
     const textarea = e.target
     textarea.style.height = 'auto'
     textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
@@ -113,17 +129,14 @@ const ChatInput = ({
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
       if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
-        // Check for bot matches first
         const filteredBots = availableBots.filter((bot) =>
           bot.toLowerCase().includes(textAfterAt.toLowerCase())
         )
 
-        // Check for user matches (only selected users)
         const filteredUsers = userSuggestions.filter((user) =>
           user.toLowerCase().includes(textAfterAt.toLowerCase())
         )
 
-        // Combine and prioritize bots first, then users
         const allFiltered = [...filteredBots, ...filteredUsers]
 
         if (allFiltered.length > 0) {
@@ -131,7 +144,6 @@ const ChatInput = ({
           setShowSuggestions(true)
           setSelectedSuggestionIndex(0)
           setMentionStartPos(lastAtIndex)
-          // Set suggestion type based on first match
           setSuggestionType(filteredBots.length > 0 ? 'bot' : 'user')
           return
         }
@@ -178,16 +190,11 @@ const ChatInput = ({
       }
     }
 
-    // Allow Enter for new lines, require Ctrl+Enter or Cmd+Enter to send
-    // Modified: Also send on plain Enter if no suggestions are showing and textarea is not multiline
     if (e.key === "Enter" && !showSuggestions) {
       if ((e.ctrlKey || e.metaKey) || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
-        // If it's a regular Enter (not Shift/Alt/Ctrl/Cmd), send if not multiline
-        // If textarea contains newlines, let Enter do a new line unless Ctrl/Cmd
         if (
           (!e.ctrlKey && !e.metaKey && (newMessage.includes('\n') || e.shiftKey || e.altKey))
         ) {
-          // Let Enter add new line
           return
         }
         e.preventDefault()
@@ -214,6 +221,11 @@ const ChatInput = ({
         open={showTemplateDialog}
         onOpenChange={setShowTemplateDialog}
         onSelect={() => setShowTemplateDialog(false)}
+      />
+      <FileUploadDialog
+        open={showFileUploadDialog}
+        onOpenChange={setShowFileUploadDialog}
+        onFilesSelect={handleFilesSelect}
       />
       <div
         className={`fixed bottom-0 left-0 right-0 ${isFullPage ? "flex justify-center" : ""} border-t border-gray-200 bg-white relative z-20`}
@@ -243,8 +255,32 @@ const ChatInput = ({
         )}
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
+          {attachedFiles.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2 transition-all duration-200">
+              {attachedFiles.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className={`flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm transition-all duration-150 ${
+                    isRemoving === index ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
+                  }`}
+                  style={{
+                    animation: isRemoving === index ? 'none' : 'slideIn 0.2s ease-out'
+                  }}
+                >
+                  <span className="text-slate-700 text-xs max-w-[150px] truncate">{file.name}</span>
+                  <button
+                    onClick={() => removeAttachedFile(index)}
+                    className="text-slate-500 hover:text-slate-700 ml-1 transition-colors duration-150"
+                    disabled={isRemoving !== null}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
-            {/* Templates button on the LEFT */}
             {isFullPage && (
               <Button
                 variant="outline"
@@ -262,14 +298,24 @@ const ChatInput = ({
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              className="flex-1  resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
+              className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
               rows={3}
               style={{ lineHeight: "1.5" }}
             />
             <div className="flex items-center h-full gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFileUploadDialog(true)}
+                className="flex items-center gap-1 transition-all duration-150"
+                aria-label="Attach Files"
+              >
+                <Paperclip className="h-4 w-4" />
+              </Button>
+              
               <button
                 onClick={onSendMessage}
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() && attachedFiles.length === 0}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
                 title="Send message (Ctrl+Enter or Enter)"
               >
@@ -279,6 +325,19 @@ const ChatInput = ({
           </div>
         </div>
       </div>
+
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+      `}</style>
     </>
   )
 }

@@ -14,6 +14,7 @@ import { Configuration, ProjectsApi, TasksApi } from "@/api-client";
 import CreateProject from "@/components/apiComponents/CreateProject";
 import GenerateRequirements from "@/components/apiComponents/GenerateRequirements";
 import { CreateTask } from "@/components/apiComponents/CreateTask";
+import FileUploadDialog from "@/components/taskChatComponents/FileUploadDialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -157,6 +158,7 @@ const ProjectBoard = () => {
   const [showCreateProjectModal, setShowCreateProjectModal] = useState(false);
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [showRequirementsModal, setShowRequirementsModal] = useState(false);
+  const [showFileUploadDialog, setShowFileUploadDialog] = useState(false);
   const [requirementsProjectId, setRequirementsProjectId] = useState("");
   const [createTaskProjectId, setCreateTaskProjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -254,6 +256,10 @@ const ProjectBoard = () => {
     setShowCreateProjectModal(false);
   };
 
+  const handleFilesSelect = (files: File[]) => {
+    console.log("Files uploaded:", files);
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
       <TaskChat
@@ -324,10 +330,7 @@ const ProjectBoard = () => {
               </div>
             </Card>
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                setChatOpen(true);
-                setSelectedTask({ id: "doc", title: "Create new doc" });
-              }}
+              onClick={() => setShowFileUploadDialog(true)}
             >
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
@@ -390,6 +393,13 @@ const ProjectBoard = () => {
               <GenerateRequirements defaultProjectId={requirementsProjectId} />
             </div>
           </div>
+        )}
+        {showFileUploadDialog && (
+          <FileUploadDialog
+            open={showFileUploadDialog}
+            onOpenChange={setShowFileUploadDialog}
+            onFilesSelect={handleFilesSelect}
+          />
         )}
       </div>
     </div>
