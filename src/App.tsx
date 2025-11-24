@@ -23,12 +23,15 @@ const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const location = useLocation();
   const taskName = location.state?.taskName || (taskId ? `Task #${taskId}` : "Task");
+  const globalDocs = location.state?.globalDocs || [];  
+  
   return (
     <TaskChat
       isOpen={!!taskId}
       onClose={() => window.history.back()}
       taskName={taskName}
       taskId={taskId || ""}
+      globalDocs={globalDocs} 
     />
   );
 };

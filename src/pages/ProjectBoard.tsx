@@ -2,11 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  EllipsisVertical,
-  Filter,
-  FileText,
-} from "lucide-react";
+import { EllipsisVertical, Filter, FileText, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import TaskChat from "@/components/taskChatComponents/TaskChat";
 import { useUser, useAuth } from "@clerk/clerk-react";
@@ -23,8 +19,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Sidebar from "@/components/Sidebar";
 import TopBar from "@/components/Topbar";
+import { uploadFileToS3, listFilesFromS3, getS3FileUrl, deleteFileFromS3 } from "@/utils/s3Client";
 
-// Dummy fallback for missing avatars
 const getInitials = (name: string) => {
   if (!name) return "??";
   const parts = name.trim().split(" ");
@@ -32,7 +28,14 @@ const getInitials = (name: string) => {
   return (parts[0][0] + parts[1][0]).toUpperCase();
 };
 
-const getProgressColor = (progress: number): string => 'text-green-300';
+interface UploadedFile {
+  name: string;
+  size: number;
+  type: string;
+  uploadedAt: string;
+  id: string;
+  url: string;
+}
 
 function ProjectsList({
   projects,
@@ -162,9 +165,33 @@ const ProjectBoard = () => {
   const [requirementsProjectId, setRequirementsProjectId] = useState("");
   const [createTaskProjectId, setCreateTaskProjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
 
   const { user } = useUser();
   const { getToken } = useAuth();
+
+  const fetchUploadedFiles = async () => {
+    try {
+      const s3Files = await listFilesFromS3("docs");
+      
+      const mapped = await Promise.all(
+        (s3Files || [])
+          .filter((f: any) => !!f.Key)
+          .map(async (f: any) => ({
+            name: f.Key.split("/").slice(1).join("/"),
+            size: f.Size,
+            type: "",
+            uploadedAt: f.LastModified,
+            id: f.Key,
+            url: await getS3FileUrl(f.Key),
+          }))
+      );
+      
+      setUploadedFiles(mapped);
+    } catch (err) {
+      console.error('Error fetching S3 files:', err);
+    }
+  };
 
   useEffect(() => {
     const fetchProjectsAndTasks = async () => {
@@ -209,6 +236,7 @@ const ProjectBoard = () => {
     };
 
     fetchProjectsAndTasks();
+    fetchUploadedFiles();
   }, [getToken]);
 
   const handleCreateTask = (taskName: string, projectName: string) => {
@@ -256,8 +284,21 @@ const ProjectBoard = () => {
     setShowCreateProjectModal(false);
   };
 
-  const handleFilesSelect = (files: File[]) => {
-    console.log("Files uploaded:", files);
+  const handleFilesSelect = async (files: File[]) => {
+    for (const f of files) {
+      await uploadFileToS3(f, "docs");
+    }
+    await fetchUploadedFiles();
+  };
+
+  const handleRemoveFile = async (fileId: string) => {
+    try {
+      await deleteFileFromS3(fileId);
+      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
+    } catch (error) {
+      console.error('Error deleting file from S3:', error);
+      alert('Failed to delete file. Please try again.');
+    }
   };
 
   return (
@@ -268,6 +309,7 @@ const ProjectBoard = () => {
         taskName={selectedTask?.title ?? ""}
         taskId={selectedTask?.id ?? ""}
         onCreateTask={handleCreateTask}
+        globalDocs={uploadedFiles}
       />
 
       <Sidebar />
@@ -298,6 +340,39 @@ const ProjectBoard = () => {
             </div>
           </div>
         </div>
+        
+        {uploadedFiles.length > 0 && (
+          <div className="px-6 py-4 bg-white border-b border-gray-200">
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="text-sm font-semibold text-gray-800"> Documents</h4>
+              <span className="text-xs text-gray-500">{uploadedFiles.length} file{uploadedFiles.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {uploadedFiles.map((file) => (
+                <Badge 
+                  key={file.id} 
+                  variant="secondary" 
+                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                  onClick={() => window.open(file.url, '_blank')}
+                >
+                  <FileText className="w-3 h-3 text-slate-600" />
+                  <span className="text-xs text-gray-700">{file.name}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveFile(file.id);
+                    }}
+                    className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
+                    aria-label="Remove file"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <div className="px-6 py-4 bg-white border-b border-gray-200">
           <div className="grid grid-cols-3 gap-4">
             <Card className="p-4 hover:shadow-md transition-shadow cursor-pointer"

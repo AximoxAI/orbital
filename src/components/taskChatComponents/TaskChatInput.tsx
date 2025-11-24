@@ -1,9 +1,10 @@
 import type React from "react"
 import { useRef, useState } from "react"
-import { Send, Bot, User, LayoutTemplate, Paperclip, X } from "lucide-react"
+import { Send, Bot, User, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
-import FileUploadDialog from "./FileUploadDialog"
+import AttachFileButton from "./AttachFileButton"
+import AttachedFilesList from "./AttachedFilesList"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -70,14 +71,23 @@ interface UserType {
   email?: string
 }
 
+interface UploadedFile {
+  name: string
+  size: number
+  type: string
+  uploadedAt: string
+  id: string
+  url: string
+}
+
 interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
   onSendMessage: () => void
   isFullPage?: boolean
   availableUsers: UserType[]
-  attachedFiles: File[]
-  setAttachedFiles: (files: File[]) => void
+  attachedS3Files: UploadedFile[]
+  setAttachedS3Files: (files: UploadedFile[]) => void
 }
 
 const ChatInput = ({
@@ -86,8 +96,8 @@ const ChatInput = ({
   onSendMessage,
   isFullPage = false,
   availableUsers,
-  attachedFiles,
-  setAttachedFiles,
+  attachedS3Files,
+  setAttachedS3Files,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
@@ -95,22 +105,17 @@ const ChatInput = ({
   const [mentionStartPos, setMentionStartPos] = useState(0)
   const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
-  const [showFileUploadDialog, setShowFileUploadDialog] = useState(false)
-  const [isRemoving, setIsRemoving] = useState<number | null>(null)
+  const [isRemovingS3, setIsRemovingS3] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const userSuggestions = availableUsers.map(u => "@" + (u.name || u.email || u.id));
 
-  const handleFilesSelect = (files: File[]) => {
-    setAttachedFiles(files)
-  }
-
-  const removeAttachedFile = (index: number) => {
-    setIsRemoving(index)
+  const handleRemoveFile = (fileId: string) => {
+    setIsRemovingS3(fileId)
     setTimeout(() => {
-      setAttachedFiles(attachedFiles.filter((_, i) => i !== index))
-      setIsRemoving(null)
+      setAttachedS3Files(attachedS3Files.filter(f => f.id !== fileId))
+      setIsRemovingS3(null)
     }, 150)
   }
 
@@ -222,11 +227,6 @@ const ChatInput = ({
         onOpenChange={setShowTemplateDialog}
         onSelect={() => setShowTemplateDialog(false)}
       />
-      <FileUploadDialog
-        open={showFileUploadDialog}
-        onOpenChange={setShowFileUploadDialog}
-        onFilesSelect={handleFilesSelect}
-      />
       <div
         className={`fixed bottom-0 left-0 right-0 ${isFullPage ? "flex justify-center" : ""} border-t border-gray-200 bg-white relative z-20`}
       >
@@ -255,30 +255,11 @@ const ChatInput = ({
         )}
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
-          {attachedFiles.length > 0 && (
-            <div className="mb-2 flex flex-wrap gap-2 transition-all duration-200">
-              {attachedFiles.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className={`flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-sm transition-all duration-150 ${
-                    isRemoving === index ? 'opacity-0 scale-90' : 'opacity-100 scale-100'
-                  }`}
-                  style={{
-                    animation: isRemoving === index ? 'none' : 'slideIn 0.2s ease-out'
-                  }}
-                >
-                  <span className="text-slate-700 text-xs max-w-[150px] truncate">{file.name}</span>
-                  <button
-                    onClick={() => removeAttachedFile(index)}
-                    className="text-slate-500 hover:text-slate-700 ml-1 transition-colors duration-150"
-                    disabled={isRemoving !== null}
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+          <AttachedFilesList
+            files={attachedS3Files}
+            onRemove={handleRemoveFile}
+            removingFileId={isRemovingS3}
+          />
 
           <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
             {isFullPage && (
@@ -302,20 +283,16 @@ const ChatInput = ({
               rows={3}
               style={{ lineHeight: "1.5" }}
             />
-            <div className="flex items-center h-full gap-2">
-              <Button
-                variant="outline"
+            <div className="flex items-center gap-2">
+              <AttachFileButton
+                onFilesSelect={setAttachedS3Files}
+                attachedS3Files={attachedS3Files}
+                variant="ghost"
                 size="sm"
-                onClick={() => setShowFileUploadDialog(true)}
-                className="flex items-center gap-1 transition-all duration-150"
-                aria-label="Attach Files"
-              >
-                <Paperclip className="h-4 w-4" />
-              </Button>
-              
+              />
               <button
                 onClick={onSendMessage}
-                disabled={!newMessage.trim() && attachedFiles.length === 0}
+                disabled={!newMessage.trim() && attachedS3Files.length === 0}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
                 title="Send message (Ctrl+Enter or Enter)"
               >
@@ -325,19 +302,6 @@ const ChatInput = ({
           </div>
         </div>
       </div>
-
-      <style>{`
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-      `}</style>
     </>
   )
 }

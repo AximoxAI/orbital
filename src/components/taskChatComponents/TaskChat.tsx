@@ -9,6 +9,7 @@ import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
 import MessagesList from "./TaskChatMessages/index"
 import { UsersApi, UserResponseDto } from "@/api-client"
 import Preview from "./Preview"
+import GlobalDocsModal from "./GlobalDocsModal"
 
 interface UserType {
   id: string
@@ -16,6 +17,15 @@ interface UserType {
   avatar: string
   isOnline: boolean
   email?: string
+}
+
+interface UploadedFile {
+  name: string
+  size: number
+  type: string
+  uploadedAt: string
+  id: string
+  url: string
 }
 
 interface TaskChatProps {
@@ -26,6 +36,7 @@ interface TaskChatProps {
   onCreateTask?: (taskName: string, projectName: string) => void
   onCallStart?: (taskId: string) => void
   onCallEnd?: (taskId: string) => void
+  globalDocs?: UploadedFile[]
 }
 
 function formatDateTime(datetime: string) {
@@ -51,6 +62,7 @@ const TaskChat = ({
   onCreateTask,
   onCallStart,
   onCallEnd,
+  globalDocs = [],
 }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -77,19 +89,21 @@ const TaskChat = ({
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
   const [repoUrl, setRepoUrl] = useState<string | null>(null)
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([])
+  const [attachedS3Files, setAttachedS3Files] = useState<UploadedFile[]>([])
+  const [showGlobalDocsModal, setShowGlobalDocsModal] = useState(false)
   const pendingMessageFilesRef = useRef<any>(null)
-
   const [showRepoGraphPreview, setShowRepoGraphPreview] = useState(false)
-
   const { user } = useUser()
   const { getToken } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { taskId: routeTaskId } = useParams<{ taskId?: string }>()
-
   const isFullPage = !!routeTaskId
   const executeTaskRef = useRef<((message?: string) => void) | null>(null)
+
+  const GlobalDocs = isFullPage && location.state?.globalDocs 
+    ? location.state.globalDocs 
+    : globalDocs;
 
   let taskName = propTaskName
   if (isFullPage && location.state?.taskName) {
@@ -98,7 +112,6 @@ const TaskChat = ({
 
   const addCallEventMessage = useCallback((eventType: "started" | "ended") => {
     const content = eventType === "started" ? "Video call started" : "Video call ended"
-
     if (socketApiInstanceRef.current) {
       socketApiInstanceRef.current.sendMessage({
         senderType: "system",
@@ -413,32 +426,43 @@ const TaskChat = ({
     }
   }
 
-  const handleAttachedFileClick = useCallback((file: any) => {
-
-    const fileItem = {
-      path: file.name,
-      //Replace with actual S3 content later
-      content: "",
-      timestamp: new Date().toISOString(),
-    }
+  const handleAttachedFileClick = useCallback(async (file: any) => {
     
-    setGeneratedFiles([fileItem])
-    setShowMonacoCanvas(true)
-    setShowRepoGraphPreview(false)
-    setEditorValue(fileItem.content)
+    try {
+      let content = "";
+      if (file.url) {
+        const response = await fetch(file.url);
+        content = await response.text();
+      }
+      
+      const fileItem = {
+        path: file.name,
+        content: content,
+        timestamp: file.uploadedAt || new Date().toISOString(),
+      }
+      
+      setGeneratedFiles([fileItem])
+      setShowMonacoCanvas(true)
+      setShowRepoGraphPreview(false)
+      setEditorValue(content)
+    } catch (error) {
+      console.error('Error fetching file content:', error);
+    }
   }, [])
 
   const handleSendMessage = () => {
     setIsUserSkeletonVisible(true);
-    if (newMessage.trim() || attachedFiles.length > 0) {
-      const dummyFiles = attachedFiles.length > 0 ? attachedFiles.map(file => ({
+    if (newMessage.trim() || attachedS3Files.length > 0) {
+      const Files = attachedS3Files.length > 0 ? attachedS3Files.map(file => ({
         name: file.name,
         size: file.size,
-        type: file.type
+        type: file.type,
+        url: file.url,
+        id: file.id,
       })) : undefined
       
-      if (dummyFiles) {
-        pendingMessageFilesRef.current = dummyFiles
+      if (Files) {
+        pendingMessageFilesRef.current = Files
       }
       
       const message = {
@@ -447,7 +471,7 @@ const TaskChat = ({
         content: newMessage,
         timestamp: new Date().toISOString(),
         taskId,
-        attachedFiles: dummyFiles,
+        attachedFiles: Files,
       }
       socketApiInstanceRef.current?.sendMessage(message) 
       const trimmedMessage = newMessage.trim()
@@ -468,7 +492,7 @@ const TaskChat = ({
         setShowMonacoCanvas(false)
       }
       setNewMessage("")
-      setAttachedFiles([])
+      setAttachedS3Files([])
       if (shouldExecuteTask && executeTaskRef.current) {
         executeTaskRef.current(newMessage)
       }
@@ -477,7 +501,12 @@ const TaskChat = ({
 
   const handleMaximize = () => {
     if (!isFullPage && taskId) {
-      navigate(`/tasks/${taskId}`, { state: { taskName } })
+      navigate(`/tasks/${taskId}`, { 
+        state: { 
+          taskName,
+          globalDocs: GlobalDocs
+        } 
+      })
     }
   }
 
@@ -533,6 +562,17 @@ const TaskChat = ({
     setShowMonacoCanvas(true)
   }
 
+  const handleOpenGlobalDocs = () => {
+    setShowGlobalDocsModal(true)
+  }
+
+  const handleAttachDocToTask = (doc: UploadedFile) => {
+    if (!attachedS3Files.some(d => d.id === doc.id)) {
+      setAttachedS3Files(prev => [...prev, doc])
+    }
+    setShowGlobalDocsModal(false)
+  }
+
   if (!isOpen) return null
 
   const containerClasses = isFullPage
@@ -567,6 +607,7 @@ const TaskChat = ({
           onRemoveUser={handleRemoveUser}
           availableUsers={availableUsers}
           onOpenRepoGraph={handleOpenRepoGraph}
+          onOpenGlobalDocs={handleOpenGlobalDocs}
           onCallStart={() => {
             addCallEventMessage("started")
             onCallStart?.(taskId)
@@ -610,8 +651,8 @@ const TaskChat = ({
           onSendMessage={handleSendMessage}
           isFullPage={isFullPage}
           availableUsers={chatUsers}
-          attachedFiles={attachedFiles}
-          setAttachedFiles={setAttachedFiles}
+          attachedS3Files={attachedS3Files}
+          setAttachedS3Files={setAttachedS3Files}
         />
       </div>
       {isFullPage && (
@@ -631,6 +672,16 @@ const TaskChat = ({
           onFilesGenerated={handleFilesGenerated}
           customPreview={<Preview />}
           showCustomPreview={showRepoGraphPreview}
+        />
+      )}
+
+      {showGlobalDocsModal && (
+        <GlobalDocsModal
+          open={showGlobalDocsModal}
+          onClose={() => setShowGlobalDocsModal(false)}
+          globalDocs={GlobalDocs}   
+          attachedDocs={attachedS3Files}
+          onAttach={handleAttachDocToTask}
         />
       )}
     </div>

@@ -20,6 +20,8 @@ interface AttachedFile {
   name: string
   size: number
   type: string
+  url?: string
+  id?: string
 }
 
 interface MessageContentProps {
@@ -501,10 +503,10 @@ export const MessageContent = ({
             <div
               key={index}
               onClick={() => onFileClick?.(file)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-100 border border-slate-200 rounded-md text-xs font-medium text-slate-700 hover:bg-slate-200 hover:shadow-sm transition-all cursor-pointer active:scale-95"
+              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-100 hover:shadow-sm transition-all cursor-pointer active:scale-95"
             >
               <File className="w-3.5 h-3.5 text-slate-500" />
-              <span className="truncate max-w-[200px]">{file.name}</span>
+              <span className="truncate text-slate-500 max-w-[200px]">{file.name}</span>
             </div>
           ))}
         </div>
