@@ -14,6 +14,8 @@ interface AttachFileButtonProps {
   variant?: "outline" | "ghost" | "default"
   size?: "sm" | "icon" | "default"
   className?: string
+  label?: string          // optional text label
+  hideIcon?: boolean      // hide paperclip if true
 }
 
 const AttachFileButton = ({
@@ -22,6 +24,8 @@ const AttachFileButton = ({
   variant = "ghost",
   size = "sm",
   className = "",
+  label,
+  hideIcon = false,
 }: AttachFileButtonProps) => {
   const [showFileUploadDialog, setShowFileUploadDialog] = useState(false)
 
@@ -43,10 +47,11 @@ const AttachFileButton = ({
         variant={variant}
         size={size}
         onClick={() => setShowFileUploadDialog(true)}
-        className={`flex items-center border-[1px] gap-1 transition-all duration-150 ${className}`}
-        aria-label="Attach Files"
+        className={`flex items-center gap-1 transition-all duration-150 ${className}`}
+        aria-label={label || "Attach Files"}
       >
-        <Paperclip className="h-4 w-4" />
+        {!hideIcon && <Paperclip className="h-4 w-4" />}
+        {label && <span className="text-sm">{label}</span>}
       </Button>
 
       <FileUploadDialog
