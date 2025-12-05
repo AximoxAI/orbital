@@ -1,10 +1,10 @@
 import type React from "react"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Send, Bot, User, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
 import AttachFileButton, { FileItem } from "./AttachFileButton"
-import AttachedFilesList from "./AttachedFilesList"
+import FileAttachmentCard from "./TaskChatMessages/FileAttachmentCard"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -71,6 +71,9 @@ interface UserType {
   isOnline: boolean
   email?: string
 }
+interface PreviewableFileItem extends FileItem {
+  previewUrl?: string
+}
 
 interface ChatInputProps {
   newMessage: string
@@ -78,8 +81,28 @@ interface ChatInputProps {
   onSendMessage: () => void
   isFullPage?: boolean
   availableUsers: UserType[]
-  files: FileItem[]
-  setFiles: (files: FileItem[]) => void
+  files: PreviewableFileItem[]
+  setFiles: (files: PreviewableFileItem[]) => void
+}
+
+function isImageFile(type?: string, name?: string): boolean {
+  const lowerType = (type || "").toLowerCase()
+  const lowerName = (name || "").toLowerCase()
+  return lowerType.includes("image") || /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lowerName)
+}
+
+// Create local image preview for newly attached files (Blob URL)
+function getPreviewUrl(fileItem: PreviewableFileItem): string | undefined {
+  const type = fileItem.file.type
+  if (type && isImageFile(type, fileItem.file.name)) {
+    // If previewUrl is already set, use it
+    if (fileItem.previewUrl) return fileItem.previewUrl
+    // Otherwise create it
+    const url = URL.createObjectURL(fileItem.file)
+    fileItem.previewUrl = url
+    return url
+  }
+  return undefined
 }
 
 const ChatInput = ({
@@ -105,7 +128,24 @@ const ChatInput = ({
     (u) => "@" + (u.name || u.email || u.id),
   )
 
+  // CLEAN UP object URLs on remove
+  useEffect(() => {
+    return () => {
+      files.forEach((fileItem) => {
+        if (fileItem.previewUrl) {
+          URL.revokeObjectURL(fileItem.previewUrl)
+        }
+      })
+    }
+    // only run at unmount
+    // eslint-disable-next-line
+  }, [])
+
   const handleRemoveFile = (fileId: string) => {
+    const removedFile = files.find(f => f.id === fileId)
+    if (removedFile?.previewUrl) {
+      URL.revokeObjectURL(removedFile.previewUrl)
+    }
     setRemovingFileId(fileId)
     setTimeout(() => {
       setFiles(files.filter((f) => f.id !== fileId))
@@ -264,11 +304,24 @@ const ChatInput = ({
         )}
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
-          <AttachedFilesList
-            files={files}
-            onRemove={handleRemoveFile}
-            removingFileId={removingFileId}
-          />
+          {/* Attached files as cards (the same as in MessageContent) */}
+          {files && files.length > 0 && (
+            <div className="flex flex-wrap gap-3 mb-3">
+              {files.map((fileItem, idx) => (
+                <FileAttachmentCard
+                  key={fileItem.id || fileItem.file.name}
+                  file={{
+                    id: fileItem.id,
+                    name: fileItem.file.name,
+                    type: fileItem.file.type,
+                    size: fileItem.file.size,
+                    url: getPreviewUrl(fileItem) // local preview for images
+                  }}
+                  onClick={() => {}}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
             {isFullPage && (
