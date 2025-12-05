@@ -1,7 +1,7 @@
 import { ChatApi, Configuration, TasksApi, ProjectsApi } from "@/api-client"
 import { io, type Socket } from "socket.io-client"
 
-const CHAT_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/chat`
+const CHAT_SOCKET_URL = `${import.meta.env. VITE_BACKEND_API_KEY}/chat`
 const EXECUTION_SOCKET_URL = `${import.meta.env.VITE_BACKEND_API_KEY}/ws/v1/tasks`
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
@@ -13,14 +13,15 @@ export class TaskChatAPI {
   private chatSocket: Socket | null = null
   private executionSocket: Socket | null = null
   private sessionToken?: string
+  private pendingMessageCallback: ((msg: any) => void) | null = null
 
   constructor(sessionToken?: string) {
     const config = new Configuration({
-      basePath: import.meta.env.VITE_BACKEND_API_KEY,
+      basePath: import.meta.env. VITE_BACKEND_API_KEY,
       accessToken: sessionToken || undefined,
     })
     this.chatApi = new ChatApi(config)
-    this.tasksApi = new TasksApi(config)
+    this. tasksApi = new TasksApi(config)
     this.projectsApi = new ProjectsApi(config)
     this.sessionToken = sessionToken
   }
@@ -28,7 +29,7 @@ export class TaskChatAPI {
   async fetchMessages(taskId: string) {
     try {
       const response = await this.chatApi.chatControllerFindAll(taskId)
-      return Array.isArray(response.data) ? response.data : []
+      return Array. isArray(response.data) ?  response.data : []
     } catch (error) {
       throw new Error("Failed to load messages from the server.")
     }
@@ -37,7 +38,7 @@ export class TaskChatAPI {
   async getGeneratedFiles(messageId: string) {
     try {
       const response = await this.tasksApi.tasksControllerGetGeneratedFiles(messageId)
-      return Array.isArray(response.data) ? response.data : []
+      return Array. isArray(response.data) ?  response.data : []
     } catch (error) {
       throw error
     }
@@ -46,7 +47,7 @@ export class TaskChatAPI {
   async getExecutionLogs(messageId: string) {
     try {
       const response = await this.tasksApi.tasksControllerGetExecutionLogs(messageId)
-      return Array.isArray(response.data) ? response.data : []
+      return Array. isArray(response.data) ?  response.data : []
     } catch (error) {
       throw error
     }
@@ -63,7 +64,7 @@ export class TaskChatAPI {
 
   async fetchProject(projectId: string) {
     try {
-      const response = await this.projectsApi.projectsControllerFindOne(projectId)
+      const response = await this. projectsApi.projectsControllerFindOne(projectId)
       return response.data
     } catch (error) {
       throw new Error("Failed to load project details from server.")
@@ -98,13 +99,24 @@ export class TaskChatAPI {
       },
     })
 
-    this.chatSocket.on("connect", () => {
+    this. chatSocket.on("connect", () => {
       callbacks.onConnect()
-      this.chatSocket?.emit("joinTaskRoom", { taskId })
+      this.chatSocket?. emit("joinTaskRoom", { taskId })
     })
 
     this.chatSocket.on("disconnect", callbacks.onDisconnect)
-    this.chatSocket.on("newMessage", callbacks.onNewMessage)
+    
+    // Wrap the onNewMessage callback to handle pending messages
+    this.chatSocket.on("newMessage", (msg: any) => {
+      // If we have a pending callback for this message, call it first
+      if (this.pendingMessageCallback) {
+        this. pendingMessageCallback(msg)
+        this.pendingMessageCallback = null
+      } else {
+        // Otherwise, pass to the normal callback
+        callbacks.onNewMessage(msg)
+      }
+    })
 
     return this.chatSocket
   }
@@ -117,16 +129,19 @@ export class TaskChatAPI {
     }
   }
 
-  sendMessage(message: {
-    taskId: string
-    senderType: string
-    senderId: string
-    content: string
-    timestamp?: string
-    mentions?: string[]
-  }): Promise<any> {
+  sendMessage(
+    message: {
+      taskId: string
+      senderType: string
+      senderId: string
+      content: string
+      timestamp?: string
+      mentions?: string[]
+    },
+    onMessageReceived?: (msg: any) => void
+  ): Promise<any> {
     return new Promise((resolve, reject) => {
-      if (!this.chatSocket || !this.chatSocket.connected) {
+      if (!this. chatSocket || !this.chatSocket.connected) {
         reject(new Error("Socket not connected"))
         return
       }
@@ -136,8 +151,13 @@ export class TaskChatAPI {
       )
 
       const messagePayload = {
-        ...message,
+        ... message,
         mentions: mentionedBots.length > 0 ? mentionedBots : message.mentions,
+      }
+
+      // Set the pending callback if provided
+      if (onMessageReceived) {
+        this.pendingMessageCallback = onMessageReceived
       }
 
       this.chatSocket.emit("sendMessage", messagePayload, (response: any) => {
@@ -166,16 +186,16 @@ export class TaskChatAPI {
     })
 
     this.executionSocket.on("connect", callbacks.onConnect)
-    this.executionSocket.on("disconnect", callbacks.onDisconnect)
+    this. executionSocket.on("disconnect", callbacks.onDisconnect)
     this.executionSocket.on("connect_error", callbacks.onDisconnect)
-    this.executionSocket.on("execution_result", callbacks.onExecutionResult)
+    this. executionSocket.on("execution_result", callbacks.onExecutionResult)
 
     return this.executionSocket
   }
 
   disconnectExecutionSocket() {
     if (this.executionSocket) {
-      this.executionSocket.disconnect()
+      this.executionSocket. disconnect()
       this.executionSocket = null
     }
   }
@@ -186,7 +206,7 @@ export class TaskChatAPI {
     message: string;
     mentions: string[];
   }) {
-    if (this.executionSocket && this.executionSocket.connected) {
+    if (this.executionSocket && this.executionSocket. connected) {
       this.executionSocket.emit("execute", payload)
     }
   }
