@@ -1,7 +1,7 @@
 "use client"
 import type React from "react"
 import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
-import { Code, Phone, PhoneOff, File } from "lucide-react"
+import { Code, Phone, PhoneOff } from "lucide-react"
 import { LogsPanel } from "./LogsPanel"
 import { TaskSummaryPanel } from "./TaskSummaryPanel"
 import type { TaskExecutionLog, MessageType } from "./types"
@@ -10,6 +10,7 @@ import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
 import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
+import FileAttachmentCard from "./FileAttachmentCard"
 
 const configuration = new OpenApiConfiguration({
   basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -217,13 +218,13 @@ export const MessageContent = ({
 
   const getAgentOutputText = () => {
     if (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) {
-      return liveAgentOutput.join('\n')
+      return liveAgentOutput.join("\n")
     }
     if (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) {
-      return executionAgentOutput.join('\n')
+      return executionAgentOutput.join("\n")
     }
     if (Array.isArray(agentOutput) && agentOutput.length > 0) {
-      return agentOutput.join('\n')
+      return agentOutput.join("\n")
     }
     return ""
   }
@@ -237,7 +238,7 @@ export const MessageContent = ({
         (log) =>
           log.type === TaskExecutionLogTypeEnum.AgentOutput &&
           log.status === TaskExecutionLogStatusEnum.Agent &&
-          log.content
+          log.content,
       )
       if (agentOutputLogs.length > 0) {
         return agentOutputLogs[agentOutputLogs.length - 1].content || ""
@@ -255,9 +256,7 @@ export const MessageContent = ({
         setIsLoadingAgentSummary(true)
         const logs = await fetchExecutionLogs(message.id)
         const found = logs.some(
-          (log) =>
-            ( log.type === TaskExecutionLogTypeEnum.Summary) &&
-            (log.status === TaskExecutionLogStatusEnum.Agent)
+          (log) => log.type === TaskExecutionLogTypeEnum.Summary && log.status === TaskExecutionLogStatusEnum.Agent,
         )
         if (!ignore) {
           setHasAgentSummary(found)
@@ -291,13 +290,14 @@ export const MessageContent = ({
   }, [hasAgentSummary, isLoadingAgentSummary, onContentHeightChange])
 
   const shouldShowActions =
-    !isFollowingBotMessage ||
-    (isFollowingBotMessage && (hasAgentSummary))
+    !isFollowingBotMessage || (isFollowingBotMessage && hasAgentSummary)
 
-  const shouldShowSuggestions =
-    isFollowingBotMessage && (hasAgentSummary )
+  const shouldShowSuggestions = isFollowingBotMessage && hasAgentSummary
 
-  const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
+  const renderedContent = useMemo(
+    () => renderMessageContent(message.content, chatUsers),
+    [message.content, chatUsers],
+  )
 
   if (message.isCallEvent) {
     const isCallStarted = message.callEventType === "started"
@@ -393,10 +393,7 @@ export const MessageContent = ({
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
               {hasGeneratedFiles ? (
                 <>
-                  <span
-                    className="font-semibold text-sm sm:text-md text-slate-600 truncate"
-                    style={{ fontFamily: "Inter" }}
-                  >
+                  <span className="font-semibold text-sm sm:text-md text-slate-600 truncate" style={{ fontFamily: "Inter" }}>
                     Code Generated Successfully
                   </span>
                   <span className="text-slate-400 text-xs sm:text-sm truncate" style={{ fontFamily: "Inter" }}>
@@ -404,10 +401,7 @@ export const MessageContent = ({
                   </span>
                 </>
               ) : (
-                <span
-                  className="font-semibold text-sm sm:text-md text-slate-600 truncate"
-                  style={{ fontFamily: "Inter" }}
-                >
+                <span className="font-semibold text-sm sm:text-md text-slate-600 truncate" style={{ fontFamily: "Inter" }}>
                   Check execution logs
                 </span>
               )}
@@ -437,12 +431,7 @@ export const MessageContent = ({
           {isActiveRetrieveProjectBlock ? (
             <>
               {liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (
-                <LogsPanel
-                  logs={liveRetrieveProjectLogs}
-                  logsOpen={logsOpen}
-                  setLogsOpen={setLogsOpen}
-                  title="EXECUTION LOGS"
-                />
+                <LogsPanel logs={liveRetrieveProjectLogs} logsOpen={logsOpen} setLogsOpen={setLogsOpen} title="EXECUTION LOGS" />
               )}
               {((Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) ||
                 (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)) && (
@@ -497,21 +486,15 @@ export const MessageContent = ({
 
   return (
     <div ref={containerRef} className="w-full">
+      {/* Claude-like cards for attachments */}
       {message.attachedFiles && message.attachedFiles.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-2">
-          {message.attachedFiles.map((file: AttachedFile, index: number) => (
-            <div
-              key={index}
-              onClick={() => onFileClick?.(file)}
-              className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium text-blue-700 hover:bg-blue-100 hover:shadow-sm transition-all cursor-pointer active:scale-95"
-            >
-              <File className="w-3.5 h-3.5 text-slate-500" />
-              <span className="truncate text-slate-500 max-w-[200px]">{file.name}</span>
-            </div>
+        <div className="flex flex-wrap gap-3 mb-3">
+          {message.attachedFiles.map((file, idx) => (
+            <FileAttachmentCard key={`${file.id || file.name}-${idx}`} file={file} onClick={onFileClick} />
           ))}
         </div>
       )}
-      
+
       {message.content && message.content.trim() && (
         <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
           <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
