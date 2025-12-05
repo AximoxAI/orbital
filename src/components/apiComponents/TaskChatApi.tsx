@@ -48,7 +48,6 @@ export class TaskChatAPI {
       const response = await this.tasksApi.tasksControllerGetExecutionLogs(messageId)
       return Array.isArray(response.data) ? response.data : []
     } catch (error) {
-      console.error("Error fetching execution logs:", error)
       throw error
     }
   }
@@ -56,14 +55,12 @@ export class TaskChatAPI {
   async fetchTask(taskId: string) {
     try {
       const response = await this.tasksApi.tasksControllerFindOne(taskId)
-      // console.log(response.data.project_id)
-      return response.data // Should be TaskResponseDto
+      return response.data
     } catch (error) {
       throw new Error("Failed to load task details from server.")
     }
   }
 
-  // Fetch project details by project_id
   async fetchProject(projectId: string) {
     try {
       const response = await this.projectsApi.projectsControllerFindOne(projectId)
@@ -75,13 +72,9 @@ export class TaskChatAPI {
 
   async updateTaskAssignees(taskId: string, assignees: string[]) {
     try {
-      // Fetch current status so we can send it with assignees
       const task = await this.fetchTask(taskId)
-      const status = task.status || "to_do" // Fallback to "to_do" or whatever makes sense
-      await this.tasksApi.tasksControllerUpdateStatus(
-        taskId,
-        { status, assignees }
-      )
+      const status = task.status || "to_do"
+      await this.tasksApi.tasksControllerUpdateStatus(taskId, { status, assignees })
     } catch (error) {
       throw new Error("Failed to update task assignees.")
     }
@@ -125,26 +118,32 @@ export class TaskChatAPI {
   }
 
   sendMessage(message: {
+    taskId: string
     senderType: string
     senderId: string
     content: string
-    timestamp: string
-    taskId: string
+    timestamp?: string
     mentions?: string[]
-  }) {
-    const mentionedBots = availableBots.filter((bot) => message.content.includes(bot))
-    mentionedBots.forEach((bot) => {
-      console.log(`Bot mentioned: ${bot}`)
+  }): Promise<any> {
+    return new Promise((resolve, reject) => {
+      if (!this.chatSocket || !this.chatSocket.connected) {
+        reject(new Error("Socket not connected"))
+        return
+      }
+
+      const mentionedBots = availableBots.filter((bot) =>
+        message.content.includes(bot),
+      )
+
+      const messagePayload = {
+        ...message,
+        mentions: mentionedBots.length > 0 ? mentionedBots : message.mentions,
+      }
+
+      this.chatSocket.emit("sendMessage", messagePayload, (response: any) => {
+        resolve(response)
+      })
     })
-
-    const messageWithMentions = {
-      ...message,
-      mentions: mentionedBots.length > 0 ? mentionedBots : message.mentions,
-    }
-
-    if (this.chatSocket) {
-      this.chatSocket.emit("sendMessage", messageWithMentions)
-    }
   }
 
   connectExecutionSocket(
@@ -152,7 +151,7 @@ export class TaskChatAPI {
       onConnect: () => void
       onDisconnect: () => void
       onExecutionResult: (data: any) => void
-    }
+    },
   ) {
     if (this.executionSocket) {
       this.disconnectExecutionSocket()
@@ -189,14 +188,8 @@ export class TaskChatAPI {
   }) {
     if (this.executionSocket && this.executionSocket.connected) {
       this.executionSocket.emit("execute", payload)
-    } else {
-      console.error("Execution socket is not connected. Cannot send command.")
     }
   }
 }
 
-/**
- * Factory function to create a TaskChatAPI instance with a sessionToken.
- * For HTTP API calls, always create a fresh instance with the latest sessionToken.
- */
 export const createTaskChatAPI = (sessionToken?: string) => new TaskChatAPI(sessionToken)

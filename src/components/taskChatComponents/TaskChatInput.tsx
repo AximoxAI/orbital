@@ -3,7 +3,7 @@ import { useRef, useState } from "react"
 import { Send, Bot, User, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
-import AttachFileButton from "./AttachFileButton"
+import AttachFileButton, { FileItem } from "./AttachFileButton"
 import AttachedFilesList from "./AttachedFilesList"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
@@ -61,7 +61,8 @@ const USER_STYLE = {
   borderColor: "border-orange-200",
 }
 
-const getBotStyles = (bot: string) => BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
+const getBotStyles = (bot: string) =>
+  BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
 
 interface UserType {
   id: string
@@ -71,23 +72,14 @@ interface UserType {
   email?: string
 }
 
-interface UploadedFile {
-  name: string
-  size: number
-  type: string
-  uploadedAt: string
-  id: string
-  url: string
-}
-
 interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
   onSendMessage: () => void
   isFullPage?: boolean
   availableUsers: UserType[]
-  attachedS3Files: UploadedFile[]
-  setAttachedS3Files: (files: UploadedFile[]) => void
+  files: FileItem[]
+  setFiles: (files: FileItem[]) => void
 }
 
 const ChatInput = ({
@@ -96,26 +88,28 @@ const ChatInput = ({
   onSendMessage,
   isFullPage = false,
   availableUsers,
-  attachedS3Files,
-  setAttachedS3Files,
+  files,
+  setFiles,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const [mentionStartPos, setMentionStartPos] = useState(0)
-  const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
+  const [suggestionType, setSuggestionType] = useState<"bot" | "user">("bot")
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
-  const [isRemovingS3, setIsRemovingS3] = useState<string | null>(null)
+  const [removingFileId, setRemovingFileId] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const userSuggestions = availableUsers.map(u => "@" + (u.name || u.email || u.id));
+  const userSuggestions = availableUsers.map(
+    (u) => "@" + (u.name || u.email || u.id),
+  )
 
   const handleRemoveFile = (fileId: string) => {
-    setIsRemovingS3(fileId)
+    setRemovingFileId(fileId)
     setTimeout(() => {
-      setAttachedS3Files(attachedS3Files.filter(f => f.id !== fileId))
-      setIsRemovingS3(null)
+      setFiles(files.filter((f) => f.id !== fileId))
+      setRemovingFileId(null)
     }, 150)
   }
 
@@ -125,8 +119,8 @@ const ChatInput = ({
     setNewMessage(value)
 
     const textarea = e.target
-    textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
+    textarea.style.height = "auto"
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px"
 
     const textBeforeCursor = value.substring(0, cursorPos)
     const lastAtIndex = textBeforeCursor.lastIndexOf("@")
@@ -135,11 +129,11 @@ const ChatInput = ({
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
       if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         const filteredBots = availableBots.filter((bot) =>
-          bot.toLowerCase().includes(textAfterAt.toLowerCase())
+          bot.toLowerCase().includes(textAfterAt.toLowerCase()),
         )
 
         const filteredUsers = userSuggestions.filter((user) =>
-          user.toLowerCase().includes(textAfterAt.toLowerCase())
+          user.toLowerCase().includes(textAfterAt.toLowerCase()),
         )
 
         const allFiltered = [...filteredBots, ...filteredUsers]
@@ -149,7 +143,7 @@ const ChatInput = ({
           setShowSuggestions(true)
           setSelectedSuggestionIndex(0)
           setMentionStartPos(lastAtIndex)
-          setSuggestionType(filteredBots.length > 0 ? 'bot' : 'user')
+          setSuggestionType(filteredBots.length > 0 ? "bot" : "user")
           return
         }
       }
@@ -180,10 +174,14 @@ const ChatInput = ({
     if (showSuggestions) {
       if (e.key === "ArrowDown") {
         e.preventDefault()
-        setSelectedSuggestionIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0))
+        setSelectedSuggestionIndex((prev) =>
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
+        )
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
-        setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1))
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
+        )
       } else if (e.key === "Tab" || e.key === "Enter") {
         if (!e.shiftKey) {
           e.preventDefault()
@@ -196,9 +194,15 @@ const ChatInput = ({
     }
 
     if (e.key === "Enter" && !showSuggestions) {
-      if ((e.ctrlKey || e.metaKey) || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)
+      ) {
         if (
-          (!e.ctrlKey && !e.metaKey && (newMessage.includes('\n') || e.shiftKey || e.altKey))
+          !e.ctrlKey &&
+          !e.metaKey &&
+          (newMessage.includes("\n") || e.shiftKey || e.altKey)
         ) {
           return
         }
@@ -228,14 +232,19 @@ const ChatInput = ({
         onSelect={() => setShowTemplateDialog(false)}
       />
       <div
-        className={`fixed bottom-0 left-0 right-0 ${isFullPage ? "flex justify-center" : ""} border-t border-gray-200 bg-white relative z-20`}
+        className={`fixed bottom-0 left-0 right-0 ${
+          isFullPage ? "flex justify-center" : ""
+        } border-t border-gray-200 bg-white relative z-20`}
       >
         {showSuggestions && (
           <div
             className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}
           >
             {filteredSuggestions.map((suggestion, index) => {
-              const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
+              const { styles, icon: IconComponent } = getSuggestionStyles(
+                suggestion,
+                index,
+              )
               return (
                 <div
                   key={suggestion}
@@ -256,9 +265,9 @@ const ChatInput = ({
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
           <AttachedFilesList
-            files={attachedS3Files}
+            files={files}
             onRemove={handleRemoveFile}
-            removingFileId={isRemovingS3}
+            removingFileId={removingFileId}
           />
 
           <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
@@ -275,7 +284,7 @@ const ChatInput = ({
             )}
             <textarea
               ref={textareaRef}
-              placeholder="Ask about the task or discuss implementation... (Ctrl+Enter or Enter to send)"
+              placeholder="Ask about the task or discuss implementation...  (Ctrl+Enter or Enter to send)"
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
@@ -285,14 +294,14 @@ const ChatInput = ({
             />
             <div className="flex items-center gap-2">
               <AttachFileButton
-                onFilesSelect={setAttachedS3Files}
-                attachedS3Files={attachedS3Files}
+                onFilesSelect={setFiles}
+                files={files}
                 variant="ghost"
                 size="sm"
               />
               <button
                 onClick={onSendMessage}
-                disabled={!newMessage.trim() && attachedS3Files.length === 0}
+                disabled={!newMessage.trim() && files.length === 0}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
                 title="Send message (Ctrl+Enter or Enter)"
               >

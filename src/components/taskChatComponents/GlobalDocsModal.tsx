@@ -37,9 +37,9 @@ const GlobalDocsModal = ({
         >
           ×
         </button>
-        <h3 className="text-xl font-bold mb-2 text-gray-900">Global Documentation</h3>
+        <h3 className="text-xl font-bold mb-2 text-gray-900">Add Documents</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Select documents to attach to your message.
+          Select documents
         </p>
         <div className="space-y-2">
           {globalDocs.length === 0 ? (
