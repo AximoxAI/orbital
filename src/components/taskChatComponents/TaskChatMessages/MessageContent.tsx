@@ -103,6 +103,25 @@ function getUserColorStyle(userIdOrName: string) {
   }
 }
 
+// --- Styles for Nodes, Templates, and Connections (No Icons) ---
+const ENTITY_STYLES = {
+  Node: {
+    bgColor: "bg-indigo-50",
+    textColor: "text-indigo-700",
+    borderColor: "border-indigo-200",
+  },
+  Template: {
+    bgColor: "bg-teal-50",
+    textColor: "text-teal-700",
+    borderColor: "border-teal-200",
+  },
+  Connection: {
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-700",
+    borderColor: "border-slate-300",
+  },
+} as const;
+
 function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
@@ -113,25 +132,30 @@ const renderMessageContent = (
 ) => {
   const userMentions = chatUsers?.map((u) => "@" + (u.name || u.email || u.id)) ?? []
   const allKnownMentions = [...availableBots, ...userMentions]
-  if (allKnownMentions.length === 0) {
-    return <span className="text-sm text-slate-900 font-inter font-medium ">{content}</span>
+
+  // 1. Process Bots and User Mentions first
+  let parts: string[] = [content];
+  if (allKnownMentions.length > 0) {
+    const escapedMentions = allKnownMentions.map((mention) => escapeRegExp(mention))
+    const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
+    parts = content.split(mentionRegex)
   }
-  const escapedMentions = allKnownMentions.map((mention) => escapeRegExp(mention))
-  const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
-  const parts = content.split(mentionRegex)
+
   const elements: React.ReactNode[] = []
 
   parts.forEach((part, index) => {
+    // Check for Bot
     if (availableBots.includes(part)) {
       const styles = getBotStyles(part)
       elements.push(
         <span
-          key={index}
-          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
+          key={`bot-${index}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
         >
           {part.replace(/^@/, "")}
         </span>,
       )
+    // Check for User
     } else if (chatUsers && part.startsWith("@") && chatUsers.some((u) => "@" + (u.name || u.email || u.id) === part)) {
       const user = chatUsers.find((u) => "@" + (u.name || u.email || u.id) === part)
       const colorStyle = user
@@ -139,22 +163,58 @@ const renderMessageContent = (
         : getUserMentionStyle()
       elements.push(
         <span
-          key={index}
-          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${colorStyle.bgColor} ${colorStyle.textColor} border ${colorStyle.borderColor}`}
+          key={`user-${index}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle ${colorStyle.bgColor} ${colorStyle.textColor} border ${colorStyle.borderColor}`}
         >
           {part.replace(/^@/, "")}
         </span>,
       )
     } else if (part.trim()) {
-      elements.push(
-        <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
-          {part}
-        </span>,
-      )
+      // 2. Process Nodes, Templates, and Connections inside normal text blocks
+      // Regex captures: Node:xyz, Template:xyz, Connection:A -> B
+      // Supports Unicode arrows → and ←
+      const entityRegex = /(Node:[^\s]+|Connection:[^\s]+\s(?:->|<-|→|←)\s[^\s]+|Template:[^\s]+)/g;
+      
+      const subParts = part.split(entityRegex);
+      
+      subParts.forEach((subPart, subIndex) => {
+        if (subPart.startsWith("Node:")) {
+            const styles = ENTITY_STYLES.Node;
+            elements.push(
+              <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                 {subPart}
+              </span>
+            );
+        } else if (subPart.startsWith("Template:")) {
+            const styles = ENTITY_STYLES.Template;
+            elements.push(
+                <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                   {subPart}
+                </span>
+              );
+        } else if (subPart.startsWith("Connection:")) {
+            const styles = ENTITY_STYLES.Connection;
+            elements.push(
+                <span key={`conn-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                   {subPart}
+                </span>
+              );
+        } else {
+             // Normal text
+             elements.push(
+                <span key={`text-${index}-${subIndex}`} className="text-sm text-slate-900 font-inter font-medium leading-relaxed">
+                  {subPart}
+                </span>
+              )
+        }
+      });
+    } else {
+        // Whitespace preservation
+        if (part) elements.push(<span key={index}>{part}</span>)
     }
   })
 
-  return <>{elements}</>
+  return <div className="leading-relaxed">{elements}</div>
 }
 
 async function fetchExecutionLogs(messageId: string): Promise<TaskExecutionLog[]> {
@@ -497,7 +557,7 @@ export const MessageContent = ({
 
       {message.content && message.content.trim() && (
         <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
-          <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
+          <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex flex-wrap items-center">
             {renderedContent}
           </div>
         </div>
