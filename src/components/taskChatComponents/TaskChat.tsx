@@ -542,79 +542,103 @@ const TaskChat = ({
     [getToken],
   )
 
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() && files.length === 0) return
+const handleSendMessage = async () => {
+  if (! newMessage.trim() && files. length === 0) return
 
-    setIsUserSkeletonVisible(true)
+  setIsUserSkeletonVisible(true)
 
-    try {
-      const messageContent = newMessage
-      const filesToUpload = [... files]
+  try {
+    const messageContent = newMessage
+    const filesToUpload = [... files]
 
-      // Send message with a callback that intercepts the socket response
+    // FIXED: Don't send socket message yet, just show skeleton
+    // We'll send after we have everything ready
+
+    let userMessageWithFiles: any = null
+
+    // First, if there are files, we need to get a message ID to upload them
+    if (filesToUpload.length > 0) {
+      // Send the message first to get the message ID
+      const sendPromise = new Promise<any>((resolve) => {
+        socketApiInstanceRef.current?. sendMessage(
+          {
+            taskId,
+            senderType: "user",
+            senderId: user?.username || "unknown_user",
+            content: messageContent,
+          },
+          (socketMsg: any) => {
+            resolve(socketMsg)
+          },
+        )
+      })
+
+      const socketMsg = await sendPromise
+
+      // Now upload files with the message ID
+      const uploadedFiles = await uploadFilesWithMessageId(socketMsg.id, filesToUpload)
+
+      // Create the complete message with files
+      userMessageWithFiles = mapBackendMsg({
+        ...socketMsg,
+        files: uploadedFiles. map((f) => ({
+          fileId: f.id,
+          filename: f.name,
+        })),
+      })
+      userMessageWithFiles.attachedFiles = uploadedFiles
+
+      // Add to UI only after files are uploaded
+      setMessages((prev) => [...prev, userMessageWithFiles])
+      setMessagesWithFiles((prev) => new Set(prev). add(socketMsg.id))
+    } else {
+      // No files, send normally
       await socketApiInstanceRef.current?.sendMessage(
         {
           taskId,
           senderType: "user",
-          senderId: user?. username || "unknown_user",
+          senderId: user?.username || "unknown_user",
           content: messageContent,
         },
         async (socketMsg: any) => {
-          // This callback intercepts the socket's newMessage event for this specific message
-          // Upload files if needed
-          if (filesToUpload.length > 0 && socketMsg?. id) {
-            const uploadedFiles = await uploadFilesWithMessageId(socketMsg.id, filesToUpload)
-
-            // Add message with files to UI
-            const messageWithFiles = mapBackendMsg({
-              ... socketMsg,
-              files: uploadedFiles. map((f) => ({
-                fileId: f.id,
-                filename: f.name,
-              })),
-            })
-
-            setMessages((prev) => [...prev, { ...messageWithFiles, attachedFiles: uploadedFiles }])
-            setMessagesWithFiles((prev) => new Set(prev). add(socketMsg.id))
-          } else {
-            // No files, just add the message
-            setMessages((prev) => [...prev, mapBackendMsg(socketMsg)])
-          }
-
-          setIsUserSkeletonVisible(false)
+          // Add message to UI
+          setMessages((prev) => [... prev, mapBackendMsg(socketMsg)])
         },
       )
-
-      const trimmedMessage = messageContent.trim()
-      const shouldExecuteTask =
-        trimmedMessage.startsWith("@goose") ||
-        trimmedMessage. startsWith("@orbital_cli") ||
-        trimmedMessage. startsWith("@gemini_cli") ||
-        trimmedMessage.startsWith("@claude_code")
-
-      if (shouldExecuteTask) {
-        setGeneratedFiles([])
-        setExecutionLogs([])
-        setExecutionLogsMessageId(undefined)
-        setActiveRetrieveProjectId(undefined)
-        setLiveRetrieveProjectLogs([])
-        setLiveRetrieveProjectSummary([])
-        setLiveAgentOutput([])
-        setShowRepoGraphPreview(false)
-        setShowMonacoCanvas(false)
-      }
-
-      setNewMessage("")
-      setFiles([])
-
-      if (shouldExecuteTask && executeTaskRef.current) {
-        executeTaskRef.current(messageContent)
-      }
-    } catch (error) {
-      console.error("Send message error:", error)
-      setIsUserSkeletonVisible(false)
     }
+
+    setIsUserSkeletonVisible(false)
+
+    const trimmedMessage = messageContent.trim()
+    const shouldExecuteTask =
+      trimmedMessage.startsWith("@goose") ||
+      trimmedMessage.startsWith("@orbital_cli") ||
+      trimmedMessage. startsWith("@gemini_cli") ||
+      trimmedMessage. startsWith("@claude_code")
+
+    if (shouldExecuteTask) {
+      setGeneratedFiles([])
+      setExecutionLogs([])
+      setExecutionLogsMessageId(undefined)
+      setActiveRetrieveProjectId(undefined)
+      setLiveRetrieveProjectLogs([])
+      setLiveRetrieveProjectSummary([])
+      setLiveAgentOutput([])
+      setShowRepoGraphPreview(false)
+      setShowMonacoCanvas(false)
+    }
+
+    setNewMessage("")
+    setFiles([])
+
+    if (shouldExecuteTask && executeTaskRef.current) {
+      executeTaskRef.current(messageContent)
+    }
+  } catch (error) {
+    console.error("Send message error:", error)
+    setIsUserSkeletonVisible(false)
   }
+}
 
   const handleMaximize = () => {
     if (! isFullPage && taskId) {
