@@ -13,7 +13,7 @@ import {
   Tag,
 } from 'lucide-react';
 
-const OrbitalRepoGraph = () => {
+const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) => void } = {}) => {
   const cyRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -57,7 +57,7 @@ const OrbitalRepoGraph = () => {
               label: 'pranav-94',
               type: 'contributor',
               commits: 65,
-              avatar: 'https://avatars.githubusercontent.com/u/118586743?v=4',
+              avatar: 'https://avatars. githubusercontent.com/u/118586743?v=4',
               contribution: '59%',
             },
           },
@@ -93,7 +93,7 @@ const OrbitalRepoGraph = () => {
           },
 
           // Core Config
-          { data: { id: 'vite-config', label: 'vite.config.ts', type: 'config', purpose: 'Build config' } },
+          { data: { id: 'vite-config', label: 'vite. config.ts', type: 'config', purpose: 'Build config' } },
           { data: { id: 'tsconfig', label: 'tsconfig.json', type: 'config', purpose: 'TypeScript config' } },
 
           // Main Directories
@@ -109,18 +109,18 @@ const OrbitalRepoGraph = () => {
           { data: { id: 'api-dir', label: '/api-client', type: 'directory', role: 'backend-communication' } },
 
           // === PUBLIC ROUTES ===
-          { data: { id: 'route-landing', label: 'Index.tsx', type: 'route', path: '/', auth: 'public', flow: 'Landing page' } },
+          { data: { id: 'route-landing', label: 'Index. tsx', type: 'route', path: '/', auth: 'public', flow: 'Landing page' } },
           { data: { id: 'route-signin', label: 'SignIn.tsx', type: 'route', path: '/sign-in', auth: 'public', flow: 'Authentication' } },
-          { data: { id: 'route-signup', label: 'SignUp.tsx', type: 'route', path: '/sign-up', auth: 'public', flow: 'Registration' } },
+          { data: { id: 'route-signup', label: 'SignUp. tsx', type: 'route', path: '/sign-up', auth: 'public', flow: 'Registration' } },
           { data: { id: 'route-waitlist', label: 'Waitlist.tsx', type: 'route', path: '/waitlist', auth: 'public', flow: 'Join waitlist' } },
 
           // === PROTECTED ROUTES ===
           { data: { id: 'route-board', label: 'ProjectBoard.tsx', type: 'route', path: '/project-board', auth: 'protected', flow: 'Main dashboard' } },
           { data: { id: 'route-software', label: 'SoftwareEngineering.tsx', type: 'route', path: '/software-engineering', auth: 'protected', flow: 'Code editor' } },
           { data: { id: 'route-tasks', label: 'UserTasks.tsx', type: 'route', path: '/user-tasks', auth: 'protected', flow: 'Task management' } },
-          { data: { id: 'route-inbox', label: 'Inbox.tsx', type: 'route', path: '/inbox', auth: 'protected', flow: 'Notifications' } },
+          { data: { id: 'route-inbox', label: 'Inbox. tsx', type: 'route', path: '/inbox', auth: 'protected', flow: 'Notifications' } },
           { data: { id: 'route-templates', label: 'Template.tsx', type: 'route', path: '/templates', auth: 'protected', flow: 'Project templates' } },
-          { data: { id: 'route-profile', label: 'ProfilePage.tsx', type: 'route', path: '/profile', auth: 'protected', flow: 'User settings' } },
+          { data: { id: 'route-profile', label: 'ProfilePage. tsx', type: 'route', path: '/profile', auth: 'protected', flow: 'User settings' } },
 
           // === COMPONENT GROUPS ===
           { data: { id: 'comp-landing-dir', label: '/landingPageComponents', type: 'comp-group', purpose: 'Marketing components' } },
@@ -151,7 +151,7 @@ const OrbitalRepoGraph = () => {
           { data: { id: 'global-sidebar', label: 'Sidebar', type: 'component', category: 'navigation', feature: 'App navigation' } },
 
           // === API LAYER ===
-          { data: { id: 'api-client', label: 'api.ts', type: 'api', purpose: 'OpenAPI client', endpoints: 'All backend calls' } },
+          { data: { id: 'api-client', label: 'api. ts', type: 'api', purpose: 'OpenAPI client', endpoints: 'All backend calls' } },
 
           // === NEW: WORK ITEMS GROUPS (Issues / PRs) ===
           { data: { id: 'issues-group', label: 'Issues', type: 'issue-group' } },
@@ -393,7 +393,6 @@ const OrbitalRepoGraph = () => {
               'font-size': '10px',
             },
           },
-          // Work items groups and nodes (light)
           {
             selector: 'node[type="issue-group"]',
             style: {
@@ -492,13 +491,14 @@ const OrbitalRepoGraph = () => {
         },
       });
 
-      // Select / deselect behavior
       cy.on('tap', 'node', (evt: any) => {
         const node = evt.target;
         const nodeData = node.data();
 
-      if (nodeData.type === 'issue') return;
-
+        if (nodeData.type === 'issue') return;
+        
+        // ADDED: Call parent callback to insert node name in input
+  if (onNodeClick) onNodeClick(`Node:${nodeData.label}`);
 
         const properties: any = {};
         Object.keys(nodeData).forEach((key) => {
@@ -521,7 +521,6 @@ const OrbitalRepoGraph = () => {
 
       cyRef.current = cy;
 
-      // === Fetch Issues and Pull Requests (open by default) ===
       const owner = 'AximoxAI';
       const repo = 'orbital';
 
@@ -534,15 +533,13 @@ const OrbitalRepoGraph = () => {
 
       async function loadWorkItems() {
         try {
-          // Fetch issues (this endpoint returns issues + PRs; filter out PRs)
           const issuesResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
-            { headers: { Accept: 'application/vnd.github+json' } }
+            { headers: { Accept: 'application/vnd. github+json' } }
           );
           const issuesJson = await issuesResp.json();
-          const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it) => !it.pull_request) : [];
+          const pureIssues = Array.isArray(issuesJson) ? issuesJson. filter((it) => ! it.pull_request) : [];
 
-          // Fetch PRs
           const prsResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
             { headers: { Accept: 'application/vnd.github+json' } }
@@ -550,10 +547,9 @@ const OrbitalRepoGraph = () => {
           const prsJson = await prsResp.json();
           const purePRs = Array.isArray(prsJson) ? prsJson : [];
 
-          // Add Issue nodes
           for (const issue of pureIssues) {
             const issueId = `issue-${issue.number}`;
-            if (cy.getElementById(issueId).nonempty()) continue;
+            if (cy.getElementById(issueId). nonempty()) continue;
 
             cy.add({
               data: {
@@ -563,9 +559,9 @@ const OrbitalRepoGraph = () => {
                 number: issue.number,
                 title: issue.title,
                 state: issue.state,
-                author: issue.user?.login ?? 'unknown',
+                author: issue.user?. login ??  'unknown',
                 comments: issue.comments,
-                labels: (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name)).join(', '),
+                labels: (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name)). join(', '),
                 createdAt: issue.created_at,
                 url: issue.html_url,
               },
@@ -580,7 +576,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Add PR nodes
           for (const pr of purePRs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
@@ -597,7 +592,7 @@ const OrbitalRepoGraph = () => {
                 createdAt: pr.created_at,
                 url: pr.html_url,
                 base: pr.base?.ref,
-                head: pr.head?.ref,
+                head: pr.head?. ref,
               },
             });
 
@@ -610,7 +605,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Re-run layout to place new nodes nicely
           cy.layout({
             name: 'cose',
             animate: true,
@@ -624,10 +618,10 @@ const OrbitalRepoGraph = () => {
             initialTemp: 200,
             coolingFactor: 0.95,
             minTemp: 1.0,
-          }).run();
+          }). run();
         } catch (e) {
           const errId = 'work-items-error';
-          if (!cy.getElementById(errId).nonempty()) {
+          if (! cy.getElementById(errId).nonempty()) {
             cy.add({
               data: {
                 id: errId,
@@ -652,7 +646,7 @@ const OrbitalRepoGraph = () => {
         cyRef.current.destroy();
       }
     };
-  }, []);
+  }, [onNodeClick]);
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
@@ -713,7 +707,7 @@ const OrbitalRepoGraph = () => {
             <div>
               <h3 className="text-slate-900 font-bold text-xl">
                 {selectedNode.type === 'issue'
-                  ? `#${selectedNode.properties.number} ${selectedNode.properties.title ?? ''}`
+                  ? `#${selectedNode.properties.number} ${selectedNode.properties.title ??  ''}`
                   : selectedNode.label}
               </h3>
               <p className="text-slate-600 text-sm">{nodeConfig[selectedNode.type].name}</p>
@@ -741,24 +735,31 @@ const OrbitalRepoGraph = () => {
               Connections ({Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).length})
             </strong>
             <div className="mt-2 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-              {Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).map((edge: any, i: number) => {
+              {Array.from(cyRef.current. getElementById(selectedNode.id).connectedEdges()).map((edge: any, i: number) => {
                 const source = edge.source();
                 const target = edge.target();
-                const otherNode = source.id() === selectedNode.id ? target : source;
+                const otherNode = source. id() === selectedNode.id ? target : source;
                 const direction = source.id() === selectedNode.id ? '→' : '←';
+                
+                // ADDED: Build connection string for inserting
+                const connectionString = `${edge.data('label')} ${direction} ${otherNode.data('label')}`;
 
                 return (
                   <span
                     key={i}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer hover:opacity-90 transition-all hover:scale-105"
+                    className="px-3 py-1. 5 rounded-md text-xs font-medium cursor-pointer hover:opacity-90 transition-all hover:scale-105"
                     style={{
                       backgroundColor: (nodeConfig[otherNode.data('type')]?.color || '#0EA5E9') + '22',
                       color: nodeConfig[otherNode.data('type')]?.color || '#0EA5E9',
                       border: `2px solid ${nodeConfig[otherNode.data('type')]?.color || '#0EA5E9'}`,
                     }}
-                    onClick={() => cyRef.current.getElementById(otherNode.id()).select()}
+                    onClick={() => {
+                      // ADDED: Insert connection into input when clicked
+                      if (onNodeClick) onNodeClick(`Connection:${connectionString}`);
+                      cyRef.current.getElementById(otherNode.id()). select();
+                    }}
                   >
-                    {edge.data('label')} {direction} {otherNode.data('label')}
+                    {connectionString}
                   </span>
                 );
               })}

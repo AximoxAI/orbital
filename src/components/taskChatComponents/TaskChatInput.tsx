@@ -83,6 +83,8 @@ interface ChatInputProps {
   availableUsers: UserType[]
   files: PreviewableFileItem[]
   setFiles: (files: PreviewableFileItem[]) => void
+  mentionToInsert?: string | null
+  setMentionToInsert?: (val: string | null) => void
 }
 
 function isImageFile(type?: string, name?: string): boolean {
@@ -91,13 +93,10 @@ function isImageFile(type?: string, name?: string): boolean {
   return lowerType.includes("image") || /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lowerName)
 }
 
-// Create local image preview for newly attached files (Blob URL)
 function getPreviewUrl(fileItem: PreviewableFileItem): string | undefined {
   const type = fileItem.file.type
   if (type && isImageFile(type, fileItem.file.name)) {
-    // If previewUrl is already set, use it
     if (fileItem.previewUrl) return fileItem.previewUrl
-    // Otherwise create it
     const url = URL.createObjectURL(fileItem.file)
     fileItem.previewUrl = url
     return url
@@ -113,6 +112,8 @@ const ChatInput = ({
   availableUsers,
   files,
   setFiles,
+  mentionToInsert,
+  setMentionToInsert,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
@@ -128,7 +129,6 @@ const ChatInput = ({
     (u) => "@" + (u.name || u.email || u.id),
   )
 
-  // CLEAN UP object URLs on remove
   useEffect(() => {
     return () => {
       files.forEach((fileItem) => {
@@ -137,13 +137,32 @@ const ChatInput = ({
         }
       })
     }
-    // only run at unmount
     // eslint-disable-next-line
   }, [])
 
+  // ADDED: Handle mentionToInsert prop to insert template/node names
+  useEffect(() => {
+    if (mentionToInsert && textareaRef.current) {
+      const ta = textareaRef.current
+      const start = ta.selectionStart
+      const end = ta.selectionEnd
+      const before = newMessage.substring(0, start)
+      const after = newMessage. substring(end)
+      const updatedMsg = before + mentionToInsert + " " + after
+      setNewMessage(updatedMsg)
+      setTimeout(() => {
+        ta.focus()
+        const newPos = before.length + mentionToInsert.length + 1
+        ta.setSelectionRange(newPos, newPos)
+      }, 0)
+      if (setMentionToInsert) setMentionToInsert(null)
+    }
+    // eslint-disable-next-line
+  }, [mentionToInsert])
+
   const handleRemoveFile = (fileId: string) => {
     const removedFile = files.find(f => f.id === fileId)
-    if (removedFile?.previewUrl) {
+    if (removedFile?. previewUrl) {
       URL.revokeObjectURL(removedFile.previewUrl)
     }
     setRemovingFileId(fileId)
@@ -154,7 +173,7 @@ const ChatInput = ({
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
+    const value = e. target.value
     const cursorPos = e.target.selectionStart
     setNewMessage(value)
 
@@ -167,23 +186,23 @@ const ChatInput = ({
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
-      if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
+      if (! textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         const filteredBots = availableBots.filter((bot) =>
-          bot.toLowerCase().includes(textAfterAt.toLowerCase()),
+          bot.toLowerCase().includes(textAfterAt. toLowerCase()),
         )
 
         const filteredUsers = userSuggestions.filter((user) =>
-          user.toLowerCase().includes(textAfterAt.toLowerCase()),
+          user.toLowerCase(). includes(textAfterAt.toLowerCase()),
         )
 
-        const allFiltered = [...filteredBots, ...filteredUsers]
+        const allFiltered = [... filteredBots, ...filteredUsers]
 
         if (allFiltered.length > 0) {
           setFilteredSuggestions(allFiltered)
           setShowSuggestions(true)
           setSelectedSuggestionIndex(0)
           setMentionStartPos(lastAtIndex)
-          setSuggestionType(filteredBots.length > 0 ? "bot" : "user")
+          setSuggestionType(filteredBots. length > 0 ? "bot" : "user")
           return
         }
       }
@@ -192,7 +211,7 @@ const ChatInput = ({
   }
 
   const selectSuggestion = (suggestion: string) => {
-    if (!textareaRef.current) return
+    if (! textareaRef.current) return
 
     const beforeMention = newMessage.substring(0, mentionStartPos)
     const afterCursor = newMessage.substring(textareaRef.current.selectionStart)
@@ -203,9 +222,9 @@ const ChatInput = ({
 
     setTimeout(() => {
       if (textareaRef.current) {
-        const newCursorPos = beforeMention.length + suggestion.length + 1
+        const newCursorPos = beforeMention. length + suggestion.length + 1
         textareaRef.current.focus()
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        textareaRef. current.setSelectionRange(newCursorPos, newCursorPos)
       }
     }, 0)
   }
@@ -220,10 +239,10 @@ const ChatInput = ({
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
         setSelectedSuggestionIndex((prev) =>
-          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
+          prev > 0 ?  prev - 1 : filteredSuggestions.length - 1,
         )
       } else if (e.key === "Tab" || e.key === "Enter") {
-        if (!e.shiftKey) {
+        if (! e.shiftKey) {
           e.preventDefault()
           selectSuggestion(filteredSuggestions[selectedSuggestionIndex])
           return
@@ -237,11 +256,11 @@ const ChatInput = ({
       if (
         e.ctrlKey ||
         e.metaKey ||
-        (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)
+        (! e.shiftKey && ! e.altKey && !e.ctrlKey && !e.metaKey)
       ) {
         if (
-          !e.ctrlKey &&
-          !e.metaKey &&
+          ! e.ctrlKey &&
+          !e. metaKey &&
           (newMessage.includes("\n") || e.shiftKey || e.altKey)
         ) {
           return
@@ -269,7 +288,12 @@ const ChatInput = ({
       <TaskChatTemplateDialog
         open={showTemplateDialog}
         onOpenChange={setShowTemplateDialog}
-        onSelect={() => setShowTemplateDialog(false)}
+        onSelect={(templateId: string, templateName: string) => {
+          setShowTemplateDialog(false)
+          if (setMentionToInsert) {
+            setMentionToInsert(`Template:${templateName}`)
+          }
+        }}
       />
       <div
         className={`fixed bottom-0 left-0 right-0 ${
@@ -304,18 +328,17 @@ const ChatInput = ({
         )}
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
-          {/* Attached files as cards (the same as in MessageContent) */}
           {files && files.length > 0 && (
             <div className="flex flex-wrap gap-3 mb-3">
-              {files.map((fileItem, idx) => (
+              {files.map((fileItem) => (
                 <FileAttachmentCard
                   key={fileItem.id || fileItem.file.name}
                   file={{
                     id: fileItem.id,
-                    name: fileItem.file.name,
+                    name: fileItem.file. name,
                     type: fileItem.file.type,
-                    size: fileItem.file.size,
-                    url: getPreviewUrl(fileItem) // local preview for images
+                    size: fileItem.file. size,
+                    url: getPreviewUrl(fileItem)
                   }}
                   onClick={() => {}}
                 />
@@ -337,7 +360,7 @@ const ChatInput = ({
             )}
             <textarea
               ref={textareaRef}
-              placeholder="Ask about the task or discuss implementation...  (Ctrl+Enter or Enter to send)"
+              placeholder="Ask about the task or discuss implementation...   (Ctrl+Enter or Enter to send)"
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}

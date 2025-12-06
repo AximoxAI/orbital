@@ -108,6 +108,8 @@ const TaskChat = ({
   const [files, setFiles] = useState<FileItem[]>([])
   const [showGlobalDocsModal, setShowGlobalDocsModal] = useState(false)
   const [showRepoGraphPreview, setShowRepoGraphPreview] = useState(false)
+  const [mentionToInsert, setMentionToInsert] = useState<string | null>(null)
+
 
   const { user } = useUser()
   const { getToken } = useAuth()
@@ -760,35 +762,40 @@ const TaskChat = ({
           onFileClick={handleAttachedFileClick}
         />
 
-        <ChatInput
-          newMessage={newMessage}
-          setNewMessage={setNewMessage}
-          onSendMessage={handleSendMessage}
-          isFullPage={isFullPage}
-          availableUsers={chatUsers}
-          files={files}
-          setFiles={setFiles}
-        />
+       <ChatInput
+  newMessage={newMessage}
+  setNewMessage={setNewMessage}
+  onSendMessage={handleSendMessage}
+  isFullPage={isFullPage}
+  availableUsers={chatUsers}
+  files={files}
+  setFiles={setFiles}
+  mentionToInsert={mentionToInsert}
+  setMentionToInsert={setMentionToInsert}
+/>
       </div>
 
       {isFullPage && (
-        <MonacoCanvas
-          value={editorValue}
-          taskId={taskId}
-          setValue={setEditorValue}
-          executeTaskRef={executeTaskRef}
-          isVisible={showMonacoCanvas}
-          onSocketConnected={setSocketConnected}
-          filesFromApi={generatedFiles}
-          onLogsUpdate={handleLogsUpdate}
-          onSummaryUpdate={handleSummaryUpdate}
-          onAgentOutputUpdate={handleAgentOutputUpdate}
-          onClose={handleCloseMonacoCanvas}
-          inputMessage={currentInputMessage}
-          onFilesGenerated={handleFilesGenerated}
-          customPreview={<Preview />}
-          showCustomPreview={showRepoGraphPreview}
-        />
+       <MonacoCanvas
+  value={editorValue}
+  taskId={taskId}
+  setValue={setEditorValue}
+  executeTaskRef={executeTaskRef}
+  isVisible={showMonacoCanvas}
+  onSocketConnected={setSocketConnected}
+  filesFromApi={generatedFiles}
+  onLogsUpdate={handleLogsUpdate}
+  onSummaryUpdate={handleSummaryUpdate}
+  onAgentOutputUpdate={handleAgentOutputUpdate}
+  onClose={handleCloseMonacoCanvas}
+  inputMessage={currentInputMessage}
+  onFilesGenerated={handleFilesGenerated}
+  customPreview={
+      <Preview onNodeClick={(nodeLabel: string) => setMentionToInsert(nodeLabel)} />
+
+  }
+  showCustomPreview={showRepoGraphPreview}
+/>
       )}
 
       {showGlobalDocsModal && (
