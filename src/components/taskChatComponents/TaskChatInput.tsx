@@ -1,9 +1,10 @@
 import type React from "react"
-import { useRef, useState } from "react"
+import { useRef, useState, useEffect } from "react"
 import { Send, Bot, User, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
+import AttachFileButton, { FileItem } from "./AttachFileButton"
+import FileAttachmentCard from "./TaskChatMessages/FileAttachmentCard"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -60,7 +61,8 @@ const USER_STYLE = {
   borderColor: "border-orange-200",
 }
 
-const getBotStyles = (bot: string) => BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
+const getBotStyles = (bot: string) =>
+  BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
 
 interface UserType {
   id: string
@@ -69,13 +71,37 @@ interface UserType {
   isOnline: boolean
   email?: string
 }
+interface PreviewableFileItem extends FileItem {
+  previewUrl?: string
+}
 
 interface ChatInputProps {
   newMessage: string
   setNewMessage: (message: string) => void
   onSendMessage: () => void
   isFullPage?: boolean
-  availableUsers: UserType[] // only selected users!
+  availableUsers: UserType[]
+  files: PreviewableFileItem[]
+  setFiles: (files: PreviewableFileItem[]) => void
+  mentionToInsert?: string | null
+  setMentionToInsert?: (val: string | null) => void
+}
+
+function isImageFile(type?: string, name?: string): boolean {
+  const lowerType = (type || "").toLowerCase()
+  const lowerName = (name || "").toLowerCase()
+  return lowerType.includes("image") || /\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lowerName)
+}
+
+function getPreviewUrl(fileItem: PreviewableFileItem): string | undefined {
+  const type = fileItem.file.type
+  if (type && isImageFile(type, fileItem.file.name)) {
+    if (fileItem.previewUrl) return fileItem.previewUrl
+    const url = URL.createObjectURL(fileItem.file)
+    fileItem.previewUrl = url
+    return url
+  }
+  return undefined
 }
 
 const ChatInput = ({
@@ -84,55 +110,99 @@ const ChatInput = ({
   onSendMessage,
   isFullPage = false,
   availableUsers,
+  files,
+  setFiles,
+  mentionToInsert,
+  setMentionToInsert,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const [mentionStartPos, setMentionStartPos] = useState(0)
-  const [suggestionType, setSuggestionType] = useState<'bot' | 'user'>('bot')
+  const [suggestionType, setSuggestionType] = useState<"bot" | "user">("bot")
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
+  const [removingFileId, setRemovingFileId] = useState<string | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Use only selected users for suggestions
-  const userSuggestions = availableUsers.map(u => "@" + (u.name || u.email || u.id));
+  const userSuggestions = availableUsers.map(
+    (u) => "@" + (u.name || u.email || u.id),
+  )
+
+  useEffect(() => {
+    return () => {
+      files.forEach((fileItem) => {
+        if (fileItem.previewUrl) {
+          URL.revokeObjectURL(fileItem.previewUrl)
+        }
+      })
+    }
+    // eslint-disable-next-line
+  }, [])
+
+  // ADDED: Handle mentionToInsert prop to insert template/node names
+  useEffect(() => {
+    if (mentionToInsert && textareaRef.current) {
+      const ta = textareaRef.current
+      const start = ta.selectionStart
+      const end = ta.selectionEnd
+      const before = newMessage.substring(0, start)
+      const after = newMessage. substring(end)
+      const updatedMsg = before + mentionToInsert + " " + after
+      setNewMessage(updatedMsg)
+      setTimeout(() => {
+        ta.focus()
+        const newPos = before.length + mentionToInsert.length + 1
+        ta.setSelectionRange(newPos, newPos)
+      }, 0)
+      if (setMentionToInsert) setMentionToInsert(null)
+    }
+    // eslint-disable-next-line
+  }, [mentionToInsert])
+
+  const handleRemoveFile = (fileId: string) => {
+    const removedFile = files.find(f => f.id === fileId)
+    if (removedFile?. previewUrl) {
+      URL.revokeObjectURL(removedFile.previewUrl)
+    }
+    setRemovingFileId(fileId)
+    setTimeout(() => {
+      setFiles(files.filter((f) => f.id !== fileId))
+      setRemovingFileId(null)
+    }, 150)
+  }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
+    const value = e. target.value
     const cursorPos = e.target.selectionStart
     setNewMessage(value)
 
-    // Auto-resize textarea with a higher maximum height for multiline
     const textarea = e.target
-    textarea.style.height = 'auto'
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + 'px'
+    textarea.style.height = "auto"
+    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px"
 
     const textBeforeCursor = value.substring(0, cursorPos)
     const lastAtIndex = textBeforeCursor.lastIndexOf("@")
 
     if (lastAtIndex !== -1) {
       const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
-      if (!textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
-        // Check for bot matches first
+      if (! textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
         const filteredBots = availableBots.filter((bot) =>
-          bot.toLowerCase().includes(textAfterAt.toLowerCase())
+          bot.toLowerCase().includes(textAfterAt. toLowerCase()),
         )
 
-        // Check for user matches (only selected users)
         const filteredUsers = userSuggestions.filter((user) =>
-          user.toLowerCase().includes(textAfterAt.toLowerCase())
+          user.toLowerCase(). includes(textAfterAt.toLowerCase()),
         )
 
-        // Combine and prioritize bots first, then users
-        const allFiltered = [...filteredBots, ...filteredUsers]
+        const allFiltered = [... filteredBots, ...filteredUsers]
 
         if (allFiltered.length > 0) {
           setFilteredSuggestions(allFiltered)
           setShowSuggestions(true)
           setSelectedSuggestionIndex(0)
           setMentionStartPos(lastAtIndex)
-          // Set suggestion type based on first match
-          setSuggestionType(filteredBots.length > 0 ? 'bot' : 'user')
+          setSuggestionType(filteredBots. length > 0 ? "bot" : "user")
           return
         }
       }
@@ -141,7 +211,7 @@ const ChatInput = ({
   }
 
   const selectSuggestion = (suggestion: string) => {
-    if (!textareaRef.current) return
+    if (! textareaRef.current) return
 
     const beforeMention = newMessage.substring(0, mentionStartPos)
     const afterCursor = newMessage.substring(textareaRef.current.selectionStart)
@@ -152,9 +222,9 @@ const ChatInput = ({
 
     setTimeout(() => {
       if (textareaRef.current) {
-        const newCursorPos = beforeMention.length + suggestion.length + 1
+        const newCursorPos = beforeMention. length + suggestion.length + 1
         textareaRef.current.focus()
-        textareaRef.current.setSelectionRange(newCursorPos, newCursorPos)
+        textareaRef. current.setSelectionRange(newCursorPos, newCursorPos)
       }
     }, 0)
   }
@@ -163,12 +233,16 @@ const ChatInput = ({
     if (showSuggestions) {
       if (e.key === "ArrowDown") {
         e.preventDefault()
-        setSelectedSuggestionIndex((prev) => (prev < filteredSuggestions.length - 1 ? prev + 1 : 0))
+        setSelectedSuggestionIndex((prev) =>
+          prev < filteredSuggestions.length - 1 ? prev + 1 : 0,
+        )
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
-        setSelectedSuggestionIndex((prev) => (prev > 0 ? prev - 1 : filteredSuggestions.length - 1))
+        setSelectedSuggestionIndex((prev) =>
+          prev > 0 ?  prev - 1 : filteredSuggestions.length - 1,
+        )
       } else if (e.key === "Tab" || e.key === "Enter") {
-        if (!e.shiftKey) {
+        if (! e.shiftKey) {
           e.preventDefault()
           selectSuggestion(filteredSuggestions[selectedSuggestionIndex])
           return
@@ -178,16 +252,17 @@ const ChatInput = ({
       }
     }
 
-    // Allow Enter for new lines, require Ctrl+Enter or Cmd+Enter to send
-    // Modified: Also send on plain Enter if no suggestions are showing and textarea is not multiline
     if (e.key === "Enter" && !showSuggestions) {
-      if ((e.ctrlKey || e.metaKey) || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
-        // If it's a regular Enter (not Shift/Alt/Ctrl/Cmd), send if not multiline
-        // If textarea contains newlines, let Enter do a new line unless Ctrl/Cmd
+      if (
+        e.ctrlKey ||
+        e.metaKey ||
+        (! e.shiftKey && ! e.altKey && !e.ctrlKey && !e.metaKey)
+      ) {
         if (
-          (!e.ctrlKey && !e.metaKey && (newMessage.includes('\n') || e.shiftKey || e.altKey))
+          ! e.ctrlKey &&
+          !e. metaKey &&
+          (newMessage.includes("\n") || e.shiftKey || e.altKey)
         ) {
-          // Let Enter add new line
           return
         }
         e.preventDefault()
@@ -213,17 +288,27 @@ const ChatInput = ({
       <TaskChatTemplateDialog
         open={showTemplateDialog}
         onOpenChange={setShowTemplateDialog}
-        onSelect={() => setShowTemplateDialog(false)}
+        onSelect={(templateId: string, templateName: string) => {
+          setShowTemplateDialog(false)
+          if (setMentionToInsert) {
+            setMentionToInsert(`Template:${templateName}`)
+          }
+        }}
       />
       <div
-        className={`fixed bottom-0 left-0 right-0 ${isFullPage ? "flex justify-center" : ""} border-t border-gray-200 bg-white relative z-20`}
+        className={`fixed bottom-0 left-0 right-0 ${
+          isFullPage ? "flex justify-center" : ""
+        } border-t border-gray-200 bg-white relative z-20`}
       >
         {showSuggestions && (
           <div
             className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}
           >
             {filteredSuggestions.map((suggestion, index) => {
-              const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
+              const { styles, icon: IconComponent } = getSuggestionStyles(
+                suggestion,
+                index,
+              )
               return (
                 <div
                   key={suggestion}
@@ -243,8 +328,25 @@ const ChatInput = ({
         )}
 
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
+          {files && files.length > 0 && (
+            <div className="flex flex-wrap gap-3 mb-3">
+              {files.map((fileItem) => (
+                <FileAttachmentCard
+                  key={fileItem.id || fileItem.file.name}
+                  file={{
+                    id: fileItem.id,
+                    name: fileItem.file. name,
+                    type: fileItem.file.type,
+                    size: fileItem.file. size,
+                    url: getPreviewUrl(fileItem)
+                  }}
+                  onClick={() => {}}
+                />
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
-            {/* Templates button on the LEFT */}
             {isFullPage && (
               <Button
                 variant="outline"
@@ -258,18 +360,24 @@ const ChatInput = ({
             )}
             <textarea
               ref={textareaRef}
-              placeholder="Ask about the task or discuss implementation... (Ctrl+Enter or Enter to send)"
+              placeholder="Ask about the task or discuss implementation...   (Ctrl+Enter or Enter to send)"
               value={newMessage}
               onChange={handleInputChange}
               onKeyDown={handleKeyDown}
-              className="flex-1  resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
+              className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
               rows={3}
               style={{ lineHeight: "1.5" }}
             />
-            <div className="flex items-center h-full gap-2">
+            <div className="flex items-center gap-2">
+              <AttachFileButton
+                onFilesSelect={setFiles}
+                files={files}
+                variant="ghost"
+                size="sm"
+              />
               <button
                 onClick={onSendMessage}
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() && files.length === 0}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
                 title="Send message (Ctrl+Enter or Enter)"
               >

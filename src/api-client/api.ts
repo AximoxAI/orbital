@@ -262,6 +262,164 @@ export interface CreateTemplateDto {
 /**
  * 
  * @export
+ * @interface FileDetailsDto
+ */
+export interface FileDetailsDto {
+    /**
+     * File ID
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'fileId': string;
+    /**
+     * Original filename
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'filename': string;
+    /**
+     * Task ID if file belongs to a task
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'task_id'?: string;
+    /**
+     * Project ID if file belongs to a project
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'project_id'?: string;
+    /**
+     * Message ID if file belongs to a message
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'message_id'?: string;
+    /**
+     * Presigned URL for viewing/downloading the file
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'view_url': string;
+    /**
+     * File creation timestamp
+     * @type {string}
+     * @memberof FileDetailsDto
+     */
+    'created_at': string;
+}
+/**
+ * 
+ * @export
+ * @interface FilesResponseDto
+ */
+export interface FilesResponseDto {
+    /**
+     * File ID
+     * @type {string}
+     * @memberof FilesResponseDto
+     */
+    'fileId': string;
+    /**
+     * Original filename
+     * @type {string}
+     * @memberof FilesResponseDto
+     */
+    'filename': string;
+    /**
+     * Presigned URL for viewing the file
+     * @type {string}
+     * @memberof FilesResponseDto
+     */
+    'view_url': string;
+    /**
+     * File creation timestamp
+     * @type {string}
+     * @memberof FilesResponseDto
+     */
+    'created_at': string;
+}
+/**
+ * 
+ * @export
+ * @interface PresignRequestDto
+ */
+export interface PresignRequestDto {
+    /**
+     * Name of the file to upload
+     * @type {string}
+     * @memberof PresignRequestDto
+     */
+    'filename': string;
+    /**
+     * MIME type of the file
+     * @type {string}
+     * @memberof PresignRequestDto
+     */
+    'contentType': PresignRequestDtoContentTypeEnum;
+    /**
+     * Optional: Task ID if file is attached to a task.  Do not send projectId when sending taskId.
+     * @type {string}
+     * @memberof PresignRequestDto
+     */
+    'taskId'?: string;
+    /**
+     * Optional: Project ID if file is attached to a project. Do not send taskId when sending projectId.
+     * @type {string}
+     * @memberof PresignRequestDto
+     */
+    'projectId'?: string;
+    /**
+     * Optional: Message ID if file is attached to a chat message. Do not send taskId/projectId when sending messageId.
+     * @type {string}
+     * @memberof PresignRequestDto
+     */
+    'messageId'?: string;
+}
+
+export const PresignRequestDtoContentTypeEnum = {
+    ImageJpeg: 'image/jpeg',
+    ImagePng: 'image/png',
+    ImageGif: 'image/gif',
+    ImageWebp: 'image/webp',
+    ApplicationPdf: 'application/pdf',
+    TextPlain: 'text/plain',
+    TextCsv: 'text/csv',
+    ApplicationJson: 'application/json',
+    TextXPython: 'text/x-python',
+    ApplicationVndOpenxmlformatsOfficedocumentWordprocessingmlDocument: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+} as const;
+
+export type PresignRequestDtoContentTypeEnum = typeof PresignRequestDtoContentTypeEnum[keyof typeof PresignRequestDtoContentTypeEnum];
+
+/**
+ * 
+ * @export
+ * @interface PresignResponseDto
+ */
+export interface PresignResponseDto {
+    /**
+     * Presigned URL for uploading the file
+     * @type {string}
+     * @memberof PresignResponseDto
+     */
+    'uploadUrl': string;
+    /**
+     * Presigned URL for viewing the file
+     * @type {string}
+     * @memberof PresignResponseDto
+     */
+    'viewUrl': string;
+    /**
+     * ID of the created file record
+     * @type {string}
+     * @memberof PresignResponseDto
+     */
+    'fileId': string;
+}
+/**
+ * 
+ * @export
  * @interface ProjectAnalysisDto
  */
 export interface ProjectAnalysisDto {
@@ -1076,6 +1234,48 @@ export const ChatApiAxiosParamCreator = function (configuration?: Configuration)
                 options: localVarRequestOptions,
             };
         },
+        /**
+         * Returns list of files shared with the message with fresh presigned URLs
+         * @summary Get all files for a message
+         * @param {string} taskId ID of the task for this message
+         * @param {string} messageId ID of the message
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        chatControllerGetMessageFiles: async (taskId: string, messageId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'taskId' is not null or undefined
+            assertParamExists('chatControllerGetMessageFiles', 'taskId', taskId)
+            // verify required parameter 'messageId' is not null or undefined
+            assertParamExists('chatControllerGetMessageFiles', 'messageId', messageId)
+            const localVarPath = `/api/v1/tasks/{taskId}/messages/{messageId}/files`
+                .replace(`{${"taskId"}}`, encodeURIComponent(String(taskId)))
+                .replace(`{${"messageId"}}`, encodeURIComponent(String(messageId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
     }
 };
 
@@ -1113,6 +1313,20 @@ export const ChatApiFp = function(configuration?: Configuration) {
             const localVarOperationServerBasePath = operationServerMap['ChatApi.chatControllerFindAll']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
+        /**
+         * Returns list of files shared with the message with fresh presigned URLs
+         * @summary Get all files for a message
+         * @param {string} taskId ID of the task for this message
+         * @param {string} messageId ID of the message
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async chatControllerGetMessageFiles(taskId: string, messageId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FilesResponseDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.chatControllerGetMessageFiles(taskId, messageId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ChatApi.chatControllerGetMessageFiles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
     }
 };
 
@@ -1143,6 +1357,17 @@ export const ChatApiFactory = function (configuration?: Configuration, basePath?
          */
         chatControllerFindAll(taskId: string, options?: RawAxiosRequestConfig): AxiosPromise<any> {
             return localVarFp.chatControllerFindAll(taskId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns list of files shared with the message with fresh presigned URLs
+         * @summary Get all files for a message
+         * @param {string} taskId ID of the task for this message
+         * @param {string} messageId ID of the message
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        chatControllerGetMessageFiles(taskId: string, messageId: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<FilesResponseDto>> {
+            return localVarFp.chatControllerGetMessageFiles(taskId, messageId, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -1177,6 +1402,19 @@ export class ChatApi extends BaseAPI {
      */
     public chatControllerFindAll(taskId: string, options?: RawAxiosRequestConfig) {
         return ChatApiFp(this.configuration).chatControllerFindAll(taskId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns list of files shared with the message with fresh presigned URLs
+     * @summary Get all files for a message
+     * @param {string} taskId ID of the task for this message
+     * @param {string} messageId ID of the message
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ChatApi
+     */
+    public chatControllerGetMessageFiles(taskId: string, messageId: string, options?: RawAxiosRequestConfig) {
+        return ChatApiFp(this.configuration).chatControllerGetMessageFiles(taskId, messageId, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -1649,6 +1887,44 @@ export const ProjectsApiAxiosParamCreator = function (configuration?: Configurat
             };
         },
         /**
+         * Returns list of files shared with the project with fresh presigned URLs
+         * @summary Get all files for a project
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        projectsControllerGetProjectFiles: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('projectsControllerGetProjectFiles', 'id', id)
+            const localVarPath = `/api/v1/projects/{id}/files`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * 
          * @param {string} id 
          * @param {*} [options] Override http request option.
@@ -1784,6 +2060,19 @@ export const ProjectsApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Returns list of files shared with the project with fresh presigned URLs
+         * @summary Get all files for a project
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async projectsControllerGetProjectFiles(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FilesResponseDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.projectsControllerGetProjectFiles(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['ProjectsApi.projectsControllerGetProjectFiles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * 
          * @param {string} id 
          * @param {*} [options] Override http request option.
@@ -1855,6 +2144,16 @@ export const ProjectsApiFactory = function (configuration?: Configuration, baseP
          */
         projectsControllerFindOne(id: string, options?: RawAxiosRequestConfig): AxiosPromise<any> {
             return localVarFp.projectsControllerFindOne(id, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns list of files shared with the project with fresh presigned URLs
+         * @summary Get all files for a project
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        projectsControllerGetProjectFiles(id: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<FilesResponseDto>> {
+            return localVarFp.projectsControllerGetProjectFiles(id, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -1929,6 +2228,18 @@ export class ProjectsApi extends BaseAPI {
      */
     public projectsControllerFindOne(id: string, options?: RawAxiosRequestConfig) {
         return ProjectsApiFp(this.configuration).projectsControllerFindOne(id, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns list of files shared with the project with fresh presigned URLs
+     * @summary Get all files for a project
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof ProjectsApi
+     */
+    public projectsControllerGetProjectFiles(id: string, options?: RawAxiosRequestConfig) {
+        return ProjectsApiFp(this.configuration).projectsControllerGetProjectFiles(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -2210,6 +2521,44 @@ export const TasksApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
+         * Returns list of files shared with the task with fresh presigned URLs
+         * @summary Get all files for a task
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        tasksControllerGetTaskFiles: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'id' is not null or undefined
+            assertParamExists('tasksControllerGetTaskFiles', 'id', id)
+            const localVarPath = `/api/v1/tasks/{id}/files`
+                .replace(`{${"id"}}`, encodeURIComponent(String(id)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+            // authentication bearer required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
          * 
          * @summary Delete a task by ID
          * @param {string} id 
@@ -2383,6 +2732,19 @@ export const TasksApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
+         * Returns list of files shared with the task with fresh presigned URLs
+         * @summary Get all files for a task
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async tasksControllerGetTaskFiles(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FilesResponseDto>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.tasksControllerGetTaskFiles(id, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['TasksApi.tasksControllerGetTaskFiles']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
          * 
          * @summary Delete a task by ID
          * @param {string} id 
@@ -2481,6 +2843,16 @@ export const TasksApiFactory = function (configuration?: Configuration, basePath
          */
         tasksControllerGetGeneratedFiles(messageId: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<TaskGeneratedFile>> {
             return localVarFp.tasksControllerGetGeneratedFiles(messageId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Returns list of files shared with the task with fresh presigned URLs
+         * @summary Get all files for a task
+         * @param {string} id 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        tasksControllerGetTaskFiles(id: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<FilesResponseDto>> {
+            return localVarFp.tasksControllerGetTaskFiles(id, options).then((request) => request(axios, basePath));
         },
         /**
          * 
@@ -2586,6 +2958,18 @@ export class TasksApi extends BaseAPI {
      */
     public tasksControllerGetGeneratedFiles(messageId: string, options?: RawAxiosRequestConfig) {
         return TasksApiFp(this.configuration).tasksControllerGetGeneratedFiles(messageId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Returns list of files shared with the task with fresh presigned URLs
+     * @summary Get all files for a task
+     * @param {string} id 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof TasksApi
+     */
+    public tasksControllerGetTaskFiles(id: string, options?: RawAxiosRequestConfig) {
+        return TasksApiFp(this.configuration).tasksControllerGetTaskFiles(id, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -2946,6 +3330,185 @@ export class TemplatesApi extends BaseAPI {
      */
     public templatesControllerUpdate(id: string, updateTemplateDto: UpdateTemplateDto, options?: RawAxiosRequestConfig) {
         return TemplatesApiFp(this.configuration).templatesControllerUpdate(id, updateTemplateDto, options).then((request) => request(this.axios, this.basePath));
+    }
+}
+
+
+
+/**
+ * UploadsApi - axios parameter creator
+ * @export
+ */
+export const UploadsApiAxiosParamCreator = function (configuration?: Configuration) {
+    return {
+        /**
+         * Fetches file metadata and generates a fresh presigned URL for viewing/downloading
+         * @summary Get file details by ID
+         * @param {string} fileId UUID of the file
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadControllerGetFile: async (fileId: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'fileId' is not null or undefined
+            assertParamExists('uploadControllerGetFile', 'fileId', fileId)
+            const localVarPath = `/api/v1/uploads/{fileId}`
+                .replace(`{${"fileId"}}`, encodeURIComponent(String(fileId)));
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+        /**
+         * Creates a presigned S3 upload URL and saves file metadata. Supports task-level, project-level, message-level, and global files.
+         * @summary Generate presigned URL for file upload
+         * @param {PresignRequestDto} presignRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadControllerPresign: async (presignRequestDto: PresignRequestDto, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'presignRequestDto' is not null or undefined
+            assertParamExists('uploadControllerPresign', 'presignRequestDto', presignRequestDto)
+            const localVarPath = `/api/v1/uploads/presign`;
+            // use dummy base URL string because the URL constructor only accepts absolute URLs.
+            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
+            let baseOptions;
+            if (configuration) {
+                baseOptions = configuration.baseOptions;
+            }
+
+            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
+            const localVarHeaderParameter = {} as any;
+            const localVarQueryParameter = {} as any;
+
+
+    
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
+            setSearchParams(localVarUrlObj, localVarQueryParameter);
+            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
+            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(presignRequestDto, localVarRequestOptions, configuration)
+
+            return {
+                url: toPathString(localVarUrlObj),
+                options: localVarRequestOptions,
+            };
+        },
+    }
+};
+
+/**
+ * UploadsApi - functional programming interface
+ * @export
+ */
+export const UploadsApiFp = function(configuration?: Configuration) {
+    const localVarAxiosParamCreator = UploadsApiAxiosParamCreator(configuration)
+    return {
+        /**
+         * Fetches file metadata and generates a fresh presigned URL for viewing/downloading
+         * @summary Get file details by ID
+         * @param {string} fileId UUID of the file
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async uploadControllerGetFile(fileId: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<FileDetailsDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.uploadControllerGetFile(fileId, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UploadsApi.uploadControllerGetFile']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+        /**
+         * Creates a presigned S3 upload URL and saves file metadata. Supports task-level, project-level, message-level, and global files.
+         * @summary Generate presigned URL for file upload
+         * @param {PresignRequestDto} presignRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        async uploadControllerPresign(presignRequestDto: PresignRequestDto, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PresignResponseDto>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.uploadControllerPresign(presignRequestDto, options);
+            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
+            const localVarOperationServerBasePath = operationServerMap['UploadsApi.uploadControllerPresign']?.[localVarOperationServerIndex]?.url;
+            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
+        },
+    }
+};
+
+/**
+ * UploadsApi - factory interface
+ * @export
+ */
+export const UploadsApiFactory = function (configuration?: Configuration, basePath?: string, axios?: AxiosInstance) {
+    const localVarFp = UploadsApiFp(configuration)
+    return {
+        /**
+         * Fetches file metadata and generates a fresh presigned URL for viewing/downloading
+         * @summary Get file details by ID
+         * @param {string} fileId UUID of the file
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadControllerGetFile(fileId: string, options?: RawAxiosRequestConfig): AxiosPromise<FileDetailsDto> {
+            return localVarFp.uploadControllerGetFile(fileId, options).then((request) => request(axios, basePath));
+        },
+        /**
+         * Creates a presigned S3 upload URL and saves file metadata. Supports task-level, project-level, message-level, and global files.
+         * @summary Generate presigned URL for file upload
+         * @param {PresignRequestDto} presignRequestDto 
+         * @param {*} [options] Override http request option.
+         * @throws {RequiredError}
+         */
+        uploadControllerPresign(presignRequestDto: PresignRequestDto, options?: RawAxiosRequestConfig): AxiosPromise<PresignResponseDto> {
+            return localVarFp.uploadControllerPresign(presignRequestDto, options).then((request) => request(axios, basePath));
+        },
+    };
+};
+
+/**
+ * UploadsApi - object-oriented interface
+ * @export
+ * @class UploadsApi
+ * @extends {BaseAPI}
+ */
+export class UploadsApi extends BaseAPI {
+    /**
+     * Fetches file metadata and generates a fresh presigned URL for viewing/downloading
+     * @summary Get file details by ID
+     * @param {string} fileId UUID of the file
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UploadsApi
+     */
+    public uploadControllerGetFile(fileId: string, options?: RawAxiosRequestConfig) {
+        return UploadsApiFp(this.configuration).uploadControllerGetFile(fileId, options).then((request) => request(this.axios, this.basePath));
+    }
+
+    /**
+     * Creates a presigned S3 upload URL and saves file metadata. Supports task-level, project-level, message-level, and global files.
+     * @summary Generate presigned URL for file upload
+     * @param {PresignRequestDto} presignRequestDto 
+     * @param {*} [options] Override http request option.
+     * @throws {RequiredError}
+     * @memberof UploadsApi
+     */
+    public uploadControllerPresign(presignRequestDto: PresignRequestDto, options?: RawAxiosRequestConfig) {
+        return UploadsApiFp(this.configuration).uploadControllerPresign(presignRequestDto, options).then((request) => request(this.axios, this.basePath));
     }
 }
 

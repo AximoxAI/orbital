@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch } from "lucide-react"
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -30,6 +30,7 @@ interface TaskChatHeaderProps {
   onOpenRepoGraph: () => void
   onCallStart?: () => void
   onCallEnd?: () => void
+  onOpenGlobalDocs?: () => void
 }
 
 const TaskChatHeader = ({
@@ -45,6 +46,7 @@ const TaskChatHeader = ({
   onOpenRepoGraph,
   onCallStart,
   onCallEnd,
+  onOpenGlobalDocs,
 }: TaskChatHeaderProps) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
@@ -105,16 +107,28 @@ const TaskChatHeader = ({
         </div>
         <div className="flex items-center gap-2">
           {isFullPage && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-shrink-0"
-              onClick={onOpenRepoGraph}
-              aria-label="Open Repo Graph"
-            >
-              <GitBranch className="mr-2 h-4 w-4" />
-              Repo Graph
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-shrink-0"
+                onClick={onOpenRepoGraph}
+                aria-label="Open Repo Graph"
+              >
+                <GitBranch className="mr-2 h-4 w-4" />
+                Repo Graph
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="flex-shrink-0 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-indigo-200"
+                onClick={onOpenGlobalDocs}
+                aria-label="Open Global Docs"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                 Docs
+              </Button>
+            </>
           )}
           <Popover open={showTagsPopover} onOpenChange={setShowTagsPopover}>
             <PopoverTrigger asChild>

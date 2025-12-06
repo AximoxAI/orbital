@@ -13,7 +13,7 @@ import {
   Tag,
 } from 'lucide-react';
 
-const OrbitalRepoGraph = () => {
+const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) => void } = {}) => {
   const cyRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
@@ -497,8 +497,14 @@ const OrbitalRepoGraph = () => {
         const node = evt.target;
         const nodeData = node.data();
 
-      if (nodeData.type === 'issue') return;
+        // Trigger the callback for chat input
+        // Sanitize spaces to underscores so chat regex doesn't break
+        if (onNodeClick && nodeData.label) {
+          const safeLabel = nodeData.label.replace(/\s+/g, '_');
+          onNodeClick(`Node:${safeLabel}`);
+        }
 
+        if (nodeData.type === 'issue') return;
 
         const properties: any = {};
         Object.keys(nodeData).forEach((key) => {
@@ -542,7 +548,6 @@ const OrbitalRepoGraph = () => {
           const issuesJson = await issuesResp.json();
           const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it) => !it.pull_request) : [];
 
-          // Fetch PRs
           const prsResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
             { headers: { Accept: 'application/vnd.github+json' } }
@@ -550,7 +555,6 @@ const OrbitalRepoGraph = () => {
           const prsJson = await prsResp.json();
           const purePRs = Array.isArray(prsJson) ? prsJson : [];
 
-          // Add Issue nodes
           for (const issue of pureIssues) {
             const issueId = `issue-${issue.number}`;
             if (cy.getElementById(issueId).nonempty()) continue;
@@ -580,7 +584,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Add PR nodes
           for (const pr of purePRs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
@@ -610,7 +613,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Re-run layout to place new nodes nicely
           cy.layout({
             name: 'cose',
             animate: true,
@@ -652,7 +654,7 @@ const OrbitalRepoGraph = () => {
         cyRef.current.destroy();
       }
     };
-  }, []);
+  }, [onNodeClick]); // Add onNodeClick to dependency array
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
@@ -746,6 +748,11 @@ const OrbitalRepoGraph = () => {
                 const target = edge.target();
                 const otherNode = source.id() === selectedNode.id ? target : source;
                 const direction = source.id() === selectedNode.id ? '→' : '←';
+                const displayString = `${edge.data('label')} ${direction} ${otherNode.data('label')}`;
+                
+                // Sanitize labels for chat input (replace spaces with underscore)
+                const safeLabel = otherNode.data('label').replace(/\s+/g, '_');
+                const chatConnectionString = `${edge.data('label')} ${direction} ${safeLabel}`;
 
                 return (
                   <span
@@ -756,9 +763,13 @@ const OrbitalRepoGraph = () => {
                       color: nodeConfig[otherNode.data('type')]?.color || '#0EA5E9',
                       border: `2px solid ${nodeConfig[otherNode.data('type')]?.color || '#0EA5E9'}`,
                     }}
-                    onClick={() => cyRef.current.getElementById(otherNode.id()).select()}
+                    onClick={() => {
+                      // Insert sanitized connection string into chat
+                      if (onNodeClick) onNodeClick(`Connection:${chatConnectionString}`);
+                      cyRef.current.getElementById(otherNode.id()).select();
+                    }}
                   >
-                    {edge.data('label')} {direction} {otherNode.data('label')}
+                    {displayString}
                   </span>
                 );
               })}

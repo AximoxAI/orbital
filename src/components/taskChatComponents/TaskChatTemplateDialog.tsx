@@ -9,14 +9,8 @@ import { useEffect, useState } from "react"
 import { TemplatesApi, Configuration } from "@/api-client"
 
 const BACKEND_API_URL =
-  import.meta.env.VITE_BACKEND_API_KEY || "https://your-backend-url.com/api"
+  import.meta.env. VITE_BACKEND_API_KEY || "https://your-backend-url.com/api"
 
-/**
- * Props:
- * - open: boolean
- * - onOpenChange: (open: boolean) => void
- * - onSelect: (templateId: string) => void
- */
 const TaskChatTemplateDialog = ({
   open,
   onOpenChange,
@@ -24,21 +18,21 @@ const TaskChatTemplateDialog = ({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onSelect: (templateId: string) => void
+  onSelect: (templateId: string, templateName: string) => void
 }) => {
   const [templates, setTemplates] = useState<Array<any>>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (! open) return
     setLoading(true)
     setError(null)
     const api = new TemplatesApi(new Configuration({ basePath: BACKEND_API_URL }))
     api
-      .templatesControllerFindAll()
+      . templatesControllerFindAll()
       .then((res) => setTemplates(res.data))
-      .catch((err) => setError(err?.message || "Failed to load templates"))
+      .catch((err) => setError(err?. message || "Failed to load templates"))
       .finally(() => setLoading(false))
   }, [open])
 
@@ -61,15 +55,15 @@ const TaskChatTemplateDialog = ({
               {error}
             </div>
           )}
-          {!loading && !error && templates.length === 0 && (
+          {! loading && !error && templates.length === 0 && (
             <div className="col-span-2 text-gray-400 text-center">
-              No templates found.
+              No templates found. 
             </div>
           )}
           {templates.map((tpl) => (
             <Card
               key={tpl.id}
-              onClick={() => onSelect(tpl.id)}
+              onClick={() => onSelect(tpl. id, tpl.title || tpl.name || "Template")}
               className="cursor-pointer p-5 rounded-xl border border-gray-200 hover:shadow-md transition-shadow"
               tabIndex={0}
             >

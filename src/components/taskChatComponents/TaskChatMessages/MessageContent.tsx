@@ -10,14 +10,23 @@ import { availableBots, getBotStyles, getUserMentionStyle } from "./botStyles"
 import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
+import FileAttachmentCard from "./FileAttachmentCard"
 
 const configuration = new OpenApiConfiguration({
   basePath: import.meta.env.VITE_BACKEND_API_KEY,
 })
 const tasksApi = new TasksApi(configuration)
 
+interface AttachedFile {
+  name: string
+  size: number
+  type: string
+  url?: string
+  id?: string
+}
+
 interface MessageContentProps {
-  message: MessageType
+  message: MessageType & { attachedFiles?: AttachedFile[] }
   isFullPage: boolean
   onShowGeneratedFiles: (id: string) => void
   messageIndex: number
@@ -44,6 +53,7 @@ interface MessageContentProps {
   parentMessageContent?: string
   parentAgentName?: string
   onContentHeightChange?: () => void
+  onFileClick?: (file: AttachedFile) => void
 }
 
 const extractSummaryFromExecutionLogs = (logs: TaskExecutionLog[]) => {
@@ -93,6 +103,25 @@ function getUserColorStyle(userIdOrName: string) {
   }
 }
 
+// --- Styles for Nodes, Templates, and Connections (No Icons) ---
+const ENTITY_STYLES = {
+  Node: {
+    bgColor: "bg-indigo-50",
+    textColor: "text-indigo-700",
+    borderColor: "border-indigo-200",
+  },
+  Template: {
+    bgColor: "bg-teal-50",
+    textColor: "text-teal-700",
+    borderColor: "border-teal-200",
+  },
+  Connection: {
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-700",
+    borderColor: "border-slate-300",
+  },
+} as const;
+
 function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
@@ -103,25 +132,30 @@ const renderMessageContent = (
 ) => {
   const userMentions = chatUsers?.map((u) => "@" + (u.name || u.email || u.id)) ?? []
   const allKnownMentions = [...availableBots, ...userMentions]
-  if (allKnownMentions.length === 0) {
-    return <span className="text-sm text-slate-900 font-inter font-medium ">{content}</span>
+
+  // 1. Process Bots and User Mentions first
+  let parts: string[] = [content];
+  if (allKnownMentions.length > 0) {
+    const escapedMentions = allKnownMentions.map((mention) => escapeRegExp(mention))
+    const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
+    parts = content.split(mentionRegex)
   }
-  const escapedMentions = allKnownMentions.map((mention) => escapeRegExp(mention))
-  const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
-  const parts = content.split(mentionRegex)
+
   const elements: React.ReactNode[] = []
 
   parts.forEach((part, index) => {
+    // Check for Bot
     if (availableBots.includes(part)) {
       const styles = getBotStyles(part)
       elements.push(
         <span
-          key={index}
-          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
+          key={`bot-${index}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`}
         >
           {part.replace(/^@/, "")}
         </span>,
       )
+    // Check for User
     } else if (chatUsers && part.startsWith("@") && chatUsers.some((u) => "@" + (u.name || u.email || u.id) === part)) {
       const user = chatUsers.find((u) => "@" + (u.name || u.email || u.id) === part)
       const colorStyle = user
@@ -129,22 +163,58 @@ const renderMessageContent = (
         : getUserMentionStyle()
       elements.push(
         <span
-          key={index}
-          className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-bold shadow-sm mr-2 ${colorStyle.bgColor} ${colorStyle.textColor} border ${colorStyle.borderColor}`}
+          key={`user-${index}`}
+          className={`inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle ${colorStyle.bgColor} ${colorStyle.textColor} border ${colorStyle.borderColor}`}
         >
           {part.replace(/^@/, "")}
         </span>,
       )
     } else if (part.trim()) {
-      elements.push(
-        <span key={index} className="text-sm text-slate-900 font-inter font-medium ">
-          {part}
-        </span>,
-      )
+      // 2. Process Nodes, Templates, and Connections inside normal text blocks
+      // Regex captures: Node:xyz, Template:xyz, Connection:A -> B
+      // Supports Unicode arrows → and ←
+      const entityRegex = /(Node:[^\s]+|Connection:[^\s]+\s(?:->|<-|→|←)\s[^\s]+|Template:[^\s]+)/g;
+      
+      const subParts = part.split(entityRegex);
+      
+      subParts.forEach((subPart, subIndex) => {
+        if (subPart.startsWith("Node:")) {
+            const styles = ENTITY_STYLES.Node;
+            elements.push(
+              <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                 {subPart}
+              </span>
+            );
+        } else if (subPart.startsWith("Template:")) {
+            const styles = ENTITY_STYLES.Template;
+            elements.push(
+                <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                   {subPart}
+                </span>
+              );
+        } else if (subPart.startsWith("Connection:")) {
+            const styles = ENTITY_STYLES.Connection;
+            elements.push(
+                <span key={`conn-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                   {subPart}
+                </span>
+              );
+        } else {
+             // Normal text
+             elements.push(
+                <span key={`text-${index}-${subIndex}`} className="text-sm text-slate-900 font-inter font-medium leading-relaxed">
+                  {subPart}
+                </span>
+              )
+        }
+      });
+    } else {
+        // Whitespace preservation
+        if (part) elements.push(<span key={index}>{part}</span>)
     }
   })
 
-  return <>{elements}</>
+  return <div className="leading-relaxed">{elements}</div>
 }
 
 async function fetchExecutionLogs(messageId: string): Promise<TaskExecutionLog[]> {
@@ -183,7 +253,8 @@ export const MessageContent = ({
   onRetryClick,
   parentMessageContent,
   parentAgentName,
-  onContentHeightChange
+  onContentHeightChange,
+  onFileClick
 }: MessageContentProps) => {
   const [hasAgentSummary, setHasAgentSummary] = useState<boolean>(false)
   const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
@@ -207,13 +278,13 @@ export const MessageContent = ({
 
   const getAgentOutputText = () => {
     if (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) {
-      return liveAgentOutput.join('\n')
+      return liveAgentOutput.join("\n")
     }
     if (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) {
-      return executionAgentOutput.join('\n')
+      return executionAgentOutput.join("\n")
     }
     if (Array.isArray(agentOutput) && agentOutput.length > 0) {
-      return agentOutput.join('\n')
+      return agentOutput.join("\n")
     }
     return ""
   }
@@ -227,7 +298,7 @@ export const MessageContent = ({
         (log) =>
           log.type === TaskExecutionLogTypeEnum.AgentOutput &&
           log.status === TaskExecutionLogStatusEnum.Agent &&
-          log.content
+          log.content,
       )
       if (agentOutputLogs.length > 0) {
         return agentOutputLogs[agentOutputLogs.length - 1].content || ""
@@ -245,9 +316,7 @@ export const MessageContent = ({
         setIsLoadingAgentSummary(true)
         const logs = await fetchExecutionLogs(message.id)
         const found = logs.some(
-          (log) =>
-            ( log.type === TaskExecutionLogTypeEnum.Summary) &&
-            (log.status === TaskExecutionLogStatusEnum.Agent)
+          (log) => log.type === TaskExecutionLogTypeEnum.Summary && log.status === TaskExecutionLogStatusEnum.Agent,
         )
         if (!ignore) {
           setHasAgentSummary(found)
@@ -281,13 +350,14 @@ export const MessageContent = ({
   }, [hasAgentSummary, isLoadingAgentSummary, onContentHeightChange])
 
   const shouldShowActions =
-    !isFollowingBotMessage ||
-    (isFollowingBotMessage && (hasAgentSummary))
+    !isFollowingBotMessage || (isFollowingBotMessage && hasAgentSummary)
 
-  const shouldShowSuggestions =
-    isFollowingBotMessage && (hasAgentSummary )
+  const shouldShowSuggestions = isFollowingBotMessage && hasAgentSummary
 
-  const renderedContent = useMemo(() => renderMessageContent(message.content, chatUsers), [message.content, chatUsers])
+  const renderedContent = useMemo(
+    () => renderMessageContent(message.content, chatUsers),
+    [message.content, chatUsers],
+  )
 
   if (message.isCallEvent) {
     const isCallStarted = message.callEventType === "started"
@@ -383,10 +453,7 @@ export const MessageContent = ({
             <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
               {hasGeneratedFiles ? (
                 <>
-                  <span
-                    className="font-semibold text-sm sm:text-md text-slate-600 truncate"
-                    style={{ fontFamily: "Inter" }}
-                  >
+                  <span className="font-semibold text-sm sm:text-md text-slate-600 truncate" style={{ fontFamily: "Inter" }}>
                     Code Generated Successfully
                   </span>
                   <span className="text-slate-400 text-xs sm:text-sm truncate" style={{ fontFamily: "Inter" }}>
@@ -394,10 +461,7 @@ export const MessageContent = ({
                   </span>
                 </>
               ) : (
-                <span
-                  className="font-semibold text-sm sm:text-md text-slate-600 truncate"
-                  style={{ fontFamily: "Inter" }}
-                >
+                <span className="font-semibold text-sm sm:text-md text-slate-600 truncate" style={{ fontFamily: "Inter" }}>
                   Check execution logs
                 </span>
               )}
@@ -427,12 +491,7 @@ export const MessageContent = ({
           {isActiveRetrieveProjectBlock ? (
             <>
               {liveRetrieveProjectLogs && liveRetrieveProjectLogs.length > 0 && (
-                <LogsPanel
-                  logs={liveRetrieveProjectLogs}
-                  logsOpen={logsOpen}
-                  setLogsOpen={setLogsOpen}
-                  title="EXECUTION LOGS"
-                />
+                <LogsPanel logs={liveRetrieveProjectLogs} logsOpen={logsOpen} setLogsOpen={setLogsOpen} title="EXECUTION LOGS" />
               )}
               {((Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) ||
                 (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0)) && (
@@ -487,11 +546,22 @@ export const MessageContent = ({
 
   return (
     <div ref={containerRef} className="w-full">
-      <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
-        <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex items-center">
-          {renderedContent}
+      {/* Claude-like cards for attachments */}
+      {message.attachedFiles && message.attachedFiles.length > 0 && (
+        <div className="flex flex-wrap gap-3 mb-3">
+          {message.attachedFiles.map((file, idx) => (
+            <FileAttachmentCard key={`${file.id || file.name}-${idx}`} file={file} onClick={onFileClick} />
+          ))}
         </div>
-      </div>
+      )}
+
+      {message.content && message.content.trim() && (
+        <div className="border border-slate-200 rounded-xl w-fit bg-white p-2 flex items-center h-auto ">
+          <div className="text-slate-900 font-normal font-inter p-2 m-0 leading-tight flex flex-wrap items-center">
+            {renderedContent}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
