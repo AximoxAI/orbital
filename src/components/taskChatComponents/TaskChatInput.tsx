@@ -1,6 +1,6 @@
 import type React from "react"
-import { useRef, useState, useEffect } from "react"
-import { Send, Bot, User, LayoutTemplate } from "lucide-react"
+import { useRef, useState, useEffect, useCallback } from "react"
+import { Send, Bot, User, LayoutTemplate, X } from "lucide-react" 
 import { Button } from "@/components/ui/button"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
 import AttachFileButton, { FileItem } from "./AttachFileButton"
@@ -10,33 +10,33 @@ const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
 const BOT_STYLES = {
   "@goose": {
-    bgColor: "bg-gradient-to-r from-pink-50 to-rose-50",
+    bgColor: "bg-pink-50",
     textColor: "text-pink-800",
-    selectedBg: "bg-gradient-to-r from-pink-100 to-rose-100",
+    selectedBg: "bg-pink-100",
     selectedText: "text-pink-900",
     iconColor: "text-pink-600",
     borderColor: "border-pink-200",
   },
   "@orbital_cli": {
-    bgColor: "bg-gradient-to-r from-purple-50 to-violet-50",
+    bgColor: "bg-purple-50",
     textColor: "text-purple-800",
-    selectedBg: "bg-gradient-to-r from-purple-100 to-violet-100",
+    selectedBg: "bg-purple-100",
     selectedText: "text-purple-900",
     iconColor: "text-purple-600",
     borderColor: "border-purple-200",
   },
   "@gemini_cli": {
-    bgColor: "bg-gradient-to-r from-blue-50 to-cyan-50",
+    bgColor: "bg-blue-50",
     textColor: "text-blue-800",
-    selectedBg: "bg-gradient-to-r from-blue-100 to-cyan-100",
+    selectedBg: "bg-blue-100",
     selectedText: "text-blue-900",
     iconColor: "text-blue-600",
     borderColor: "border-blue-200",
   },
   "@claude_code": {
-    bgColor: "bg-gradient-to-r from-green-50 to-emerald-50",
+    bgColor: "bg-green-50",
     textColor: "text-green-800",
-    selectedBg: "bg-gradient-to-r from-green-100 to-emerald-100",
+    selectedBg: "bg-green-100",
     selectedText: "text-green-900",
     iconColor: "text-green-600",
     borderColor: "border-green-200",
@@ -44,22 +44,40 @@ const BOT_STYLES = {
 } as const
 
 const DEFAULT_BOT_STYLE = {
-  bgColor: "bg-gradient-to-r from-gray-50 to-slate-50",
-  textColor: "text-gray-800",
-  selectedBg: "bg-gradient-to-r from-gray-100 to-slate-100",
-  selectedText: "text-gray-900",
-  iconColor: "text-gray-600",
-  borderColor: "border-gray-200",
+  bgColor: "bg-slate-50",
+  textColor: "text-slate-800",
+  selectedBg: "bg-slate-100",
+  selectedText: "text-slate-900",
+  iconColor: "text-slate-600",
+  borderColor: "border-slate-200",
 }
 
 const USER_STYLE = {
-  bgColor: "bg-gradient-to-r from-orange-50 to-amber-50",
-  textColor: "text-orange-800",
-  selectedBg: "bg-gradient-to-r from-orange-100 to-amber-100",
-  selectedText: "text-orange-900",
-  iconColor: "text-orange-600",
-  borderColor: "border-orange-200",
+  bgColor: "bg-amber-50",
+  textColor: "text-amber-800",
+  selectedBg: "bg-amber-100",
+  selectedText: "text-amber-900",
+  iconColor: "text-amber-600",
+  borderColor: "border-amber-200",
 }
+
+const ENTITY_STYLES = {
+  Node: {
+    bgColor: "bg-indigo-50",
+    textColor: "text-indigo-700",
+    borderColor: "border-indigo-200",
+  },
+  Template: {
+    bgColor: "bg-teal-50",
+    textColor: "text-teal-700",
+    borderColor: "border-teal-200",
+  },
+  Connection: {
+    bgColor: "bg-slate-100",
+    textColor: "text-slate-700",
+    borderColor: "border-slate-300",
+  },
+} as const
 
 const getBotStyles = (bot: string) =>
   BOT_STYLES[bot as keyof typeof BOT_STYLES] || DEFAULT_BOT_STYLE
@@ -118,12 +136,13 @@ const ChatInput = ({
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
-  const [mentionStartPos, setMentionStartPos] = useState(0)
-  const [suggestionType, setSuggestionType] = useState<"bot" | "user">("bot")
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
-  const [removingFileId, setRemovingFileId] = useState<string | null>(null)
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Use a ref for the div that acts as the input
+  const inputRef = useRef<HTMLDivElement>(null)
+  
+  // Track where the mention started to know what text to replace
+  const mentionRangeRef = useRef<Range | null>(null)
 
   const userSuggestions = availableUsers.map(
     (u) => "@" + (u.name || u.email || u.id),
@@ -140,96 +159,170 @@ const ChatInput = ({
     // eslint-disable-next-line
   }, [])
 
-  // ADDED: Handle mentionToInsert prop to insert template/node names
+  // Sync: If parent clears newMessage, we must clear the div
   useEffect(() => {
-    if (mentionToInsert && textareaRef.current) {
-      const ta = textareaRef.current
-      const start = ta.selectionStart
-      const end = ta.selectionEnd
-      const before = newMessage.substring(0, start)
-      const after = newMessage. substring(end)
-      const updatedMsg = before + mentionToInsert + " " + after
-      setNewMessage(updatedMsg)
-      setTimeout(() => {
-        ta.focus()
-        const newPos = before.length + mentionToInsert.length + 1
-        ta.setSelectionRange(newPos, newPos)
-      }, 0)
-      if (setMentionToInsert) setMentionToInsert(null)
+    if (newMessage === "" && inputRef.current && inputRef.current.innerText.trim() !== "") {
+      inputRef.current.innerHTML = ""
     }
-    // eslint-disable-next-line
-  }, [mentionToInsert])
+  }, [newMessage])
 
-  const handleRemoveFile = (fileId: string) => {
-    const removedFile = files.find(f => f.id === fileId)
-    if (removedFile?. previewUrl) {
-      URL.revokeObjectURL(removedFile.previewUrl)
-    }
-    setRemovingFileId(fileId)
-    setTimeout(() => {
-      setFiles(files.filter((f) => f.id !== fileId))
-      setRemovingFileId(null)
-    }, 150)
+  const handleRemoveFile = (indexToRemove: number) => {
+    setFiles(files.filter((_, index) => index !== indexToRemove))
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e. target.value
-    const cursorPos = e.target.selectionStart
-    setNewMessage(value)
+  // Helper: Create the "Tag" pill
+  const createTagElement = (text: string, type: "bot" | "user" | "entity") => {
+    const span = document.createElement("span")
+    span.contentEditable = "false" // CRITICAL: This makes it un-editable!
+    span.innerText = text
 
-    const textarea = e.target
-    textarea.style.height = "auto"
-    textarea.style.height = Math.min(textarea.scrollHeight, 200) + "px"
+    let styles = DEFAULT_BOT_STYLE
+    if (type === "bot") styles = getBotStyles(text)
+    else if (type === "user") styles = USER_STYLE
+    else if (type === "entity") {
+      if (text.startsWith("Node:")) styles = ENTITY_STYLES.Node
+      else if (text.startsWith("Template:")) styles = ENTITY_STYLES.Template
+      else if (text.startsWith("Connection:")) styles = ENTITY_STYLES.Connection
+    }
 
-    const textBeforeCursor = value.substring(0, cursorPos)
-    const lastAtIndex = textBeforeCursor.lastIndexOf("@")
+    // Mimic the tag visual style from MessageContent
+    span.className = `inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle select-none ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`
+    return span
+  }
 
-    if (lastAtIndex !== -1) {
-      const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1)
-      if (! textAfterAt.includes(" ") && !textAfterAt.includes("\n")) {
-        const filteredBots = availableBots.filter((bot) =>
-          bot.toLowerCase().includes(textAfterAt. toLowerCase()),
-        )
+  const insertTag = useCallback(
+    (text: string, type: "bot" | "user" | "entity") => {
+      if (!inputRef.current) return
 
-        const filteredUsers = userSuggestions.filter((user) =>
-          user.toLowerCase(). includes(textAfterAt.toLowerCase()),
-        )
+      const span = createTagElement(text, type)
+      const space = document.createTextNode("\u00A0") // Non-breaking space
 
-        const allFiltered = [... filteredBots, ...filteredUsers]
+      // Logic: Linear insertion (Insert Tag -> Move Caret -> Insert Space -> Move Caret)
+      // This ensures the cursor is strictly AFTER the inserted elements.
+      
+      const applyLinearInsertion = (range: Range) => {
+          range.insertNode(span)
+          range.setStartAfter(span)
+          range.setEndAfter(span)
+          
+          range.insertNode(space)
+          range.setStartAfter(space)
+          range.setEndAfter(space)
 
-        if (allFiltered.length > 0) {
-          setFilteredSuggestions(allFiltered)
-          setShowSuggestions(true)
-          setSelectedSuggestionIndex(0)
-          setMentionStartPos(lastAtIndex)
-          setSuggestionType(filteredBots. length > 0 ? "bot" : "user")
-          return
+          range.collapse(true)
+          
+          const sel = window.getSelection()
+          if (sel) {
+              sel.removeAllRanges()
+              sel.addRange(range)
+          }
+      }
+
+      // 1. If we are completing a typed mention (e.g. "@goo"), replace that specific range
+      if (mentionRangeRef.current) {
+        const range = mentionRangeRef.current
+        range.deleteContents()
+        applyLinearInsertion(range)
+        mentionRangeRef.current = null
+      } 
+      // 2. Otherwise insert at current caret position (e.g. from template dialog)
+      else {
+        const sel = window.getSelection()
+        if (sel && sel.rangeCount > 0 && inputRef.current.contains(sel.anchorNode)) {
+          const range = sel.getRangeAt(0)
+          applyLinearInsertion(range)
+        } else {
+          // 3. Fallback: If lost focus, append to end
+          inputRef.current.appendChild(span)
+          inputRef.current.appendChild(space)
+          
+          // Move caret to very end
+          const range = document.createRange()
+          range.selectNodeContents(inputRef.current)
+          range.collapse(false) // collapse to end
+          
+          const newSel = window.getSelection()
+          newSel?.removeAllRanges()
+          newSel?.addRange(range)
+        }
+      }
+
+      setNewMessage(inputRef.current.innerText)
+      setShowSuggestions(false)
+    },
+    [setNewMessage],
+  )
+
+  // Handle external insertions (like clicking a Node in the graph)
+  useEffect(() => {
+    if (mentionToInsert) {
+      let type: "bot" | "user" | "entity" = "entity"
+      if (mentionToInsert.startsWith("@")) type = "bot"
+      insertTag(mentionToInsert, type)
+      if (setMentionToInsert) setMentionToInsert(null)
+      
+      // Refocus input
+      setTimeout(() => {
+        if (inputRef.current) {
+            inputRef.current.focus()
+        }
+      }, 0)
+    }
+  }, [mentionToInsert, insertTag, setMentionToInsert])
+
+  const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
+    const target = e.currentTarget
+    const text = target.innerText
+    setNewMessage(text)
+
+    // Mention detection logic adapted for contentEditable
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0) {
+      const range = sel.getRangeAt(0)
+      const node = range.startContainer
+      
+      // We only care if typing in a text node
+      if (node.nodeType === Node.TEXT_NODE && node.textContent) {
+        const textBeforeCaret = node.textContent.substring(0, range.startOffset)
+        const match = textBeforeCaret.match(/@([\w\.\-_]*)$/)
+
+        if (match) {
+          const query = match[1]
+          const triggerIndex = match.index!
+          
+          // Save range for replacement
+          const triggerRange = document.createRange()
+          triggerRange.setStart(node, triggerIndex)
+          triggerRange.setEnd(node, range.startOffset)
+          mentionRangeRef.current = triggerRange
+
+          const filteredBots = availableBots.filter((bot) =>
+            bot.toLowerCase().includes(("@" + query).toLowerCase()),
+          )
+          const filteredUsers = userSuggestions.filter((user) =>
+            user.toLowerCase().includes(("@" + query).toLowerCase()),
+          )
+          const allFiltered = [...filteredBots, ...filteredUsers]
+
+          if (allFiltered.length > 0) {
+            setFilteredSuggestions(allFiltered)
+            setShowSuggestions(true)
+            setSelectedSuggestionIndex(0)
+            return
+          }
         }
       }
     }
     setShowSuggestions(false)
+    mentionRangeRef.current = null
   }
 
   const selectSuggestion = (suggestion: string) => {
-    if (! textareaRef.current) return
-
-    const beforeMention = newMessage.substring(0, mentionStartPos)
-    const afterCursor = newMessage.substring(textareaRef.current.selectionStart)
-    const newValue = beforeMention + suggestion + " " + afterCursor
-
-    setNewMessage(newValue)
-    setShowSuggestions(false)
-
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const newCursorPos = beforeMention. length + suggestion.length + 1
-        textareaRef.current.focus()
-        textareaRef. current.setSelectionRange(newCursorPos, newCursorPos)
-      }
-    }, 0)
+    const type = availableBots.includes(suggestion) ? "bot" : "user"
+    insertTag(suggestion, type)
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (showSuggestions) {
       if (e.key === "ArrowDown") {
         e.preventDefault()
@@ -239,10 +332,10 @@ const ChatInput = ({
       } else if (e.key === "ArrowUp") {
         e.preventDefault()
         setSelectedSuggestionIndex((prev) =>
-          prev > 0 ?  prev - 1 : filteredSuggestions.length - 1,
+          prev > 0 ? prev - 1 : filteredSuggestions.length - 1,
         )
       } else if (e.key === "Tab" || e.key === "Enter") {
-        if (! e.shiftKey) {
+        if (!e.shiftKey) {
           e.preventDefault()
           selectSuggestion(filteredSuggestions[selectedSuggestionIndex])
           return
@@ -253,17 +346,9 @@ const ChatInput = ({
     }
 
     if (e.key === "Enter" && !showSuggestions) {
-      if (
-        e.ctrlKey ||
-        e.metaKey ||
-        (! e.shiftKey && ! e.altKey && !e.ctrlKey && !e.metaKey)
-      ) {
-        if (
-          ! e.ctrlKey &&
-          !e. metaKey &&
-          (newMessage.includes("\n") || e.shiftKey || e.altKey)
-        ) {
-          return
+      if (e.ctrlKey || e.metaKey || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
+        if (!e.ctrlKey && !e.metaKey && (e.shiftKey || e.altKey)) {
+          return // Allow new line
         }
         e.preventDefault()
         onSendMessage()
@@ -279,7 +364,6 @@ const ChatInput = ({
     const isBot = availableBots.includes(suggestion)
     const styles = isBot ? getBotStyles(suggestion) : USER_STYLE
     const icon = isBot ? Bot : User
-
     return { styles, icon }
   }
 
@@ -305,10 +389,7 @@ const ChatInput = ({
             className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}
           >
             {filteredSuggestions.map((suggestion, index) => {
-              const { styles, icon: IconComponent } = getSuggestionStyles(
-                suggestion,
-                index,
-              )
+              const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
               return (
                 <div
                   key={suggestion}
@@ -330,23 +411,31 @@ const ChatInput = ({
         <div className={`${isFullPage ? "w-[60%]" : "w-full"} p-4`}>
           {files && files.length > 0 && (
             <div className="flex flex-wrap gap-3 mb-3">
-              {files.map((fileItem) => (
-                <FileAttachmentCard
-                  key={fileItem.id || fileItem.file.name}
-                  file={{
-                    id: fileItem.id,
-                    name: fileItem.file. name,
-                    type: fileItem.file.type,
-                    size: fileItem.file. size,
-                    url: getPreviewUrl(fileItem)
-                  }}
-                  onClick={() => {}}
-                />
+              {files.map((fileItem, index) => (
+                <div key={fileItem.id || fileItem.file.name || index} className="relative group">
+                  <FileAttachmentCard
+                    file={{
+                      id: fileItem.id,
+                      name: fileItem.file.name,
+                      type: fileItem.file.type,
+                      size: fileItem.file.size,
+                      url: getPreviewUrl(fileItem),
+                    }}
+                    onClick={() => {}}
+                  />
+                  <button
+                    onClick={() => handleRemoveFile(index)}
+                    className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md border  transition-colors z-10"
+                    title="Remove file"
+                  >
+                    <X className="w-3 h-3 text-gray-500 " />
+                  </button>
+                </div>
               ))}
             </div>
           )}
 
-          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200">
+          <div className="flex items-center gap-3 border border-gray-200 rounded-2xl p-3 shadow-sm focus-within:border-blue-500 focus-within:shadow-md transition-all duration-200 bg-white">
             {isFullPage && (
               <Button
                 variant="outline"
@@ -358,23 +447,27 @@ const ChatInput = ({
                 <LayoutTemplate className="h-4 w-4" />
               </Button>
             )}
-            <textarea
-              ref={textareaRef}
-              placeholder="Ask about the task or discuss implementation...   (Ctrl+Enter or Enter to send)"
-              value={newMessage}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              className="flex-1 resize-none border-0 bg-transparent text-sm text-gray-900 placeholder-gray-500 focus:outline-none min-h-[60px] max-h-[200px]"
-              rows={3}
-              style={{ lineHeight: "1.5" }}
-            />
+
+            {/* Replaced textarea with a Styled Div that looks identical */}
+            <div className="flex-1 relative min-h-[60px] max-h-[200px] overflow-y-auto">
+                {!newMessage && (
+                    <div className="absolute top-0 left-0 text-gray-500 text-sm pointer-events-none p-1">
+                        Ask about the task or discuss implementation...   (Ctrl+Enter or Enter to send)
+                    </div>
+                )}
+                <div
+                    ref={inputRef}
+                    contentEditable
+                    onInput={handleInput}
+                    onKeyDown={handleKeyDown}
+                    // This class string is copied EXACTLY from your original textarea to match the Look & Feel
+                    className="w-full h-full outline-none text-sm text-gray-900 bg-transparent whitespace-pre-wrap font-sans p-1"
+                    style={{ lineHeight: "1.5" }}
+                />
+            </div>
+
             <div className="flex items-center gap-2">
-              <AttachFileButton
-                onFilesSelect={setFiles}
-                files={files}
-                variant="ghost"
-                size="sm"
-              />
+              <AttachFileButton onFilesSelect={setFiles} files={files} variant="ghost" size="sm" />
               <button
                 onClick={onSendMessage}
                 disabled={!newMessage.trim() && files.length === 0}

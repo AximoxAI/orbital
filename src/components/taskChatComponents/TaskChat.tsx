@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import LeftPanel from "./LeftPanel"
 import MonacoCanvas from "./MonacoCanvas"
 import { useUser, useAuth } from "@clerk/clerk-react"
@@ -19,7 +19,10 @@ import GlobalDocsModal from "./GlobalDocsModal"
 import { FileItem } from "./AttachFileButton"
 import axios from "axios"
 
-const BACKEND_URL = import.meta.env. VITE_BACKEND_API_KEY
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY
+
+// FIX 1: Wrap MonacoCanvas in React.memo to prevent re-renders when parent state (input) changes
+const MemoizedMonacoCanvas = React.memo(MonacoCanvas);
 
 interface UserType {
   id: string
@@ -123,11 +126,11 @@ const TaskChat = ({
 
   const mergedGlobalDocs: UploadedFile[] = [
     ...(projectDocs || []),
-    ...(isFullPage && location.state?.globalDocs ?  location.state. globalDocs : globalDocs),
+    ...(isFullPage && location.state?.globalDocs ? location.state.globalDocs : globalDocs),
   ]
 
   let taskName = propTaskName
-  if (isFullPage && location. state?.taskName) {
+  if (isFullPage && location.state?.taskName) {
     taskName = location.state.taskName
   }
 
@@ -161,17 +164,17 @@ const TaskChat = ({
       const isCallStartMessage = isSystemMessage && msg.content === "Video call started"
       const isCallEndMessage =
         isSystemMessage &&
-        (msg.content === "Video call ended" || msg.content?. startsWith("Video call ended"))
+        (msg.content === "Video call ended" || msg.content?.startsWith("Video call ended"))
 
       const attachedFiles: UploadedFile[] | undefined =
         msg.files?.map((f: any) => ({
           id: f.fileId,
-          name: f. filename,
+          name: f.filename,
           url: "",
           uploadedAt: msg.timestamp || new Date().toISOString(),
           size: 0,
           type: "",
-        })) ??  undefined
+        })) ?? undefined
 
       return {
         id: msg.id || String(Date.now()),
@@ -179,7 +182,7 @@ const TaskChat = ({
         sender_id: msg.sender_id,
         author,
         content: msg.content,
-        timestamp: msg.timestamp ?  formatDateTime(msg.timestamp) : "Just now",
+        timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
         isCode: !!msg.isCode,
         taskSuggestion: msg.taskSuggestion || undefined,
         isCallEvent: isCallStartMessage || isCallEndMessage,
@@ -192,13 +195,13 @@ const TaskChat = ({
 
   const addCallEventMessage = useCallback(
     (eventType: "started" | "ended") => {
-      const content = eventType === "started" ?  "Video call started" : "Video call ended"
+      const content = eventType === "started" ? "Video call started" : "Video call ended"
       if (socketApiInstanceRef.current) {
-        socketApiInstanceRef. current.sendMessage({
+        socketApiInstanceRef.current.sendMessage({
           senderType: "system",
           senderId: "system",
           content,
-          timestamp: new Date(). toISOString(),
+          timestamp: new Date().toISOString(),
           taskId,
         })
       }
@@ -227,7 +230,7 @@ const TaskChat = ({
 
           const presignData = presignResponse.data
 
-          await axios.put(presignData. uploadUrl, item.file, {
+          await axios.put(presignData.uploadUrl, item.file, {
             headers: {
               "Content-Type": item.file.type || "application/octet-stream",
             },
@@ -259,10 +262,10 @@ const TaskChat = ({
         const res = await api.usersControllerFindAll({
           headers: { Authorization: `Bearer ${sessionToken}` },
         })
-        const users: UserResponseDto[] = res. data
+        const users: UserResponseDto[] = res.data
         const mapped: UserType[] = users.map((u) => ({
-          id: u.id! ,
-          name: u.name || u.email || u.id! ,
+          id: u.id!,
+          name: u.name || u.email || u.id!,
           avatar: u.avatar || "",
           isOnline: u.status === "online",
           email: u.email,
@@ -301,7 +304,7 @@ const TaskChat = ({
 
   useEffect(() => {
     async function fetchRepoUrl() {
-      if (! taskId) {
+      if (!taskId) {
         setRepoUrl(null)
         return
       }
@@ -324,7 +327,7 @@ const TaskChat = ({
 
   useEffect(() => {
     let cancelled = false
-    if (! isOpen || !taskId) return
+    if (!isOpen || !taskId) return
 
     getToken().then((sessionToken) => {
       if (cancelled) return
@@ -361,7 +364,7 @@ const TaskChat = ({
   }, [isOpen, taskId, getToken, activeRetrieveProjectId, mapBackendMsg])
 
   useEffect(() => {
-    if (! isOpen || !taskId || hasLoadedMessagesRef.current) return
+    if (!isOpen || !taskId || hasLoadedMessagesRef.current) return
 
     setLoading(true)
     hasLoadedMessagesRef.current = true
@@ -383,7 +386,7 @@ const TaskChat = ({
           } catch {}
         }
         if (msg.attachedFiles && msg.attachedFiles.length > 0) {
-          attachedFilesSet.add(msg. id)
+          attachedFilesSet.add(msg.id)
         }
       }
 
@@ -408,9 +411,9 @@ const TaskChat = ({
   }, [isOpen, taskId, getToken, mapBackendMsg])
 
   const handleAddUser = async (userId: string) => {
-    if (! userId || chatUsers.some((u) => u.id === userId)) return
+    if (!userId || chatUsers.some((u) => u.id === userId)) return
     const toAdd = availableUsers.find((u) => u.id === userId)
-    if (! toAdd) return
+    if (!toAdd) return
     const updatedUsers = [...chatUsers, toAdd]
     setChatUsers(updatedUsers)
     try {
@@ -462,12 +465,12 @@ const TaskChat = ({
     try {
       const sessionToken = await getToken()
       const api = createTaskChatAPI(sessionToken)
-      const [filesFromApi, logsFromApi] = await Promise. all([
+      const [filesFromApi, logsFromApi] = await Promise.all([
         api.getGeneratedFiles(messageId),
-        api.getExecutionLogs(messageId). catch(() => []),
+        api.getExecutionLogs(messageId).catch(() => []),
       ])
       setShowRepoGraphPreview(false)
-      if (filesFromApi. length > 0) {
+      if (filesFromApi.length > 0) {
         setGeneratedFiles(
           filesFromApi.map((f) => ({
             path: f.path || f.filename || "file",
@@ -501,7 +504,7 @@ const TaskChat = ({
 
         const res = await uploadsApi.uploadControllerGetFile(file.id)
         const url = res.data.view_url
-        if (! url) return
+        if (!url) return
 
         const isPdfByType = file.type === "application/pdf"
         const isPdfByName = file.name.toLowerCase().endsWith(".pdf")
@@ -542,106 +545,95 @@ const TaskChat = ({
     [getToken],
   )
 
-const handleSendMessage = async () => {
-  if (! newMessage.trim() && files. length === 0) return
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() && files.length === 0) return
 
-  setIsUserSkeletonVisible(true)
+    setIsUserSkeletonVisible(true)
 
-  try {
-    const messageContent = newMessage
-    const filesToUpload = [... files]
+    try {
+      const messageContent = newMessage
+      const filesToUpload = [...files]
 
-    // FIXED: Don't send socket message yet, just show skeleton
-    // We'll send after we have everything ready
+      let userMessageWithFiles: any = null
 
-    let userMessageWithFiles: any = null
+      if (filesToUpload.length > 0) {
+        const sendPromise = new Promise<any>((resolve) => {
+          socketApiInstanceRef.current?.sendMessage(
+            {
+              taskId,
+              senderType: "user",
+              senderId: user?.username || "unknown_user",
+              content: messageContent,
+            },
+            (socketMsg: any) => {
+              resolve(socketMsg)
+            },
+          )
+        })
 
-    // First, if there are files, we need to get a message ID to upload them
-    if (filesToUpload.length > 0) {
-      // Send the message first to get the message ID
-      const sendPromise = new Promise<any>((resolve) => {
-        socketApiInstanceRef.current?. sendMessage(
+        const socketMsg = await sendPromise
+        const uploadedFiles = await uploadFilesWithMessageId(socketMsg.id, filesToUpload)
+
+        userMessageWithFiles = mapBackendMsg({
+          ...socketMsg,
+          files: uploadedFiles.map((f) => ({
+            fileId: f.id,
+            filename: f.name,
+          })),
+        })
+        userMessageWithFiles.attachedFiles = uploadedFiles
+
+        setMessages((prev) => [...prev, userMessageWithFiles])
+        setMessagesWithFiles((prev) => new Set(prev).add(socketMsg.id))
+      } else {
+        await socketApiInstanceRef.current?.sendMessage(
           {
             taskId,
             senderType: "user",
             senderId: user?.username || "unknown_user",
             content: messageContent,
           },
-          (socketMsg: any) => {
-            resolve(socketMsg)
+          async (socketMsg: any) => {
+            setMessages((prev) => [...prev, mapBackendMsg(socketMsg)])
           },
         )
-      })
+      }
 
-      const socketMsg = await sendPromise
+      setIsUserSkeletonVisible(false)
 
-      // Now upload files with the message ID
-      const uploadedFiles = await uploadFilesWithMessageId(socketMsg.id, filesToUpload)
+      const trimmedMessage = messageContent.trim()
+      const shouldExecuteTask =
+        trimmedMessage.startsWith("@goose") ||
+        trimmedMessage.startsWith("@orbital_cli") ||
+        trimmedMessage.startsWith("@gemini_cli") ||
+        trimmedMessage.startsWith("@claude_code")
 
-      // Create the complete message with files
-      userMessageWithFiles = mapBackendMsg({
-        ...socketMsg,
-        files: uploadedFiles. map((f) => ({
-          fileId: f.id,
-          filename: f.name,
-        })),
-      })
-      userMessageWithFiles.attachedFiles = uploadedFiles
+      if (shouldExecuteTask) {
+        setGeneratedFiles([])
+        setExecutionLogs([])
+        setExecutionLogsMessageId(undefined)
+        setActiveRetrieveProjectId(undefined)
+        setLiveRetrieveProjectLogs([])
+        setLiveRetrieveProjectSummary([])
+        setLiveAgentOutput([])
+        setShowRepoGraphPreview(false)
+        setShowMonacoCanvas(false)
+      }
 
-      // Add to UI only after files are uploaded
-      setMessages((prev) => [...prev, userMessageWithFiles])
-      setMessagesWithFiles((prev) => new Set(prev). add(socketMsg.id))
-    } else {
-      // No files, send normally
-      await socketApiInstanceRef.current?.sendMessage(
-        {
-          taskId,
-          senderType: "user",
-          senderId: user?.username || "unknown_user",
-          content: messageContent,
-        },
-        async (socketMsg: any) => {
-          // Add message to UI
-          setMessages((prev) => [... prev, mapBackendMsg(socketMsg)])
-        },
-      )
+      setNewMessage("")
+      setFiles([])
+
+      if (shouldExecuteTask && executeTaskRef.current) {
+        executeTaskRef.current(messageContent)
+      }
+    } catch (error) {
+      console.error("Send message error:", error)
+      setIsUserSkeletonVisible(false)
     }
-
-    setIsUserSkeletonVisible(false)
-
-    const trimmedMessage = messageContent.trim()
-    const shouldExecuteTask =
-      trimmedMessage.startsWith("@goose") ||
-      trimmedMessage.startsWith("@orbital_cli") ||
-      trimmedMessage. startsWith("@gemini_cli") ||
-      trimmedMessage. startsWith("@claude_code")
-
-    if (shouldExecuteTask) {
-      setGeneratedFiles([])
-      setExecutionLogs([])
-      setExecutionLogsMessageId(undefined)
-      setActiveRetrieveProjectId(undefined)
-      setLiveRetrieveProjectLogs([])
-      setLiveRetrieveProjectSummary([])
-      setLiveAgentOutput([])
-      setShowRepoGraphPreview(false)
-      setShowMonacoCanvas(false)
-    }
-
-    setNewMessage("")
-    setFiles([])
-
-    if (shouldExecuteTask && executeTaskRef.current) {
-      executeTaskRef.current(messageContent)
-    }
-  } catch (error) {
-    console.error("Send message error:", error)
-    setIsUserSkeletonVisible(false)
   }
-}
 
   const handleMaximize = () => {
-    if (! isFullPage && taskId) {
+    if (!isFullPage && taskId) {
       navigate(`/tasks/${taskId}`, {
         state: { taskName, globalDocs: mergedGlobalDocs },
       })
@@ -702,19 +694,29 @@ const handleSendMessage = async () => {
       file: new File([], doc.name, { type: doc.type || "" }),
       id: doc.id,
     }
-    if (! files.some((d) => d.id === doc. id)) {
+    if (!files.some((d) => d.id === doc.id)) {
       setFiles((prev) => [...prev, item])
     }
     setShowGlobalDocsModal(false)
   }
 
   useEffect(() => {
-    if (generatedFiles.length === 0 && ! showRepoGraphPreview) {
+    if (generatedFiles.length === 0 && !showRepoGraphPreview) {
       setShowMonacoCanvas(false)
     }
   }, [generatedFiles, showRepoGraphPreview])
 
-  if (! isOpen) return null
+  // FIX 2: Stable callback for the graph click
+  const handleNodeClick = useCallback((nodeLabel: string) => {
+    setMentionToInsert(nodeLabel)
+  }, [])
+
+  // FIX 3: Stable Component instance using useMemo to ensure Referentially Stable Prop
+  const memoizedPreview = useMemo(() => (
+    <Preview onNodeClick={handleNodeClick} />
+  ), [handleNodeClick])
+
+  if (!isOpen) return null
 
   const containerClasses = isFullPage
     ? "fixed inset-0 bg-gradient-to-br from-gray-50 to-white z-50 flex flex-row"
@@ -786,40 +788,38 @@ const handleSendMessage = async () => {
           onFileClick={handleAttachedFileClick}
         />
 
-       <ChatInput
-  newMessage={newMessage}
-  setNewMessage={setNewMessage}
-  onSendMessage={handleSendMessage}
-  isFullPage={isFullPage}
-  availableUsers={chatUsers}
-  files={files}
-  setFiles={setFiles}
-  mentionToInsert={mentionToInsert}
-  setMentionToInsert={setMentionToInsert}
-/>
+        <ChatInput
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          onSendMessage={handleSendMessage}
+          isFullPage={isFullPage}
+          availableUsers={chatUsers}
+          files={files}
+          setFiles={setFiles}
+          mentionToInsert={mentionToInsert}
+          setMentionToInsert={setMentionToInsert}
+        />
       </div>
 
       {isFullPage && (
-       <MonacoCanvas
-  value={editorValue}
-  taskId={taskId}
-  setValue={setEditorValue}
-  executeTaskRef={executeTaskRef}
-  isVisible={showMonacoCanvas}
-  onSocketConnected={setSocketConnected}
-  filesFromApi={generatedFiles}
-  onLogsUpdate={handleLogsUpdate}
-  onSummaryUpdate={handleSummaryUpdate}
-  onAgentOutputUpdate={handleAgentOutputUpdate}
-  onClose={handleCloseMonacoCanvas}
-  inputMessage={currentInputMessage}
-  onFilesGenerated={handleFilesGenerated}
-  customPreview={
-      <Preview onNodeClick={(nodeLabel: string) => setMentionToInsert(nodeLabel)} />
-
-  }
-  showCustomPreview={showRepoGraphPreview}
-/>
+        <MemoizedMonacoCanvas
+          value={editorValue}
+          taskId={taskId}
+          setValue={setEditorValue}
+          executeTaskRef={executeTaskRef}
+          isVisible={showMonacoCanvas}
+          onSocketConnected={setSocketConnected}
+          filesFromApi={generatedFiles}
+          onLogsUpdate={handleLogsUpdate}
+          onSummaryUpdate={handleSummaryUpdate}
+          onAgentOutputUpdate={handleAgentOutputUpdate}
+          onClose={handleCloseMonacoCanvas}
+          inputMessage={currentInputMessage}
+          onFilesGenerated={handleFilesGenerated}
+          // FIX 4: Use the memoized element props
+          customPreview={memoizedPreview}
+          showCustomPreview={showRepoGraphPreview}
+        />
       )}
 
       {showGlobalDocsModal && (

@@ -11,6 +11,7 @@ import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
 import FileAttachmentCard from "./FileAttachmentCard"
+import { GRAPH_DATA } from "../Preview"
 
 const configuration = new OpenApiConfiguration({
   basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -126,6 +127,21 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
+// 1. Create a Set of valid node labels for O(1) lookup
+const VALID_NODE_LABELS = new Set<string>();
+
+if (Array.isArray(GRAPH_DATA)) {
+  GRAPH_DATA.forEach((el: any) => {
+    // We only care about nodes that have a label
+    if (el.data && !el.data.source && el.data.label) {
+      // Normalize: The chat uses spaces replaced by underscores often, 
+      // but let's store both the original and the underscore version to be safe.
+      VALID_NODE_LABELS.add(el.data.label);
+      VALID_NODE_LABELS.add(el.data.label.replace(/\s+/g, '_'));
+    }
+  });
+}
+
 const renderMessageContent = (
   content: string,
   chatUsers: { id: string; name: string; email?: string }[] | undefined,
@@ -171,36 +187,62 @@ const renderMessageContent = (
       )
     } else if (part.trim()) {
       // 2. Process Nodes, Templates, and Connections inside normal text blocks
-      // Regex captures: Node:xyz, Template:xyz, Connection:A -> B
-      // Supports Unicode arrows → and ←
       const entityRegex = /(Node:[^\s]+|Connection:[^\s]+\s(?:->|<-|→|←)\s[^\s]+|Template:[^\s]+)/g;
       
       const subParts = part.split(entityRegex);
       
       subParts.forEach((subPart, subIndex) => {
+        let matched = false;
+
+        // --- VALIDATION LOGIC START ---
         if (subPart.startsWith("Node:")) {
-            const styles = ENTITY_STYLES.Node;
-            elements.push(
-              <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
-                 {subPart}
-              </span>
-            );
+            const label = subPart.substring(5); // Remove "Node:"
+            // Only render as pill if it exists in the graph
+            if (VALID_NODE_LABELS.has(label)) {
+                matched = true;
+                const styles = ENTITY_STYLES.Node;
+                elements.push(
+                  <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                     {subPart}
+                  </span>
+                );
+            }
+        } else if (subPart.startsWith("Connection:")) {
+             // Connection:RELATION -> NodeLabel
+             // We extract the last part (NodeLabel) and check if it is valid
+             const segments = subPart.split(/\s(?:->|<-|→|←)\s/);
+             if (segments.length > 1) {
+                 const targetLabel = segments[segments.length - 1];
+                 if (VALID_NODE_LABELS.has(targetLabel)) {
+                    matched = true;
+                    const styles = ENTITY_STYLES.Connection;
+                    elements.push(
+                        <span key={`conn-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
+                           {subPart}
+                        </span>
+                      );
+                 }
+             }
         } else if (subPart.startsWith("Template:")) {
+            // Templates might not be strictly in the graph nodes list based on current data,
+            // but if we want to be strict, we check. 
+            // If templates are just generic, we might skip validation or add them to VALID_NODE_LABELS.
+            // For now, assuming "Template:" is a special marker that might not be in GRAPH_DATA,
+            // we will render it if it matches the pattern, OR we can strict check it too.
+            // Based on user request "check all the data for nodes connections", we strictly check Node/Connection.
+            // We will leave Template as is for now unless it needs validation too.
             const styles = ENTITY_STYLES.Template;
             elements.push(
                 <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
                    {subPart}
                 </span>
               );
-        } else if (subPart.startsWith("Connection:")) {
-            const styles = ENTITY_STYLES.Connection;
-            elements.push(
-                <span key={`conn-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
-                   {subPart}
-                </span>
-              );
-        } else {
-             // Normal text
+             matched = true;
+        } 
+        
+        // --- FALLBACK ---
+        if (!matched) {
+             // Normal text (or invalid node/connection)
              elements.push(
                 <span key={`text-${index}-${subIndex}`} className="text-sm text-slate-900 font-inter font-medium leading-relaxed">
                   {subPart}
