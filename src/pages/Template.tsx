@@ -246,7 +246,7 @@ const Template = () => {
           </div>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {loading ? (
-            <div className="flex justify-center items-center h-32 text-gray-700">Loading templates...</div>
+            <div className="flex justify-center items-center h-32 text-gray-700">Loading Workflows...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
               {filteredTemplates.map((tpl, idx) => (
@@ -273,7 +273,7 @@ const Template = () => {
                     className="w-full font-medium bg-transparent "
                     onClick={() => handleUseTemplate(tpl)}
                   >
-                    Edit Template
+                    Edit Workflow
                   </Button>
                 </Card>
               ))}
