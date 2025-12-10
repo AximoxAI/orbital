@@ -7,7 +7,9 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { useState } from "react"
 import VideoCallModal from "./VideoCallModal"
 
-const AVAILABLE_TAGS = ["Bug", "Feature", "Urgent", "Blocked", "Frontend", "Backend", "Design", "Research"]
+const ALL_AVAILABLE_TAGS = ["Bug", "Feature", "Urgent", "Blocked", "Frontend", "Backend", "Design", "Research"]
+
+const DEFAULT_SELECTED_TAGS = ["Bug", "Feature", "Urgent"]
 
 interface User {
   id: string
@@ -49,14 +51,12 @@ const TaskChatHeader = ({
   onOpenGlobalDocs,
 }: TaskChatHeaderProps) => {
   const [showVideoModal, setShowVideoModal] = useState(false)
-  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>(DEFAULT_SELECTED_TAGS)
   const [showTagsPopover, setShowTagsPopover] = useState(false)
 
-  // Users available to add
   const usersToAdd = availableUsers.filter((u) => !users.some((chatUser) => chatUser.id === u.id))
 
-  // Tags available to pick
-  const tagsToPick = AVAILABLE_TAGS.filter((tag) => !selectedTags.includes(tag))
+  const tagsToPick = ALL_AVAILABLE_TAGS.filter((tag) => !selectedTags.includes(tag))
 
   const handleTagSelect = (tag: string) => {
     setSelectedTags((prev) => [...prev, tag])
@@ -77,8 +77,7 @@ const TaskChatHeader = ({
         <div className="min-w-0 flex-1">
           <h3 className="mb-1 truncate text-base font-bold text-gray-900 sm:text-lg flex items-center gap-2">
             Task Discussion
-            {/* Render selected tags after Task Discussion */}
-            {selectedTags.length > 0 && (
+            {isFullPage && selectedTags.length > 0 && (
               <span className="flex flex-wrap gap-2 ml-2">
                 {selectedTags.map((tag) => (
                   <span
@@ -130,71 +129,75 @@ const TaskChatHeader = ({
               </Button>
             </>
           )}
-          <Popover open={showTagsPopover} onOpenChange={setShowTagsPopover}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="transition-colors duration-200 hover:bg-gray-100"
-                aria-label="Add tags"
-              >
-                <Tag className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-slate-900">Select Tags</h4>
-                  <span className="text-xs text-slate-500">{selectedTags.length} selected</span>
-                </div>
 
-                {tagsToPick.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="rounded-full bg-slate-100 p-3 mb-3">
-                      <Check className="h-6 w-6 text-slate-600" />
+          {isFullPage && (
+            <Popover open={showTagsPopover} onOpenChange={setShowTagsPopover}>
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="transition-colors duration-200 hover:bg-gray-100"
+                  aria-label="Add tags"
+                >
+                  <Tag className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-4">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-slate-900">Select Tags</h4>
+                    <span className="text-xs text-slate-500">{selectedTags.length} selected</span>
+                  </div>
+
+                  {tagsToPick.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                      <div className="rounded-full bg-slate-100 p-3 mb-3">
+                        <Check className="h-6 w-6 text-slate-600" />
+                      </div>
+                      <p className="text-sm text-slate-600 font-medium">All tags selected</p>
+                      <p className="text-xs text-slate-500 mt-1">Remove tags to add different ones</p>
                     </div>
-                    <p className="text-sm text-slate-600 font-medium">All tags selected</p>
-                    <p className="text-xs text-slate-500 mt-1">Remove tags to add different ones</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-2">
-                    {tagsToPick.map((tag) => (
-                      <button
-                        key={tag}
-                        className="group relative flex items-center justify-center rounded border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-                        style={{ minWidth: 64, minHeight: 26, padding: 0, width: 90, height: 20, maxWidth: 200 }}
-                        onClick={() => handleTagSelect(tag)}
-                      >
-                        <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
-                        <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="rounded-full bg-slate-600 p-0.5">
-                            <Plus className="h-2 w-2 text-white" />
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {selectedTags.length > 0 && (
-                  <div className="pt-3 border-t border-slate-200">
-                    <p className="text-xs text-slate-600 mb-2">Selected tags:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedTags.map((tag) => (
-                        <span
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2">
+                      {tagsToPick.map((tag) => (
+                        <button
                           key={tag}
-                          className="inline-flex items-center rounded-md bg-slate-600 px-2 py-1 text-xs font-medium text-white"
+                          className="group relative flex items-center justify-center rounded border-2 border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-slate-100 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                          style={{ minWidth: 64, minHeight: 26, padding: 0, width: 90, height: 20, maxWidth: 200 }}
+                          onClick={() => handleTagSelect(tag)}
                         >
-                          {tag}
-                        </span>
+                          <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900">{tag}</span>
+                          <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="rounded-full bg-slate-600 p-0.5">
+                              <Plus className="h-2 w-2 text-white" />
+                            </div>
+                          </div>
+                        </button>
                       ))}
                     </div>
-                  </div>
-                )}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  )}
+
+                  {selectedTags.length > 0 && (
+                    <div className="pt-3 border-t border-slate-200">
+                      <p className="text-xs text-slate-600 mb-2">Selected tags:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {selectedTags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center rounded-md bg-slate-600 px-2 py-1 text-xs font-medium text-white"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+
           <Button
             variant="ghost"
             size="sm"

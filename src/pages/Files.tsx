@@ -12,18 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import FileUploadDialog from "@/components/taskChatComponents/FileUploadDialog"
 import AttachFileButton, { FileItem } from "@/components/taskChatComponents/AttachFileButton"
-
-type ItemType = "file" | "folder"
-
-interface Item {
-  id: string
-  name: string
-  type: ItemType
-  size?: number
-  url?: string
-  createdAt?: string
-  children?: Item[]
-}
+import { useFileSystem,Item } from "@/components/FileSystemContext"
 
 const formatSize = (bytes?: number) => {
   if (!bytes) return ""
@@ -33,20 +22,14 @@ const formatSize = (bytes?: number) => {
 }
 
 export default function Files() {
-  const [items, setItems] = useState<Item[]>([
-    { id: "f-1", name: "notes.txt", type: "file", size: 4096, createdAt: new Date().toISOString(), url: undefined },
-    { id: "d-1", name: "Project Assets", type: "folder", children: [] },
-  ])
+  const { items, addItem, removeItem } = useFileSystem();
+
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [showNewFolder, setShowNewFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState("")
   const [search, setSearch] = useState("")
-
-  // Folder uploads
   const [folderUploadTargetId, setFolderUploadTargetId] = useState<string | null>(null)
   const [showFolderUploadDialog, setShowFolderUploadDialog] = useState(false)
-
-  // Top-level attachments state for "Add file" using AttachFileButton
   const [rootAttachFiles, setRootAttachFiles] = useState<FileItem[]>([])
 
   const uid = (p = "") => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}${p}`
@@ -63,58 +46,43 @@ export default function Files() {
       children: [],
       createdAt: new Date().toISOString(),
     }
-    setItems((p) => [folder, ...p])
+    addItem(folder); 
     setNewFolderName("")
     setShowNewFolder(false)
   }
 
   const addRootFilesFromArray = (files: File[]) => {
     if (!files || files.length === 0) return
-    const picked: Item[] = files.map((f) => ({
-      id: uid("f"),
-      name: f.name,
-      type: "file",
-      size: f.size,
-      url: URL.createObjectURL(f),
-      createdAt: new Date().toISOString(),
-    }))
-    setItems((p) => [...picked, ...p])
-  }
-
-  const removeItem = (id: string) => {
-    const removeRec = (list: Item[]): Item[] =>
-      list
-        .filter((it) => it.id !== id)
-        .map((it) =>
-          it.type === "folder" && it.children && it.children.length
-            ? { ...it, children: removeRec(it.children) }
-            : it,
-        )
-    setItems((p) => removeRec(p))
+    files.forEach(f => {
+      const newItem: Item = {
+        id: uid("f"),
+        name: f.name,
+        type: "file",
+        size: f.size,
+        mimeType: f.type,
+        url: URL.createObjectURL(f), 
+        createdAt: new Date().toISOString(),
+        originalFile: f
+      }
+      addItem(newItem); 
+    });
   }
 
   const addFilesToFolderFromArray = (folderId: string, files: File[]) => {
     if (!files || files.length === 0) return
-    const added: Item[] = files.map((f) => ({
-      id: uid("f"),
-      name: f.name,
-      type: "file",
-      size: f.size,
-      url: URL.createObjectURL(f),
-      createdAt: new Date().toISOString(),
-    }))
-
-    const mapRec = (list: Item[]): Item[] =>
-      list.map((it) => {
-        if (it.id === folderId && it.type === "folder") {
-          return { ...it, children: [...(it.children || []), ...added] }
-        }
-        if (it.type === "folder" && it.children && it.children.length) {
-          return { ...it, children: mapRec(it.children) }
-        }
-        return it
-      })
-    setItems((p) => mapRec(p))
+    files.forEach(f => {
+      const newItem: Item = {
+        id: uid("f"),
+        name: f.name,
+        type: "file",
+        size: f.size,
+        mimeType: f.type,
+        url: URL.createObjectURL(f),
+        createdAt: new Date().toISOString(),
+        originalFile: f 
+      }
+      addItem(newItem, folderId); 
+    });
   }
 
   const renderList = (list: Item[], depth = 0) =>
@@ -123,12 +91,7 @@ export default function Files() {
       const isExpanded = !!expanded[it.id]
 
       if (search && !it.name.toLowerCase().includes(search.toLowerCase())) {
-        if (
-          isFolder &&
-          it.children &&
-          it.children.some((c) => c.name.toLowerCase().includes(search.toLowerCase()))
-        ) {
-          // keep
+        if (isFolder && it.children && it.children.some((c) => c.name.toLowerCase().includes(search.toLowerCase()))) {
         } else {
           return null
         }
@@ -143,21 +106,13 @@ export default function Files() {
             <div className="flex items-center gap-3 min-w-0">
               {isFolder ? (
                 <button onClick={() => toggle(it.id)} className="w-6 flex items-center justify-center">
-                  {isExpanded ? (
-                    <ChevronDown className="w-4 h-4 text-slate-500" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4 text-slate-500" />
-                  )}
+                  {isExpanded ? <ChevronDown className="w-4 h-4 text-slate-500" /> : <ChevronRight className="w-4 h-4 text-slate-500" />}
                 </button>
               ) : (
                 <div style={{ width: 24 }} />
               )}
 
-              {isFolder ? (
-                <Folder className="w-5 h-5 text-slate-600" />
-              ) : (
-                <FileIcon className="w-5 h-5 text-slate-400" />
-              )}
+              {isFolder ? <Folder className="w-5 h-5 text-slate-600" /> : <FileIcon className="w-5 h-5 text-slate-400" />}
 
               <div className="truncate min-w-0">
                 <div className="text-sm text-slate-900 truncate">{it.name}</div>
@@ -171,39 +126,19 @@ export default function Files() {
               {isFolder && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="p-1">
-                      <MoreVertical className="w-4 h-4 text-slate-600" />
-                    </Button>
+                    <Button variant="ghost" className="p-1"><MoreVertical className="w-4 h-4 text-slate-600" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setFolderUploadTargetId(it.id)
-                        setShowFolderUploadDialog(true)
-                      }}
-                    >
-                      Add file inside
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        removeItem(it.id)
-                      }}
-                    >
-                      Delete folder
-                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => { setFolderUploadTargetId(it.id); setShowFolderUploadDialog(true); }}>Add file</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => removeItem(it.id)}>Delete</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
-
               {it.type === "file" && it.url && (
-                <button
-                  onClick={() => window.open(it.url, "_blank")}
-                  className="p-1 hover:bg-slate-100 rounded"
-                >
+                <button onClick={() => window.open(it.url, "_blank")} className="p-1 hover:bg-slate-100 rounded">
                   <Download className="w-4 h-4 text-slate-600" />
                 </button>
               )}
-
               {it.type === "file" && (
                 <button onClick={() => removeItem(it.id)} className="p-1 hover:bg-red-50 rounded">
                   <Trash2 className="w-4 h-4 text-slate-600" />
@@ -211,19 +146,10 @@ export default function Files() {
               )}
             </div>
           </div>
-
           {isFolder && isExpanded && (
             <div>
-              {it.children && it.children.length > 0 ? (
-                renderList(it.children, depth + 1)
-              ) : (
-                <div
-                  className="px-4 py-2 text-sm text-slate-400 italic"
-                  style={{ paddingLeft: 16 + (depth + 1) * 12 }}
-                >
-                  Empty folder
-                </div>
-              )}
+              {it.children && it.children.length > 0 ? renderList(it.children, depth + 1) : 
+                <div className="px-4 py-2 text-sm text-slate-400 italic" style={{ paddingLeft: 16 + (depth + 1) * 12 }}>Empty folder</div>}
             </div>
           )}
         </div>
@@ -233,129 +159,48 @@ export default function Files() {
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
-
       <div className="flex-1 flex flex-col">
-        <TopBar
-          searchValue={search}
-          setSearchValue={setSearch}
-          placeholder="Search files..."
-          showLogout
-        />
-
+        <TopBar searchValue={search} setSearchValue={setSearch} placeholder="Search files..." showLogout />
         <div className="max-w-6xl mx-auto w-full p-6">
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900">Documents</h2>
-            </div>
-
+            <h2 className="text-2xl font-semibold text-slate-900">Documents</h2>
             <div className="flex items-center gap-3">
-              {/* Use existing AttachFileButton with text label, no icon */}
               <AttachFileButton
                 onFilesSelect={(fileItems) => {
                   const files = fileItems.map((fi) => fi.file)
                   addRootFilesFromArray(files)
-                  setRootAttachFiles([]) // clear local mirror state
+                  setRootAttachFiles([]) 
                 }}
                 files={rootAttachFiles}
-                variant="default"
-                size="sm"
-                className="bg-slate-800 text-white hover:bg-slate-900 border-0 px-4"
-                label="Add file"
-                hideIcon
+                variant="default" size="sm" className="bg-slate-800 text-white hover:bg-slate-900 border-0 px-4" label="Add file" hideIcon
               />
-
-              <Button
-                variant="outline"
-                onClick={() => setShowNewFolder(true)}
-                className="border-slate-200 text-slate-800"
-              >
+              <Button variant="outline" onClick={() => setShowNewFolder(true)} className="border-slate-200 text-slate-800">
                 <Folder className="w-4 h-4 mr-2" /> New folder
               </Button>
             </div>
           </div>
-
           <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-            <div className="p-4">
-              {items.length === 0 ? (
-                <div className="text-center py-10 text-slate-400">
-                  No files or folders yet. Use "Add file" or "New folder".
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">{renderList(items)}</div>
-              )}
-            </div>
+            <div className="p-4">{items.length === 0 ? <div className="text-center py-10 text-slate-400">No files yet.</div> : <div className="divide-y divide-slate-100">{renderList(items)}</div>}</div>
           </div>
         </div>
       </div>
-
-      {/* FileUploadDialog to add files inside a specific folder */}
-      <FileUploadDialog
-        open={showFolderUploadDialog}
-        onOpenChange={(open) => {
-          if (!open) {
-            setFolderUploadTargetId(null)
-          }
-          setShowFolderUploadDialog(open)
-        }}
-        onFilesSelect={(files) => {
-          if (folderUploadTargetId) {
-            addFilesToFolderFromArray(folderUploadTargetId, files)
-          }
-          setShowFolderUploadDialog(false)
-          setFolderUploadTargetId(null)
+      
+      <FileUploadDialog open={showFolderUploadDialog} onOpenChange={setShowFolderUploadDialog} onFilesSelect={(files) => {
+          if (folderUploadTargetId) addFilesToFolderFromArray(folderUploadTargetId, files);
+          setShowFolderUploadDialog(false);
+          setFolderUploadTargetId(null);
         }}
       />
 
-      {/* New folder modal */}
       {showNewFolder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
-            <div className="flex items-start justify-between">
-              <h3 className="text-lg font-medium text-slate-900">Create new folder</h3>
-              <button
-                onClick={() => {
-                  setShowNewFolder(false)
-                  setNewFolderName("")
-                }}
-                className="text-slate-400"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="mt-4">
-              <Input
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                placeholder="Folder name"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addFolder()
-                  if (e.key === "Escape") {
-                    setShowNewFolder(false)
-                    setNewFolderName("")
-                  }
-                }}
-                autoFocus
-              />
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowNewFolder(false)
-                  setNewFolderName("")
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={addFolder}
-                className="bg-slate-800 text-white hover:bg-slate-900"
-              >
-                Create
-              </Button>
-            </div>
+             <h3 className="text-lg font-medium text-slate-900">Create new folder</h3>
+             <Input className="mt-4" value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} placeholder="Folder name" autoFocus onKeyDown={(e) => e.key === "Enter" && addFolder()} />
+             <div className="mt-4 flex justify-end gap-2">
+               <Button variant="outline" onClick={() => setShowNewFolder(false)}>Cancel</Button>
+               <Button onClick={addFolder} className="bg-slate-800 text-white">Create</Button>
+             </div>
           </div>
         </div>
       )}

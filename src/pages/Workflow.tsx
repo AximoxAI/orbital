@@ -42,7 +42,7 @@ const categories = [
   { key: "qa", label: "QA" },
 ]
 
-const Template = () => {
+const Workflow = () => {
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [templates, setTemplates] = useState<Array<any>>([])
@@ -215,13 +215,13 @@ const Template = () => {
         />
         <div className="flex flex-col flex-1 max-w-7xl mx-auto w-full pt-4 px-8">
           <div className="flex items-center justify-between mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">SDLC Templates</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Workflows</h1>
             <Button
               className="font-semibold px-4 py-2 rounded-lg shadow-sm bg-slate-700 text-white hover:bg-slate-800"
               onClick={() => setShowCreateTemplate(true)}
               data-testid="create-template-btn"
             >
-              + Create New Template
+              + Workflow
             </Button>
           </div>
           <div className="flex items-center justify-between mb-8">
@@ -246,7 +246,7 @@ const Template = () => {
           </div>
           {error && <div className="mb-4 text-red-500">{error}</div>}
           {loading ? (
-            <div className="flex justify-center items-center h-32 text-gray-700">Loading templates...</div>
+            <div className="flex justify-center items-center h-32 text-gray-700">Loading Workflows...</div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
               {filteredTemplates.map((tpl, idx) => (
@@ -273,7 +273,7 @@ const Template = () => {
                     className="w-full font-medium bg-transparent "
                     onClick={() => handleUseTemplate(tpl)}
                   >
-                    Edit Template
+                    Edit Workflow
                   </Button>
                 </Card>
               ))}
@@ -306,7 +306,6 @@ const Template = () => {
                     <Input
                       value={editVersion}
                       onChange={e => setEditVersion(e.target.value)}
-                      required
                     />
                   </div>
                   <div className="mb-4">
@@ -315,7 +314,6 @@ const Template = () => {
                       value={editDescription}
                       onChange={e => setEditDescription(e.target.value)}
                       rows={2}
-                      required
                     />
                   </div>
                   <div className="flex flex-wrap gap-1 mb-4">
@@ -339,17 +337,8 @@ const Template = () => {
                     />
                     <Button type="button" onClick={handleEditTagAdd} className="bg-slate-50 hover:bg-slate-50 border-[2px] text-slate-800">Add</Button>
                   </div>
-                  <div className="mb-4">
-                    <div className="font-medium text-sm mb-1">System Prompt</div>
-                    <Textarea
-                      value={systemPrompt}
-                      onChange={e => setSystemPrompt(e.target.value)}
-                      rows={3}
-                      className="resize-none"
-                    />
-                  </div>
                   <div>
-                    <div className="font-medium text-sm mb-1">User Prompt</div>
+                    <div className="font-medium text-sm mb-1"> Prompt</div>
                     <Textarea
                       value={userPrompt}
                       onChange={e => setUserPrompt(e.target.value)}
@@ -397,7 +386,6 @@ const Template = () => {
                   <Input
                     value={createTemplateFields.version}
                     onChange={e => handleCreateTemplateChange("version", e.target.value)}
-                    required
                   />
                 </div>
                 <div className="mb-4">
@@ -406,25 +394,15 @@ const Template = () => {
                     value={createTemplateFields.description}
                     onChange={e => handleCreateTemplateChange("description", e.target.value)}
                     rows={2}
-                    required
                   />
                 </div>
+                
                 <div className="mb-4">
-                  <div className="font-medium text-sm mb-1">System Prompt</div>
-                  <Textarea
-                    value={createTemplateFields.systemPrompt}
-                    onChange={e => handleCreateTemplateChange("systemPrompt", e.target.value)}
-                    rows={3}
-                    required
-                  />
-                </div>
-                <div className="mb-4">
-                  <div className="font-medium text-sm mb-1">User Prompt</div>
+                  <div className="font-medium text-sm mb-1"> Prompt</div>
                   <Textarea
                     value={createTemplateFields.userPrompt}
                     onChange={e => handleCreateTemplateChange("userPrompt", e.target.value)}
                     rows={2}
-                    required
                   />
                 </div>
                 <div className="mb-4">
@@ -471,4 +449,4 @@ const Template = () => {
   )
 }
 
-export default Template
+export default Workflow

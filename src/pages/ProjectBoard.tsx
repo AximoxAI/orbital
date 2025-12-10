@@ -438,7 +438,7 @@ const ProjectBoard = () => {
 
       {/* Sidebar no longer receives files as props */}
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col relative">
         <TopBar
           searchValue={search}
           setSearchValue={setSearch}
@@ -602,6 +602,19 @@ const ProjectBoard = () => {
             }}
             onFilesSelect={handleFilesSelect}
           />
+        )}
+
+        {!chatOpen && (
+          <Button
+            size="lg"
+            className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-600 text-white rounded-2xl w-12 h-12 p-0 flex items-center justify-center text-xl font-bold"
+            onClick={() => {
+              setSelectedTask({ id: "orbital-chat", title: "Orbital" })
+              setChatOpen(true)
+            }}
+          >
+            O
+          </Button>
         )}
       </div>
     </div>

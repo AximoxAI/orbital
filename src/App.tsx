@@ -16,9 +16,11 @@ import TaskChat from "./components/taskChatComponents/TaskChat";
 import WaitlistPage from "./pages/Waitlist";
 import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
-import Template from "./pages/Template";
 import UserTasks from "./pages/UserTasks";
-import Inbox from "./pages/Inbox"; 
+import Inbox from "./pages/Inbox";
+import { FileSystemProvider } from "./components/FileSystemContext";
+import Workflow from "./pages/Workflow";
+
 
 const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
@@ -71,90 +73,94 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<HomeRedirectIfSignedIn />} />
-            <Route
-              path="/software-engineering"
-              element={
-                <ProtectedRoute>
-                  <SoftwareEngineering />
-                </ProtectedRoute>
-              }
-            />
-            <Route 
-              path="/signup-success" 
-              element={
-                <ProtectedRoute>
-                  <SignUpSuccess />
-                </ProtectedRoute>
-              } 
-            />
-            <Route
-              path="/project-board"
-              element={
-                <ProtectedRoute>
-                  <ProjectBoard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/files"
-              element={
-                <ProtectedRoute>
-                  <Files />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tasks/:taskId"
-              element={
-                <ProtectedRoute>
-                  <TaskChatRoute />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/waitlist"
-              element={<WaitlistPage />}
-            />
-            <Route
-              path="/templates"
-              element={
-                <ProtectedRoute>
-                  <Template />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/tasks"
-              element={
-                <ProtectedRoute>
-                  <UserTasks />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/inbox"
-              element={
-                <ProtectedRoute>
-                  <Inbox />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-            <Route path="/sign-in" element={<SignInPage />} />
-            <Route path="/sign-up" element={<SignUpPage />} />
-          </Routes>
-        </BrowserRouter>
+        
+        <FileSystemProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<HomeRedirectIfSignedIn />} />
+              <Route
+                path="/software-engineering"
+                element={
+                  <ProtectedRoute>
+                    <SoftwareEngineering />
+                  </ProtectedRoute>
+                }
+              />
+              <Route 
+                path="/signup-success" 
+                element={
+                  <ProtectedRoute>
+                    <SignUpSuccess />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route
+                path="/project-board"
+                element={
+                  <ProtectedRoute>
+                    <ProjectBoard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/files"
+                element={
+                  <ProtectedRoute>
+                    <Files />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks/:taskId"
+                element={
+                  <ProtectedRoute>
+                    <TaskChatRoute />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/waitlist"
+                element={<WaitlistPage />}
+              />
+              <Route
+                path="/workflows"
+                element={
+                  <ProtectedRoute>
+                    <Workflow />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/tasks"
+                element={
+                  <ProtectedRoute>
+                    <UserTasks />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/inbox"
+                element={
+                  <ProtectedRoute>
+                    <Inbox />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<NotFound />} />
+              <Route path="/sign-in" element={<SignInPage />} />
+              <Route path="/sign-up" element={<SignUpPage />} />
+            </Routes>
+          </BrowserRouter>
+        </FileSystemProvider>
+
       </TooltipProvider>
     </QueryClientProvider>
   </ClerkProvider>
