@@ -22,7 +22,7 @@ const sidebarLinks = [
 const workspaceLinks = [
   { label: "Project board", icon: null, to: "/project-board", color: "bg-blue-500" },
   { label: "Upcoming", icon: Calendar, to: "#" },
-  { label: "Templates", icon: FileText, to: "/templates" },
+  { label: "Workflows", icon: FileText, to: "/Workflows" },
   { label: "Views", icon: FileText, to: "#" },
   { label: "Teams", icon: Users, to: "#" },
 ]

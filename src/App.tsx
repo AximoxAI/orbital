@@ -16,10 +16,10 @@ import TaskChat from "./components/taskChatComponents/TaskChat";
 import WaitlistPage from "./pages/Waitlist";
 import ProfilePage from "./pages/ProfilePage";
 import SignUpSuccess from "./pages/SignUpSuccess";
-import Template from "./pages/Template";
 import UserTasks from "./pages/UserTasks";
 import Inbox from "./pages/Inbox";
 import { FileSystemProvider } from "./components/FileSystemContext";
+import Workflow from "./pages/Workflow";
 
 
 const TaskChatRoute = () => {
@@ -131,10 +131,10 @@ const App = () => (
                 element={<WaitlistPage />}
               />
               <Route
-                path="/templates"
+                path="/workflows"
                 element={
                   <ProtectedRoute>
-                    <Template />
+                    <Workflow />
                   </ProtectedRoute>
                 }
               />

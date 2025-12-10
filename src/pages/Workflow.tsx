@@ -42,7 +42,7 @@ const categories = [
   { key: "qa", label: "QA" },
 ]
 
-const Template = () => {
+const Workflow = () => {
   const [search, setSearch] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
   const [templates, setTemplates] = useState<Array<any>>([])
@@ -449,4 +449,4 @@ const Template = () => {
   )
 }
 
-export default Template
+export default Workflow
