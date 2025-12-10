@@ -48,7 +48,7 @@ const GlobalDocsModal = ({
             type: item.mimeType || "application/octet-stream", 
             uploadedAt: item.createdAt || new Date().toISOString(),
             url: item.url || "",
-            originalFile: item.originalFile // <--- PASSING THE REAL FILE
+            originalFile: item.originalFile
           })
         } else if (item.type === "folder" && item.children) {
           results = [...results, ...extractFiles(item.children)]
@@ -73,7 +73,7 @@ const GlobalDocsModal = ({
         </button>
         <h3 className="text-xl font-bold mb-2 text-gray-900">Add Documents</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Select documents from your file library
+          Select documents
         </p>
         <div className="space-y-2">
           {allDocs.length === 0 ? (
