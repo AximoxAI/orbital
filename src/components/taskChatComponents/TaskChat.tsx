@@ -39,6 +39,7 @@ interface UploadedFile {
   uploadedAt: string
   id: string
   url: string
+  originalFile?: File; 
 }
 
 export interface MonacoFileItem {
@@ -689,13 +690,41 @@ const TaskChat = ({
     setShowMonacoCanvas(true)
   }
 
-  const handleAttachDocToTask = (doc: UploadedFile) => {
-    const item: FileItem = {
-      file: new File([], doc.name, { type: doc.type || "" }),
-      id: doc.id,
-    }
-    if (!files.some((d) => d.id === doc.id)) {
-      setFiles((prev) => [...prev, item])
+  const handleAttachDocToTask = async (doc: UploadedFile) => {
+    try {
+      let file: File;
+
+      if (doc.originalFile) {
+        file = doc.originalFile;
+      } 
+      else if (doc.url) {
+        try {
+          const response = await fetch(doc.url);
+          const blob = await response.blob();
+          file = new File([blob], doc.name, { type: doc.type });
+        } catch {
+          file = new File([], doc.name, { type: doc.type || "" });
+          if (doc.size) Object.defineProperty(file, 'size', { value: doc.size, writable: false });
+        }
+      } 
+      else {
+         file = new File([], doc.name, { type: doc.type || "" });
+         if (doc.size) Object.defineProperty(file, 'size', { value: doc.size, writable: false });
+      }
+
+      const previewUrl = doc.originalFile ? URL.createObjectURL(doc.originalFile) : doc.url;
+
+      const item: FileItem & { previewUrl?: string } = {
+        file: file,
+        id: doc.id,
+        previewUrl: previewUrl
+      }
+      
+      if (!files.some((d) => d.id === doc.id)) {
+        setFiles((prev) => [...prev, item])
+      }
+    } catch (error) {
+      console.error("Error attaching doc:", error);
     }
     setShowGlobalDocsModal(false)
   }

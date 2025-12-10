@@ -97,13 +97,7 @@ const LeftPanel: React.FC<LeftPanelProps> = ({ collapsed, onToggleCollapse, repo
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 ">
           <div className={`flex flex-col gap-2`}>
-            <Button
-              variant="outline"
-              className={`flex items-center gap-2 text-indigo-600 border-gray-200 hover:bg-indigo-50 ${collapsed ? "px-0 justify-center" : "flex-1 justify-center"}`}
-            >
-              <Book className="w-4 h-4 flex-shrink-0" />
-              {!collapsed && <span>Docs</span>}
-            </Button>
+      
             <Button
               variant="outline"
               className={`flex items-center gap-2 text-gray-600 border-gray-200 hover:bg-gray-50 ${collapsed ? "px-0 justify-center cursor-not-allowed opacity-50" : "flex-1 justify-center"}`}

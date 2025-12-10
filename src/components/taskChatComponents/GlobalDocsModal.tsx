@@ -1,5 +1,7 @@
+import { useEffect, useState, useMemo } from "react"
 import { FileText, Plus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useFileSystem, Item } from "../FileSystemContext";
 
 interface UploadedFile {
   name: string;
@@ -8,12 +10,19 @@ interface UploadedFile {
   uploadedAt: string;
   id: string;
   url: string;
+  originalFile?: File; 
+}
+
+const formatSize = (bytes: number) => {
+  if (!bytes) return "0 KB"
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
 interface GlobalDocsModalProps {
   open: boolean;
   onClose: () => void;
-  globalDocs: UploadedFile[];
   attachedDocs: UploadedFile[];
   onAttach: (doc: UploadedFile) => void;
 }
@@ -21,10 +30,35 @@ interface GlobalDocsModalProps {
 const GlobalDocsModal = ({
   open,
   onClose,
-  globalDocs,
   attachedDocs,
   onAttach,
 }: GlobalDocsModalProps) => {
+  
+  const { items } = useFileSystem();
+
+  const allDocs = useMemo(() => {
+    const extractFiles = (list: Item[]): UploadedFile[] => {
+      let results: UploadedFile[] = []
+      for (const item of list) {
+        if (item.type === "file") {
+          results.push({
+            id: item.id,
+            name: item.name,
+            size: item.size || 0,
+            type: item.mimeType || "application/octet-stream", 
+            uploadedAt: item.createdAt || new Date().toISOString(),
+            url: item.url || "",
+            originalFile: item.originalFile // <--- PASSING THE REAL FILE
+          })
+        } else if (item.type === "folder" && item.children) {
+          results = [...results, ...extractFiles(item.children)]
+        }
+      }
+      return results
+    }
+    return extractFiles(items);
+  }, [items]); 
+
   if (!open) return null;
   
   return (
@@ -39,17 +73,17 @@ const GlobalDocsModal = ({
         </button>
         <h3 className="text-xl font-bold mb-2 text-gray-900">Add Documents</h3>
         <p className="text-sm text-gray-600 mb-4">
-          Select documents
+          Select documents from your file library
         </p>
         <div className="space-y-2">
-          {globalDocs.length === 0 ? (
+          {allDocs.length === 0 ? (
             <div className="text-center py-8">
               <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-gray-500 font-medium">No global docs available yet.</p>
-              <p className="text-xs text-gray-400 mt-1">Upload documents from the project board to see them here.</p>
+              <p className="text-sm text-gray-500 font-medium">No files found.</p>
+              <p className="text-xs text-gray-400 mt-1">Add files in the "Documents" page first.</p>
             </div>
           ) : (
-            globalDocs.map((doc) => {
+            allDocs.map((doc) => {
               const isAttached = attachedDocs.some(d => d.id === doc.id);
               
               return (
@@ -64,7 +98,7 @@ const GlobalDocsModal = ({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{doc.name}</p>
                       <p className="text-xs text-gray-500">
-                        {(doc.size / 1024).toFixed(2)} KB •
+                        {formatSize(doc.size)} •
                         {typeof doc.uploadedAt === "string" ? new Date(doc.uploadedAt).toLocaleDateString() : ""}
                       </p>
                     </div>
