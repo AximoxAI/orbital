@@ -122,6 +122,10 @@ function getPreviewUrl(fileItem: PreviewableFileItem): string | undefined {
   return undefined
 }
 
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
 const ChatInput = ({
   newMessage,
   setNewMessage,
@@ -156,22 +160,13 @@ const ChatInput = ({
         }
       })
     }
-    // eslint-disable-next-line
   }, [])
-
-  // Sync: If parent clears newMessage, we must clear the div
-  useEffect(() => {
-    if (newMessage === "" && inputRef.current && inputRef.current.innerText.trim() !== "") {
-      inputRef.current.innerHTML = ""
-    }
-  }, [newMessage])
 
   const handleRemoveFile = (indexToRemove: number) => {
     setFiles(files.filter((_, index) => index !== indexToRemove))
   }
 
-  // Helper: Create the "Tag" pill
-  const createTagElement = (text: string, type: "bot" | "user" | "entity") => {
+  const createTagElement = useCallback((text: string, type: "bot" | "user" | "entity") => {
     const span = document.createElement("span")
     span.contentEditable = "false" // CRITICAL: This makes it un-editable!
     span.innerText = text
@@ -188,7 +183,51 @@ const ChatInput = ({
     // Mimic the tag visual style from MessageContent
     span.className = `inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle select-none ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`
     return span
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!inputRef.current) return
+
+    if (newMessage === "" && inputRef.current.innerText.trim() !== "") {
+      inputRef.current.innerHTML = ""
+    } 
+    else if (newMessage !== inputRef.current.innerText) {
+      
+      inputRef.current.innerHTML = ""
+
+      const allKnownMentions = [...availableBots, ...userSuggestions]
+      
+      if (allKnownMentions.length > 0 && newMessage.includes("@")) {
+          const escapedMentions = allKnownMentions.map(escapeRegExp)
+          const mentionRegex = new RegExp(`(${escapedMentions.join("|")})`, "g")
+          
+          const parts = newMessage.split(mentionRegex)
+
+          parts.forEach((part) => {
+             if (availableBots.includes(part)) {
+                 inputRef.current?.appendChild(createTagElement(part, "bot"))
+             } else if (userSuggestions.includes(part)) {
+                 inputRef.current?.appendChild(createTagElement(part, "user"))
+             } else if (part) {
+                 inputRef.current?.appendChild(document.createTextNode(part))
+             }
+          })
+      } else {
+          inputRef.current.innerText = newMessage
+      }
+
+      if (newMessage) {
+          const range = document.createRange()
+          const sel = window.getSelection()
+          range.selectNodeContents(inputRef.current)
+          range.collapse(false)
+          sel?.removeAllRanges()
+          sel?.addRange(range)
+          inputRef.current.focus()
+      }
+    }
+  }, [newMessage, userSuggestions, createTagElement])
+
 
   const insertTag = useCallback(
     (text: string, type: "bot" | "user" | "entity") => {
@@ -225,21 +264,28 @@ const ChatInput = ({
         applyLinearInsertion(range)
         mentionRangeRef.current = null
       } 
-      // 2. Otherwise insert at current caret position (e.g. from template dialog)
       else {
         const sel = window.getSelection()
         if (sel && sel.rangeCount > 0 && inputRef.current.contains(sel.anchorNode)) {
           const range = sel.getRangeAt(0)
           applyLinearInsertion(range)
         } else {
-          // 3. Fallback: If lost focus, append to end
-          inputRef.current.appendChild(span)
-          inputRef.current.appendChild(space)
+          let targetNode: Node = inputRef.current
+          const lastChild = targetNode.lastChild
+          if (
+            lastChild &&
+            lastChild.nodeType === Node.ELEMENT_NODE &&
+            (lastChild as HTMLElement).tagName === "DIV"
+          ) {
+            targetNode = lastChild
+          }
+
+          targetNode.appendChild(span)
+          targetNode.appendChild(space)
           
-          // Move caret to very end
           const range = document.createRange()
-          range.selectNodeContents(inputRef.current)
-          range.collapse(false) // collapse to end
+          range.selectNodeContents(targetNode)
+          range.collapse(false) 
           
           const newSel = window.getSelection()
           newSel?.removeAllRanges()
@@ -250,7 +296,7 @@ const ChatInput = ({
       setNewMessage(inputRef.current.innerText)
       setShowSuggestions(false)
     },
-    [setNewMessage],
+    [setNewMessage, createTagElement],
   )
 
   // Handle external insertions (like clicking a Node in the graph)

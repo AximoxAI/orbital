@@ -85,10 +85,14 @@ export const MessageActions: React.FC<MessageActionsProps> = ({
       agentOutput = "";
     }
 
+    if (!agentOutput && messageContent) {
+      agentOutput = messageContent;
+    }
+
     if (!agentOutput.trim()) {
       toast({
         title: "No output to copy",
-        description: "There is no agent output available to copy.",
+        description: "There is no content available to copy.",
         duration: 2000,
         variant: "destructive",
       });

@@ -1,4 +1,3 @@
-"use client"
 import type React from "react"
 import { useMemo, useState, useEffect, useLayoutEffect, useRef } from "react"
 import { Code, Phone, PhoneOff } from "lucide-react"
@@ -224,13 +223,6 @@ const renderMessageContent = (
                  }
              }
         } else if (subPart.startsWith("Template:")) {
-            // Templates might not be strictly in the graph nodes list based on current data,
-            // but if we want to be strict, we check. 
-            // If templates are just generic, we might skip validation or add them to VALID_NODE_LABELS.
-            // For now, assuming "Template:" is a special marker that might not be in GRAPH_DATA,
-            // we will render it if it matches the pattern, OR we can strict check it too.
-            // Based on user request "check all the data for nodes connections", we strictly check Node/Connection.
-            // We will leave Template as is for now unless it needs validation too.
             const styles = ENTITY_STYLES.Template;
             elements.push(
                 <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
@@ -331,26 +323,6 @@ export const MessageContent = ({
     return ""
   }
 
-  const agentOutputText = getAgentOutputText()
-
-  const handleCopyAgentOutput = async () => {
-    try {
-      const logs = await fetchExecutionLogs(message.id)
-      const agentOutputLogs = logs.filter(
-        (log) =>
-          log.type === TaskExecutionLogTypeEnum.AgentOutput &&
-          log.status === TaskExecutionLogStatusEnum.Agent &&
-          log.content,
-      )
-      if (agentOutputLogs.length > 0) {
-        return agentOutputLogs[agentOutputLogs.length - 1].content || ""
-      }
-      return ""
-    } catch (err) {
-      return ""
-    }
-  }
-
   useEffect(() => {
     let ignore = false
     async function checkAgentSummary() {
@@ -391,10 +363,21 @@ export const MessageContent = ({
     }
   }, [hasAgentSummary, isLoadingAgentSummary, onContentHeightChange])
 
-  const shouldShowActions =
-    !isFollowingBotMessage || (isFollowingBotMessage && hasAgentSummary)
+  const hasExecutionData =
+    (Array.isArray(liveAgentOutput) && liveAgentOutput.length > 0) ||
+    (Array.isArray(executionAgentOutput) && executionAgentOutput.length > 0) ||
+    (Array.isArray(agentOutput) && agentOutput.length > 0) ||
+    (Array.isArray(liveRetrieveProjectSummary) && liveRetrieveProjectSummary.length > 0) ||
+    (Array.isArray(executionSummary) && executionSummary.length > 0) ||
+    (Array.isArray(summary) && summary.length > 0) ||
+    hasAgentSummary;
+  const hasFinishedGenerating = !isActiveRetrieveProjectBlock;
 
-  const shouldShowSuggestions = isFollowingBotMessage && hasAgentSummary
+  const shouldShowActions = 
+    message.type === "ai" && 
+    (hasExecutionData || (hasFinishedGenerating && message.content && message.content.trim().length > 0));
+
+  const shouldShowSuggestions = isFollowingBotMessage && shouldShowActions;
 
   const renderedContent = useMemo(
     () => renderMessageContent(message.content, chatUsers),
@@ -577,10 +560,8 @@ export const MessageContent = ({
           parentMessageContent={parentMessageContent}
           parentAgentName={parentAgentName}
           messageContent={message.content}
-          agentOutputText={agentOutputText}
           onSuggestionClick={onSuggestionClick}
           onRetryClick={onRetryClick}
-          onCopyAgentOutput={handleCopyAgentOutput}
         />
       </div>
     )
@@ -604,6 +585,16 @@ export const MessageContent = ({
           </div>
         </div>
       )}
+      <MessageActions
+        messageId={message.id}
+        shouldShowActions={shouldShowActions}
+        shouldShowSuggestions={shouldShowSuggestions}
+        parentMessageContent={parentMessageContent}
+        parentAgentName={parentAgentName}
+        messageContent={message.content}
+        onSuggestionClick={onSuggestionClick}
+        onRetryClick={onRetryClick}
+      />
     </div>
   )
 }

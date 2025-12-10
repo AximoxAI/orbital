@@ -182,14 +182,14 @@ export default function Files() {
                         setShowFolderUploadDialog(true)
                       }}
                     >
-                      Add file inside
+                      Add file
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => {
                         removeItem(it.id)
                       }}
                     >
-                      Delete folder
+                      Delete 
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
