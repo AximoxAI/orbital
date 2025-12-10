@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, useParams, useLocation, useNavigate } fro
 import Index from "./pages/Index";
 import SoftwareEngineering from "./pages/SoftwareEngineering";
 import ProjectBoard from "./pages/ProjectBoard";
+import Files from "./pages/Files";
 import NotFound from "./pages/NotFound";
 import SignUpPage from "./pages/SignUp";
 import SignInPage from "./pages/SignIn";
@@ -23,12 +24,15 @@ const TaskChatRoute = () => {
   const { taskId } = useParams<{ taskId: string }>();
   const location = useLocation();
   const taskName = location.state?.taskName || (taskId ? `Task #${taskId}` : "Task");
+  const globalDocs = location.state?.globalDocs || [];  
+  
   return (
     <TaskChat
       isOpen={!!taskId}
       onClose={() => window.history.back()}
       taskName={taskName}
       taskId={taskId || ""}
+      globalDocs={globalDocs} 
     />
   );
 };
@@ -91,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <ProjectBoard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/files"
+              element={
+                <ProtectedRoute>
+                  <Files />
                 </ProtectedRoute>
               }
             />

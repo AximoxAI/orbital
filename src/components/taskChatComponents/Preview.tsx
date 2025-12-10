@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   GitBranch,
   Folder,
-  File,
   Code,
   FileText,
   Layout,
@@ -13,261 +12,282 @@ import {
   Tag,
 } from 'lucide-react';
 
-const OrbitalRepoGraph = () => {
+// === EXPORTED SOURCE OF TRUTH ===
+export const GRAPH_DATA = [
+  // Root Repository
+  {
+    data: {
+      id: 'repo',
+      label: 'orbital',
+      type: 'repo',
+      description: 'SDLC Platform',
+      stack: 'React + TypeScript + Vite',
+      stars: 5,
+      forks: 1,
+    },
+  },
+
+  // === CONTRIBUTORS ===
+  {
+    data: {
+      id: 'contributor-team',
+      label: 'Contributors',
+      type: 'team',
+      count: 4,
+      totalCommits: 110,
+    },
+  },
+  {
+    data: {
+      id: 'contrib-pranav',
+      label: 'pranav-94',
+      type: 'contributor',
+      commits: 65,
+      avatar: 'https://avatars.githubusercontent.com/u/118586743?v=4',
+      contribution: '59%',
+    },
+  },
+  {
+    data: {
+      id: 'contrib-mohit',
+      label: 'SuperMohit',
+      type: 'contributor',
+      commits: 29,
+      avatar: 'https://avatars.githubusercontent.com/u/7871501?v=4',
+      contribution: '26%',
+    },
+  },
+  {
+    data: {
+      id: 'contrib-qmohit',
+      label: 'qmohit-code',
+      type: 'contributor',
+      commits: 15,
+      avatar: 'https://avatars.githubusercontent.com/u/189113078?v=4',
+      contribution: '14%',
+    },
+  },
+  {
+    data: {
+      id: 'contrib-arun',
+      label: 'ArunRawat404',
+      type: 'contributor',
+      commits: 1,
+      avatar: 'https://avatars.githubusercontent.com/u/88387461?v=4',
+      contribution: '1%',
+    },
+  },
+
+  // Core Config
+  { data: { id: 'vite-config', label: 'vite.config.ts', type: 'config', purpose: 'Build config' } },
+  { data: { id: 'tsconfig', label: 'tsconfig.json', type: 'config', purpose: 'TypeScript config' } },
+
+  // Main Directories
+  { data: { id: 'src', label: '/src', type: 'directory', role: 'source-root' } },
+
+  // Entry Points
+  { data: { id: 'main', label: 'main.tsx', type: 'entry', flow: 'Application entry point' } },
+  { data: { id: 'app', label: 'App.tsx', type: 'entry', flow: 'Root component + Router' } },
+
+  // Core Directories
+  { data: { id: 'pages-dir', label: '/pages', type: 'directory', role: 'routes' } },
+  { data: { id: 'components-dir', label: '/components', type: 'directory', role: 'ui-logic' } },
+  { data: { id: 'api-dir', label: '/api-client', type: 'directory', role: 'backend-communication' } },
+
+  // === PUBLIC ROUTES ===
+  { data: { id: 'route-landing', label: 'Index.tsx', type: 'route', path: '/', auth: 'public', flow: 'Landing page' } },
+  { data: { id: 'route-signin', label: 'SignIn.tsx', type: 'route', path: '/sign-in', auth: 'public', flow: 'Authentication' } },
+  { data: { id: 'route-signup', label: 'SignUp.tsx', type: 'route', path: '/sign-up', auth: 'public', flow: 'Registration' } },
+  { data: { id: 'route-waitlist', label: 'Waitlist.tsx', type: 'route', path: '/waitlist', auth: 'public', flow: 'Join waitlist' } },
+
+  // === PROTECTED ROUTES ===
+  { data: { id: 'route-board', label: 'ProjectBoard.tsx', type: 'route', path: '/project-board', auth: 'protected', flow: 'Main dashboard' } },
+  { data: { id: 'route-software', label: 'SoftwareEngineering.tsx', type: 'route', path: '/software-engineering', auth: 'protected', flow: 'Code editor' } },
+  { data: { id: 'route-tasks', label: 'UserTasks.tsx', type: 'route', path: '/user-tasks', auth: 'protected', flow: 'Task management' } },
+  { data: { id: 'route-inbox', label: 'Inbox.tsx', type: 'route', path: '/inbox', auth: 'protected', flow: 'Notifications' } },
+  { data: { id: 'route-templates', label: 'Template.tsx', type: 'route', path: '/templates', auth: 'protected', flow: 'Project templates' } },
+  { data: { id: 'route-profile', label: 'ProfilePage.tsx', type: 'route', path: '/profile', auth: 'protected', flow: 'User settings' } },
+
+  // === COMPONENT GROUPS ===
+  { data: { id: 'comp-landing-dir', label: '/landingPageComponents', type: 'comp-group', purpose: 'Marketing components' } },
+  { data: { id: 'comp-board-dir', label: '/projectBoardComponents', type: 'comp-group', purpose: 'Kanban & tasks' } },
+  { data: { id: 'comp-software-dir', label: '/softwareEngineeringComponents', type: 'comp-group', purpose: 'Code editor tools' } },
+  { data: { id: 'comp-taskchat-dir', label: '/taskChatComponents', type: 'comp-group', purpose: 'Task collaboration' } },
+  { data: { id: 'comp-global-dir', label: '/globalComponents', type: 'comp-group', purpose: 'Shared UI' } },
+
+  // === LANDING COMPONENTS ===
+  { data: { id: 'landing-hero', label: 'HeroSection', type: 'component', category: 'landing' } },
+  { data: { id: 'landing-features', label: 'Features', type: 'component', category: 'landing' } },
+  { data: { id: 'landing-cta', label: 'CTASection', type: 'component', category: 'landing' } },
+
+  // === PROJECT BOARD COMPONENTS ===
+  { data: { id: 'board-kanban', label: 'KanbanBoard', type: 'component', category: 'board', feature: 'Task visualization' } },
+  { data: { id: 'board-taskcard', label: 'TaskCard', type: 'component', category: 'board', feature: 'Task item' } },
+  { data: { id: 'board-create', label: 'CreateTask', type: 'component', category: 'board', feature: 'Task creation' } },
+
+  // === SOFTWARE ENGINEERING COMPONENTS ===
+  { data: { id: 'software-monaco', label: 'MonacoCanvas', type: 'component', category: 'code', feature: 'Code editor' } },
+  { data: { id: 'software-mermaid', label: 'MermaidComponent', type: 'component', category: 'diagram', feature: 'Diagram renderer' } },
+  { data: { id: 'software-codegen', label: 'CodeGeneration', type: 'component', category: 'ai', feature: 'AI code gen' } },
+
+  // === TASK CHAT COMPONENTS ===
+  { data: { id: 'chat-main', label: 'TaskChat', type: 'component', category: 'chat', feature: 'Task discussion', route: '/tasks/:taskId' } },
+
+  // === GLOBAL COMPONENTS ===
+  { data: { id: 'global-sidebar', label: 'Sidebar', type: 'component', category: 'navigation', feature: 'App navigation' } },
+
+  // === API LAYER ===
+  { data: { id: 'api-client', label: 'api.ts', type: 'api', purpose: 'OpenAPI client', endpoints: 'All backend calls' } },
+
+  // === NEW: WORK ITEMS GROUPS (Issues / PRs) ===
+  { data: { id: 'issues-group', label: 'Issues', type: 'issue-group' } },
+  { data: { id: 'prs-group', label: 'Pull Requests', type: 'pr-group' } },
+
+  // === EDGES: Contributors ===
+  { data: { source: 'repo', target: 'contributor-team', label: 'TEAM' } },
+  { data: { source: 'contributor-team', target: 'contrib-mohit', label: 'DEV' } },
+  { data: { source: 'contributor-team', target: 'contrib-pranav', label: 'DEV' } },
+  { data: { source: 'contributor-team', target: 'contrib-qmohit', label: 'DEV' } },
+  { data: { source: 'contributor-team', target: 'contrib-arun', label: 'DEV' } },
+
+  // Contributor code connections (major contributions)
+  { data: { source: 'contrib-pranav', target: 'route-board', label: 'BUILT' } },
+  { data: { source: 'contrib-pranav', target: 'software-monaco', label: 'BUILT' } },
+  { data: { source: 'contrib-pranav', target: 'chat-main', label: 'BUILT' } },
+  { data: { source: 'contrib-mohit', target: 'route-software', label: 'DESIGNED' } },
+  { data: { source: 'contrib-mohit', target: 'software-codegen', label: 'DESIGNED' } },
+  { data: { source: 'contrib-qmohit', target: 'comp-board-dir', label: 'CONTRIBUTED' } },
+
+  // === EDGES: Config ===
+  { data: { source: 'repo', target: 'vite-config', label: 'BUILD' } },
+  { data: { source: 'repo', target: 'tsconfig', label: 'TYPES' } },
+
+  // === EDGES: Structure ===
+  { data: { source: 'repo', target: 'src', label: 'CONTAINS' } },
+  { data: { source: 'src', target: 'main', label: 'ENTRY' } },
+  { data: { source: 'src', target: 'app', label: 'ROOT' } },
+  { data: { source: 'main', target: 'app', label: 'RENDERS' } },
+
+  // === EDGES: Directories ===
+  { data: { source: 'src', target: 'pages-dir', label: 'CONTAINS' } },
+  { data: { source: 'src', target: 'components-dir', label: 'CONTAINS' } },
+  { data: { source: 'src', target: 'api-dir', label: 'CONTAINS' } },
+
+  // === EDGES: Component Groups ===
+  { data: { source: 'components-dir', target: 'comp-landing-dir', label: 'GROUP' } },
+  { data: { source: 'components-dir', target: 'comp-board-dir', label: 'GROUP' } },
+  { data: { source: 'components-dir', target: 'comp-software-dir', label: 'GROUP' } },
+  { data: { source: 'components-dir', target: 'comp-taskchat-dir', label: 'GROUP' } },
+  { data: { source: 'components-dir', target: 'comp-global-dir', label: 'GROUP' } },
+
+  // === EDGES: Public Routes ===
+  { data: { source: 'app', target: 'route-landing', label: 'ROUTE' } },
+  { data: { source: 'app', target: 'route-signin', label: 'ROUTE' } },
+  { data: { source: 'app', target: 'route-signup', label: 'ROUTE' } },
+  { data: { source: 'app', target: 'route-waitlist', label: 'ROUTE' } },
+
+  // === EDGES: Protected Routes ===
+  { data: { source: 'app', target: 'route-board', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'route-software', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'route-tasks', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'route-inbox', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'route-templates', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'route-profile', label: 'PROTECTED' } },
+  { data: { source: 'app', target: 'chat-main', label: 'DYNAMIC' } },
+
+  // === EDGES: Route Location ===
+  { data: { source: 'pages-dir', target: 'route-landing', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-signin', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-signup', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-waitlist', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-board', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-software', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-tasks', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-inbox', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-templates', label: 'CONTAINS' } },
+  { data: { source: 'pages-dir', target: 'route-profile', label: 'CONTAINS' } },
+
+  // === EDGES: Landing Components ===
+  { data: { source: 'comp-landing-dir', target: 'landing-hero', label: 'CONTAINS' } },
+  { data: { source: 'comp-landing-dir', target: 'landing-features', label: 'CONTAINS' } },
+  { data: { source: 'comp-landing-dir', target: 'landing-cta', label: 'CONTAINS' } },
+  { data: { source: 'route-landing', target: 'landing-hero', label: 'USES' } },
+  { data: { source: 'route-landing', target: 'landing-features', label: 'USES' } },
+  { data: { source: 'route-landing', target: 'landing-cta', label: 'USES' } },
+
+  // === EDGES: Board Components ===
+  { data: { source: 'comp-board-dir', target: 'board-kanban', label: 'CONTAINS' } },
+  { data: { source: 'comp-board-dir', target: 'board-taskcard', label: 'CONTAINS' } },
+  { data: { source: 'comp-board-dir', target: 'board-create', label: 'CONTAINS' } },
+  { data: { source: 'route-board', target: 'board-kanban', label: 'USES' } },
+  { data: { source: 'route-board', target: 'board-create', label: 'USES' } },
+  { data: { source: 'board-kanban', target: 'board-taskcard', label: 'RENDERS' } },
+
+  // === EDGES: Software Components ===
+  { data: { source: 'comp-software-dir', target: 'software-monaco', label: 'CONTAINS' } },
+  { data: { source: 'comp-software-dir', target: 'software-mermaid', label: 'CONTAINS' } },
+  { data: { source: 'comp-software-dir', target: 'software-codegen', label: 'CONTAINS' } },
+  { data: { source: 'route-software', target: 'software-monaco', label: 'USES' } },
+  { data: { source: 'route-software', target: 'software-mermaid', label: 'USES' } },
+  { data: { source: 'route-software', target: 'software-codegen', label: 'USES' } },
+  { data: { source: 'software-codegen', target: 'software-monaco', label: 'OUTPUTS_TO' } },
+
+  // === EDGES: TaskChat Components ===
+  { data: { source: 'comp-taskchat-dir', target: 'chat-main', label: 'CONTAINS' } },
+
+  // === EDGES: Global Components ===
+  { data: { source: 'comp-global-dir', target: 'global-sidebar', label: 'CONTAINS' } },
+  { data: { source: 'route-board', target: 'global-sidebar', label: 'USES' } },
+  { data: { source: 'route-software', target: 'global-sidebar', label: 'USES' } },
+  { data: { source: 'route-tasks', target: 'global-sidebar', label: 'USES' } },
+
+  // === EDGES: API ===
+  { data: { source: 'api-dir', target: 'api-client', label: 'CONTAINS' } },
+  { data: { source: 'route-board', target: 'api-client', label: 'CALLS' } },
+  { data: { source: 'route-software', target: 'api-client', label: 'CALLS' } },
+  { data: { source: 'route-tasks', target: 'api-client', label: 'CALLS' } },
+  { data: { source: 'chat-main', target: 'api-client', label: 'CALLS' } },
+  { data: { source: 'board-create', target: 'api-client', label: 'CALLS' } },
+  { data: { source: 'software-codegen', target: 'api-client', label: 'CALLS' } },
+
+  // === NEW: EDGES from repo to groups ===
+  { data: { source: 'repo', target: 'issues-group', label: 'ISSUES' } },
+  { data: { source: 'repo', target: 'prs-group', label: 'PRS' } },
+];
+
+const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) => void } = {}) => {
   const cyRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js';
-    script.async = true;
+  // REF PATTERN: Keep the latest callback in a ref to avoid re-running the graph effect
+  const onNodeClickRef = useRef(onNodeClick);
 
-    script.onload = () => {
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick;
+  }, [onNodeClick]);
+
+  useEffect(() => {
+    // === FIX: Resize Observer to handle layout shifts without unmounting ===
+    const resizeObserver = new ResizeObserver(() => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+        cyRef.current.fit();
+      }
+    });
+
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    const initGraph = () => {
+      if (!containerRef.current) return;
+      
       // @ts-ignore
       const cy = window.cytoscape({
         container: containerRef.current,
-        elements: [
-          // Root Repository
-          {
-            data: {
-              id: 'repo',
-              label: 'orbital',
-              type: 'repo',
-              description: 'SDLC Platform',
-              stack: 'React + TypeScript + Vite',
-              stars: 5,
-              forks: 1,
-            },
-          },
-
-          // === CONTRIBUTORS ===
-          {
-            data: {
-              id: 'contributor-team',
-              label: 'Contributors',
-              type: 'team',
-              count: 4,
-              totalCommits: 110,
-            },
-          },
-          {
-            data: {
-              id: 'contrib-pranav',
-              label: 'pranav-94',
-              type: 'contributor',
-              commits: 65,
-              avatar: 'https://avatars.githubusercontent.com/u/118586743?v=4',
-              contribution: '59%',
-            },
-          },
-          {
-            data: {
-              id: 'contrib-mohit',
-              label: 'SuperMohit',
-              type: 'contributor',
-              commits: 29,
-              avatar: 'https://avatars.githubusercontent.com/u/7871501?v=4',
-              contribution: '26%',
-            },
-          },
-          {
-            data: {
-              id: 'contrib-qmohit',
-              label: 'qmohit-code',
-              type: 'contributor',
-              commits: 15,
-              avatar: 'https://avatars.githubusercontent.com/u/189113078?v=4',
-              contribution: '14%',
-            },
-          },
-          {
-            data: {
-              id: 'contrib-arun',
-              label: 'ArunRawat404',
-              type: 'contributor',
-              commits: 1,
-              avatar: 'https://avatars.githubusercontent.com/u/88387461?v=4',
-              contribution: '1%',
-            },
-          },
-
-          // Core Config
-          { data: { id: 'vite-config', label: 'vite.config.ts', type: 'config', purpose: 'Build config' } },
-          { data: { id: 'tsconfig', label: 'tsconfig.json', type: 'config', purpose: 'TypeScript config' } },
-
-          // Main Directories
-          { data: { id: 'src', label: '/src', type: 'directory', role: 'source-root' } },
-
-          // Entry Points
-          { data: { id: 'main', label: 'main.tsx', type: 'entry', flow: 'Application entry point' } },
-          { data: { id: 'app', label: 'App.tsx', type: 'entry', flow: 'Root component + Router' } },
-
-          // Core Directories
-          { data: { id: 'pages-dir', label: '/pages', type: 'directory', role: 'routes' } },
-          { data: { id: 'components-dir', label: '/components', type: 'directory', role: 'ui-logic' } },
-          { data: { id: 'api-dir', label: '/api-client', type: 'directory', role: 'backend-communication' } },
-
-          // === PUBLIC ROUTES ===
-          { data: { id: 'route-landing', label: 'Index.tsx', type: 'route', path: '/', auth: 'public', flow: 'Landing page' } },
-          { data: { id: 'route-signin', label: 'SignIn.tsx', type: 'route', path: '/sign-in', auth: 'public', flow: 'Authentication' } },
-          { data: { id: 'route-signup', label: 'SignUp.tsx', type: 'route', path: '/sign-up', auth: 'public', flow: 'Registration' } },
-          { data: { id: 'route-waitlist', label: 'Waitlist.tsx', type: 'route', path: '/waitlist', auth: 'public', flow: 'Join waitlist' } },
-
-          // === PROTECTED ROUTES ===
-          { data: { id: 'route-board', label: 'ProjectBoard.tsx', type: 'route', path: '/project-board', auth: 'protected', flow: 'Main dashboard' } },
-          { data: { id: 'route-software', label: 'SoftwareEngineering.tsx', type: 'route', path: '/software-engineering', auth: 'protected', flow: 'Code editor' } },
-          { data: { id: 'route-tasks', label: 'UserTasks.tsx', type: 'route', path: '/user-tasks', auth: 'protected', flow: 'Task management' } },
-          { data: { id: 'route-inbox', label: 'Inbox.tsx', type: 'route', path: '/inbox', auth: 'protected', flow: 'Notifications' } },
-          { data: { id: 'route-templates', label: 'Template.tsx', type: 'route', path: '/templates', auth: 'protected', flow: 'Project templates' } },
-          { data: { id: 'route-profile', label: 'ProfilePage.tsx', type: 'route', path: '/profile', auth: 'protected', flow: 'User settings' } },
-
-          // === COMPONENT GROUPS ===
-          { data: { id: 'comp-landing-dir', label: '/landingPageComponents', type: 'comp-group', purpose: 'Marketing components' } },
-          { data: { id: 'comp-board-dir', label: '/projectBoardComponents', type: 'comp-group', purpose: 'Kanban & tasks' } },
-          { data: { id: 'comp-software-dir', label: '/softwareEngineeringComponents', type: 'comp-group', purpose: 'Code editor tools' } },
-          { data: { id: 'comp-taskchat-dir', label: '/taskChatComponents', type: 'comp-group', purpose: 'Task collaboration' } },
-          { data: { id: 'comp-global-dir', label: '/globalComponents', type: 'comp-group', purpose: 'Shared UI' } },
-
-          // === LANDING COMPONENTS ===
-          { data: { id: 'landing-hero', label: 'HeroSection', type: 'component', category: 'landing' } },
-          { data: { id: 'landing-features', label: 'Features', type: 'component', category: 'landing' } },
-          { data: { id: 'landing-cta', label: 'CTASection', type: 'component', category: 'landing' } },
-
-          // === PROJECT BOARD COMPONENTS ===
-          { data: { id: 'board-kanban', label: 'KanbanBoard', type: 'component', category: 'board', feature: 'Task visualization' } },
-          { data: { id: 'board-taskcard', label: 'TaskCard', type: 'component', category: 'board', feature: 'Task item' } },
-          { data: { id: 'board-create', label: 'CreateTask', type: 'component', category: 'board', feature: 'Task creation' } },
-
-          // === SOFTWARE ENGINEERING COMPONENTS ===
-          { data: { id: 'software-monaco', label: 'MonacoCanvas', type: 'component', category: 'code', feature: 'Code editor' } },
-          { data: { id: 'software-mermaid', label: 'MermaidComponent', type: 'component', category: 'diagram', feature: 'Diagram renderer' } },
-          { data: { id: 'software-codegen', label: 'CodeGeneration', type: 'component', category: 'ai', feature: 'AI code gen' } },
-
-          // === TASK CHAT COMPONENTS ===
-          { data: { id: 'chat-main', label: 'TaskChat', type: 'component', category: 'chat', feature: 'Task discussion', route: '/tasks/:taskId' } },
-
-          // === GLOBAL COMPONENTS ===
-          { data: { id: 'global-sidebar', label: 'Sidebar', type: 'component', category: 'navigation', feature: 'App navigation' } },
-
-          // === API LAYER ===
-          { data: { id: 'api-client', label: 'api.ts', type: 'api', purpose: 'OpenAPI client', endpoints: 'All backend calls' } },
-
-          // === NEW: WORK ITEMS GROUPS (Issues / PRs) ===
-          { data: { id: 'issues-group', label: 'Issues', type: 'issue-group' } },
-          { data: { id: 'prs-group', label: 'Pull Requests', type: 'pr-group' } },
-
-          // === EDGES: Contributors ===
-          { data: { source: 'repo', target: 'contributor-team', label: 'TEAM' } },
-          { data: { source: 'contributor-team', target: 'contrib-mohit', label: 'DEV' } },
-          { data: { source: 'contributor-team', target: 'contrib-pranav', label: 'DEV' } },
-          { data: { source: 'contributor-team', target: 'contrib-qmohit', label: 'DEV' } },
-          { data: { source: 'contributor-team', target: 'contrib-arun', label: 'DEV' } },
-
-          // Contributor code connections (major contributions)
-          { data: { source: 'contrib-pranav', target: 'route-board', label: 'BUILT' } },
-          { data: { source: 'contrib-pranav', target: 'software-monaco', label: 'BUILT' } },
-          { data: { source: 'contrib-pranav', target: 'chat-main', label: 'BUILT' } },
-          { data: { source: 'contrib-mohit', target: 'route-software', label: 'DESIGNED' } },
-          { data: { source: 'contrib-mohit', target: 'software-codegen', label: 'DESIGNED' } },
-          { data: { source: 'contrib-qmohit', target: 'comp-board-dir', label: 'CONTRIBUTED' } },
-
-          // === EDGES: Config ===
-          { data: { source: 'repo', target: 'vite-config', label: 'BUILD' } },
-          { data: { source: 'repo', target: 'tsconfig', label: 'TYPES' } },
-
-          // === EDGES: Structure ===
-          { data: { source: 'repo', target: 'src', label: 'CONTAINS' } },
-          { data: { source: 'src', target: 'main', label: 'ENTRY' } },
-          { data: { source: 'src', target: 'app', label: 'ROOT' } },
-          { data: { source: 'main', target: 'app', label: 'RENDERS' } },
-
-          // === EDGES: Directories ===
-          { data: { source: 'src', target: 'pages-dir', label: 'CONTAINS' } },
-          { data: { source: 'src', target: 'components-dir', label: 'CONTAINS' } },
-          { data: { source: 'src', target: 'api-dir', label: 'CONTAINS' } },
-
-          // === EDGES: Component Groups ===
-          { data: { source: 'components-dir', target: 'comp-landing-dir', label: 'GROUP' } },
-          { data: { source: 'components-dir', target: 'comp-board-dir', label: 'GROUP' } },
-          { data: { source: 'components-dir', target: 'comp-software-dir', label: 'GROUP' } },
-          { data: { source: 'components-dir', target: 'comp-taskchat-dir', label: 'GROUP' } },
-          { data: { source: 'components-dir', target: 'comp-global-dir', label: 'GROUP' } },
-
-          // === EDGES: Public Routes ===
-          { data: { source: 'app', target: 'route-landing', label: 'ROUTE' } },
-          { data: { source: 'app', target: 'route-signin', label: 'ROUTE' } },
-          { data: { source: 'app', target: 'route-signup', label: 'ROUTE' } },
-          { data: { source: 'app', target: 'route-waitlist', label: 'ROUTE' } },
-
-          // === EDGES: Protected Routes ===
-          { data: { source: 'app', target: 'route-board', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'route-software', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'route-tasks', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'route-inbox', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'route-templates', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'route-profile', label: 'PROTECTED' } },
-          { data: { source: 'app', target: 'chat-main', label: 'DYNAMIC' } },
-
-          // === EDGES: Route Location ===
-          { data: { source: 'pages-dir', target: 'route-landing', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-signin', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-signup', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-waitlist', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-board', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-software', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-tasks', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-inbox', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-templates', label: 'CONTAINS' } },
-          { data: { source: 'pages-dir', target: 'route-profile', label: 'CONTAINS' } },
-
-          // === EDGES: Landing Components ===
-          { data: { source: 'comp-landing-dir', target: 'landing-hero', label: 'CONTAINS' } },
-          { data: { source: 'comp-landing-dir', target: 'landing-features', label: 'CONTAINS' } },
-          { data: { source: 'comp-landing-dir', target: 'landing-cta', label: 'CONTAINS' } },
-          { data: { source: 'route-landing', target: 'landing-hero', label: 'USES' } },
-          { data: { source: 'route-landing', target: 'landing-features', label: 'USES' } },
-          { data: { source: 'route-landing', target: 'landing-cta', label: 'USES' } },
-
-          // === EDGES: Board Components ===
-          { data: { source: 'comp-board-dir', target: 'board-kanban', label: 'CONTAINS' } },
-          { data: { source: 'comp-board-dir', target: 'board-taskcard', label: 'CONTAINS' } },
-          { data: { source: 'comp-board-dir', target: 'board-create', label: 'CONTAINS' } },
-          { data: { source: 'route-board', target: 'board-kanban', label: 'USES' } },
-          { data: { source: 'route-board', target: 'board-create', label: 'USES' } },
-          { data: { source: 'board-kanban', target: 'board-taskcard', label: 'RENDERS' } },
-
-          // === EDGES: Software Components ===
-          { data: { source: 'comp-software-dir', target: 'software-monaco', label: 'CONTAINS' } },
-          { data: { source: 'comp-software-dir', target: 'software-mermaid', label: 'CONTAINS' } },
-          { data: { source: 'comp-software-dir', target: 'software-codegen', label: 'CONTAINS' } },
-          { data: { source: 'route-software', target: 'software-monaco', label: 'USES' } },
-          { data: { source: 'route-software', target: 'software-mermaid', label: 'USES' } },
-          { data: { source: 'route-software', target: 'software-codegen', label: 'USES' } },
-          { data: { source: 'software-codegen', target: 'software-monaco', label: 'OUTPUTS_TO' } },
-
-          // === EDGES: TaskChat Components ===
-          { data: { source: 'comp-taskchat-dir', target: 'chat-main', label: 'CONTAINS' } },
-
-          // === EDGES: Global Components ===
-          { data: { source: 'comp-global-dir', target: 'global-sidebar', label: 'CONTAINS' } },
-          { data: { source: 'route-board', target: 'global-sidebar', label: 'USES' } },
-          { data: { source: 'route-software', target: 'global-sidebar', label: 'USES' } },
-          { data: { source: 'route-tasks', target: 'global-sidebar', label: 'USES' } },
-
-          // === EDGES: API ===
-          { data: { source: 'api-dir', target: 'api-client', label: 'CONTAINS' } },
-          { data: { source: 'route-board', target: 'api-client', label: 'CALLS' } },
-          { data: { source: 'route-software', target: 'api-client', label: 'CALLS' } },
-          { data: { source: 'route-tasks', target: 'api-client', label: 'CALLS' } },
-          { data: { source: 'chat-main', target: 'api-client', label: 'CALLS' } },
-          { data: { source: 'board-create', target: 'api-client', label: 'CALLS' } },
-          { data: { source: 'software-codegen', target: 'api-client', label: 'CALLS' } },
-
-          // === NEW: EDGES from repo to groups ===
-          { data: { source: 'repo', target: 'issues-group', label: 'ISSUES' } },
-          { data: { source: 'repo', target: 'prs-group', label: 'PRS' } },
-        ],
+        // USE THE EXPORTED GRAPH DATA
+        elements: GRAPH_DATA,
         style: [
           {
             selector: 'node',
@@ -497,8 +517,13 @@ const OrbitalRepoGraph = () => {
         const node = evt.target;
         const nodeData = node.data();
 
-      if (nodeData.type === 'issue') return;
+        // FIX: Use ref here
+        if (onNodeClickRef.current && nodeData.label) {
+          const safeLabel = nodeData.label.replace(/\s+/g, '_');
+          onNodeClickRef.current(`Node:${safeLabel}`);
+        }
 
+        if (nodeData.type === 'issue') return;
 
         const properties: any = {};
         Object.keys(nodeData).forEach((key) => {
@@ -534,7 +559,7 @@ const OrbitalRepoGraph = () => {
 
       async function loadWorkItems() {
         try {
-          // Fetch issues (this endpoint returns issues + PRs; filter out PRs)
+          // Check for cached data or simple fetch
           const issuesResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
             { headers: { Accept: 'application/vnd.github+json' } }
@@ -542,7 +567,6 @@ const OrbitalRepoGraph = () => {
           const issuesJson = await issuesResp.json();
           const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it) => !it.pull_request) : [];
 
-          // Fetch PRs
           const prsResp = await fetch(
             `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
             { headers: { Accept: 'application/vnd.github+json' } }
@@ -550,7 +574,6 @@ const OrbitalRepoGraph = () => {
           const prsJson = await prsResp.json();
           const purePRs = Array.isArray(prsJson) ? prsJson : [];
 
-          // Add Issue nodes
           for (const issue of pureIssues) {
             const issueId = `issue-${issue.number}`;
             if (cy.getElementById(issueId).nonempty()) continue;
@@ -580,7 +603,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Add PR nodes
           for (const pr of purePRs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
@@ -610,7 +632,6 @@ const OrbitalRepoGraph = () => {
             }
           }
 
-          // Re-run layout to place new nodes nicely
           cy.layout({
             name: 'cose',
             animate: true,
@@ -645,14 +666,31 @@ const OrbitalRepoGraph = () => {
       loadWorkItems();
     };
 
-    document.body.appendChild(script);
+    // === FIX: Robust Script Loading ===
+    // @ts-ignore
+    if (window.cytoscape) {
+      initGraph();
+    } else {
+      const existingScript = document.querySelector('script[src*="cytoscape"]');
+      if (existingScript) {
+        existingScript.addEventListener('load', initGraph);
+      } else {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.23.0/cytoscape.min.js';
+        script.async = true;
+        script.onload = initGraph;
+        document.body.appendChild(script);
+      }
+    }
 
     return () => {
+      resizeObserver.disconnect();
       if (cyRef.current) {
         cyRef.current.destroy();
       }
+      // Don't remove the script tag to avoid reload penalty on remount
     };
-  }, []);
+  }, []); // Empty dependency array prevents re-initialization
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
@@ -746,6 +784,10 @@ const OrbitalRepoGraph = () => {
                 const target = edge.target();
                 const otherNode = source.id() === selectedNode.id ? target : source;
                 const direction = source.id() === selectedNode.id ? '→' : '←';
+                const displayString = `${edge.data('label')} ${direction} ${otherNode.data('label')}`;
+                
+                const safeLabel = otherNode.data('label').replace(/\s+/g, '_');
+                const chatConnectionString = `${edge.data('label')} ${direction} ${safeLabel}`;
 
                 return (
                   <span
@@ -756,9 +798,12 @@ const OrbitalRepoGraph = () => {
                       color: nodeConfig[otherNode.data('type')]?.color || '#0EA5E9',
                       border: `2px solid ${nodeConfig[otherNode.data('type')]?.color || '#0EA5E9'}`,
                     }}
-                    onClick={() => cyRef.current.getElementById(otherNode.id()).select()}
+                    onClick={() => {
+                      if (onNodeClickRef.current) onNodeClickRef.current(`Connection:${chatConnectionString}`);
+                      cyRef.current.getElementById(otherNode.id()).select();
+                    }}
                   >
-                    {edge.data('label')} {direction} {otherNode.data('label')}
+                    {displayString}
                   </span>
                 );
               })}
@@ -770,4 +815,4 @@ const OrbitalRepoGraph = () => {
   );
 };
 
-export default OrbitalRepoGraph;
+export default React.memo(OrbitalRepoGraph);

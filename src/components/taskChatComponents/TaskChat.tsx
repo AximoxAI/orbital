@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import LeftPanel from "./LeftPanel"
 import MonacoCanvas from "./MonacoCanvas"
 import { useUser, useAuth } from "@clerk/clerk-react"
@@ -6,9 +6,23 @@ import { useNavigate, useLocation, useParams } from "react-router-dom"
 import TaskChatHeader from "./TaskChatHeader"
 import ChatInput from "./TaskChatInput"
 import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
-import MessagesList from "./TaskChatMessages/index"
-import { UsersApi, UserResponseDto } from "@/api-client"
+import MessagesList from "./TaskChatMessages"
+import {
+  UsersApi,
+  UserResponseDto,
+  Configuration,
+  UploadsApi,
+  PresignRequestDtoContentTypeEnum,
+} from "@/api-client"
 import Preview from "./Preview"
+import GlobalDocsModal from "./GlobalDocsModal"
+import { FileItem } from "./AttachFileButton"
+import axios from "axios"
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY
+
+// FIX 1: Wrap MonacoCanvas in React.memo to prevent re-renders when parent state (input) changes
+const MemoizedMonacoCanvas = React.memo(MonacoCanvas);
 
 interface UserType {
   id: string
@@ -18,14 +32,32 @@ interface UserType {
   email?: string
 }
 
+interface UploadedFile {
+  name: string
+  size: number
+  type: string
+  uploadedAt: string
+  id: string
+  url: string
+}
+
+export interface MonacoFileItem {
+  path: string
+  content?: string
+  contentUrl?: string
+  isPdf?: boolean
+  timestamp: string
+}
+
 interface TaskChatProps {
   isOpen: boolean
   onClose: () => void
   taskName: string
   taskId: string
-  onCreateTask?: (taskName: string, projectName: string) => void
   onCallStart?: (taskId: string) => void
   onCallEnd?: (taskId: string) => void
+  globalDocs?: UploadedFile[]
+  projectDocs?: UploadedFile[]
 }
 
 function formatDateTime(datetime: string) {
@@ -41,16 +73,15 @@ function formatDateTime(datetime: string) {
   })
 }
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_API_KEY 
-
 const TaskChat = ({
   isOpen,
   onClose,
   taskName: propTaskName,
   taskId,
-  onCreateTask,
   onCallStart,
   onCallEnd,
+  globalDocs = [],
+  projectDocs = [],
 }: TaskChatProps) => {
   const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
@@ -59,7 +90,7 @@ const TaskChat = ({
   const [loading, setLoading] = useState(false)
   const [showMonacoCanvas, setShowMonacoCanvas] = useState(false)
   const [socketConnected, setSocketConnected] = useState(false)
-  const [generatedFiles, setGeneratedFiles] = useState<any[]>([])
+  const [generatedFiles, setGeneratedFiles] = useState<MonacoFileItem[]>([])
   const [logs, setLogs] = useState<string[]>([])
   const [logsOpen, setLogsOpen] = useState(true)
   const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(true)
@@ -77,63 +108,176 @@ const TaskChat = ({
   const [chatUsers, setChatUsers] = useState<UserType[]>([])
   const [availableUsers, setAvailableUsers] = useState<UserType[]>([])
   const [repoUrl, setRepoUrl] = useState<string | null>(null)
-
+  const [files, setFiles] = useState<FileItem[]>([])
+  const [showGlobalDocsModal, setShowGlobalDocsModal] = useState(false)
   const [showRepoGraphPreview, setShowRepoGraphPreview] = useState(false)
+  const [mentionToInsert, setMentionToInsert] = useState<string | null>(null)
+
 
   const { user } = useUser()
   const { getToken } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { taskId: routeTaskId } = useParams<{ taskId?: string }>()
-
   const isFullPage = !!routeTaskId
   const executeTaskRef = useRef<((message?: string) => void) | null>(null)
+  const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
+  const hasLoadedMessagesRef = useRef(false)
+
+  const mergedGlobalDocs: UploadedFile[] = [
+    ...(projectDocs || []),
+    ...(isFullPage && location.state?.globalDocs ? location.state.globalDocs : globalDocs),
+  ]
 
   let taskName = propTaskName
   if (isFullPage && location.state?.taskName) {
     taskName = location.state.taskName
   }
 
-  const addCallEventMessage = useCallback((eventType: "started" | "ended") => {
-    const content = eventType === "started" ? "Video call started" : "Video call ended"
+  const mapBackendMsg = useCallback(
+    (msg: any) => {
+      let type: "ai" | "human" | "system"
+      if (msg.sender_type) {
+        type =
+          msg.sender_type === "human" || msg.sender_type === "user"
+            ? "human"
+            : msg.sender_type === "system"
+            ? "system"
+            : "ai"
+      } else if (msg.type) {
+        type =
+          msg.type === "human"
+            ? "human"
+            : msg.type === "text"
+            ? "human"
+            : msg.type === "system"
+            ? "system"
+            : "ai"
+      } else {
+        type = "ai"
+      }
 
-    if (socketApiInstanceRef.current) {
-      socketApiInstanceRef.current.sendMessage({
-        senderType: "system",
-        senderId: "system",
-        content,
-        timestamp: new Date().toISOString(),
-        taskId,
+      let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
+      if (type === "ai") author = msg.sender_id || "Bot"
+
+      const isSystemMessage = msg.sender_type === "system" && msg.sender_id === "system"
+      const isCallStartMessage = isSystemMessage && msg.content === "Video call started"
+      const isCallEndMessage =
+        isSystemMessage &&
+        (msg.content === "Video call ended" || msg.content?.startsWith("Video call ended"))
+
+      const attachedFiles: UploadedFile[] | undefined =
+        msg.files?.map((f: any) => ({
+          id: f.fileId,
+          name: f.filename,
+          url: "",
+          uploadedAt: msg.timestamp || new Date().toISOString(),
+          size: 0,
+          type: "",
+        })) ?? undefined
+
+      return {
+        id: msg.id || String(Date.now()),
+        type,
+        sender_id: msg.sender_id,
+        author,
+        content: msg.content,
+        timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
+        isCode: !!msg.isCode,
+        taskSuggestion: msg.taskSuggestion || undefined,
+        isCallEvent: isCallStartMessage || isCallEndMessage,
+        callEventType: isCallStartMessage ? "started" : isCallEndMessage ? "ended" : undefined,
+        attachedFiles,
+      }
+    },
+    [user?.username],
+  )
+
+  const addCallEventMessage = useCallback(
+    (eventType: "started" | "ended") => {
+      const content = eventType === "started" ? "Video call started" : "Video call ended"
+      if (socketApiInstanceRef.current) {
+        socketApiInstanceRef.current.sendMessage({
+          senderType: "system",
+          senderId: "system",
+          content,
+          timestamp: new Date().toISOString(),
+          taskId,
+        })
+      }
+    },
+    [taskId],
+  )
+
+  const uploadFilesWithMessageId = useCallback(
+    async (messageId: string, items: FileItem[]): Promise<UploadedFile[]> => {
+      const token = await getToken()
+      const configuration = new Configuration({
+        basePath: BACKEND_URL,
+        accessToken: token || undefined,
       })
-    }
-  }, [taskId])
+      const uploadsApi = new UploadsApi(configuration)
 
-  // ---- Fetch all users ----
+      const uploadedFiles: UploadedFile[] = []
+
+      for (const item of items) {
+        try {
+          const presignResponse = await uploadsApi.uploadControllerPresign({
+            filename: item.file.name,
+            contentType: item.file.type as PresignRequestDtoContentTypeEnum,
+            messageId,
+          })
+
+          const presignData = presignResponse.data
+
+          await axios.put(presignData.uploadUrl, item.file, {
+            headers: {
+              "Content-Type": item.file.type || "application/octet-stream",
+            },
+          })
+
+          uploadedFiles.push({
+            name: item.file.name,
+            size: item.file.size,
+            type: item.file.type,
+            uploadedAt: new Date().toISOString(),
+            id: presignData.fileId,
+            url: presignData.viewUrl,
+          })
+        } catch (error) {
+          console.error("File upload error:", error)
+        }
+      }
+
+      return uploadedFiles
+    },
+    [getToken],
+  )
+
   useEffect(() => {
     async function fetchAllUsers() {
       try {
         const sessionToken = await getToken()
         const api = new UsersApi(undefined, BACKEND_URL, undefined)
         const res = await api.usersControllerFindAll({
-          headers: { Authorization: `Bearer ${sessionToken}` }
+          headers: { Authorization: `Bearer ${sessionToken}` },
         })
         const users: UserResponseDto[] = res.data
         const mapped: UserType[] = users.map((u) => ({
-          id: u.id,
-          name: u.name || u.email || u.id,
-          avatar: u.avatar,
+          id: u.id!,
+          name: u.name || u.email || u.id!,
+          avatar: u.avatar || "",
           isOnline: u.status === "online",
           email: u.email,
         }))
         setAvailableUsers(mapped)
-      } catch (err) {
+      } catch {
         setAvailableUsers([])
       }
     }
-    fetchAllUsers()
-  }, [user, getToken])
+    if (isOpen) fetchAllUsers()
+  }, [isOpen, getToken])
 
-  // ---- Fetch task assignees and show them directly ----
   useEffect(() => {
     async function fetchTaskAssignees() {
       if (!taskId) return
@@ -141,26 +285,23 @@ const TaskChat = ({
         const sessionToken = await getToken()
         const api = createTaskChatAPI(sessionToken)
         const task = await api.fetchTask(taskId)
-        // If already full user objects, just show them
         if (Array.isArray(task.assignees) && typeof task.assignees[0] === "object") {
           setChatUsers(task.assignees)
         } else if (Array.isArray(task.assignees)) {
-          // If only ids, fallback to mapping
           const mappedAssignees = task.assignees
-            .map((aid: string) => availableUsers.find(u => u.id === aid))
+            .map((aid: string) => availableUsers.find((u) => u.id === aid))
             .filter(Boolean) as UserType[]
           setChatUsers(mappedAssignees)
         } else {
           setChatUsers([])
         }
-      } catch (err) {
+      } catch {
         setChatUsers([])
       }
     }
-    fetchTaskAssignees()
-  }, [taskId, getToken, availableUsers])
+    if (isOpen && availableUsers.length > 0) fetchTaskAssignees()
+  }, [taskId, isOpen, availableUsers, getToken])
 
-  // ---- Fetch repoUrl from project ----
   useEffect(() => {
     async function fetchRepoUrl() {
       if (!taskId) {
@@ -177,111 +318,32 @@ const TaskChat = ({
         } else {
           setRepoUrl(null)
         }
-      } catch (err) {
+      } catch {
         setRepoUrl(null)
       }
     }
-    fetchRepoUrl()
-  }, [taskId, getToken])
-
-  // ---- Add user to chat and update backend ----
-  const handleAddUser = async (userId: string) => {
-    if (!userId || chatUsers.some(u => u.id === userId)) return
-    const toAdd = availableUsers.find(u => u.id === userId)
-    if (!toAdd) return
-    const updatedUsers = [...chatUsers, toAdd]
-    setChatUsers(updatedUsers)
-    try {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      await api.updateTaskAssignees(
-        taskId,
-        updatedUsers.map(u => u.id)
-      )
-    } catch (err) {}
-  }
-
-  const handleRemoveUser = async (userId: string) => {
-    const updatedUsers = chatUsers.filter(u => u.id !== userId)
-    setChatUsers(updatedUsers)
-    try {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      await api.updateTaskAssignees(
-        taskId,
-        updatedUsers.map(u => u.id)
-      )
-    } catch (err) {}
-  }
-
-  const handleCloseMonacoCanvas = useCallback(() => {
-    setShowMonacoCanvas(false)
-    setShowRepoGraphPreview(false) 
-  }, [])
-
-  const handleFilesGenerated = useCallback((files: any[]) => {
-    if (files && files.length > 0) {
-      setGeneratedFiles(files)
-      setShowRepoGraphPreview(false) 
-      setShowMonacoCanvas(true)
-    } else {
-      setGeneratedFiles([])
-      setShowMonacoCanvas(false)
-    }
-  }, [])
-
-  const mapBackendMsg = (msg: any) => {
-    let type: "ai" | "human" | "system"
-    if (msg.sender_type) {
-      type = msg.sender_type === "human" ? "human" : msg.sender_type === "system" ? "system" : "ai"
-    } else if (msg.type) {
-      type = msg.type === "human" ? "human" : msg.type === "text" ? "human" : msg.type === "system" ? "system" : "ai"
-    } else {
-      type = "ai"
-    }
-    let author = msg.sender_id === user?.username ? "You" : msg.sender_id || "Bot"
-    if (type === "ai") author = msg.sender_id || "Bot"
-    
-    const isSystemMessage = msg.sender_type === "system" && msg.sender_id === "system"
-    const isCallStartMessage = isSystemMessage && msg.content === "Video call started"
-    const isCallEndMessage = isSystemMessage && (
-      msg.content === "Video call ended" || 
-      msg.content?.startsWith("Video call ended")
-    )
-    
-    return {
-      id: msg.id || String(Date.now()),
-      type,
-      sender_id: msg.sender_id,
-      author,
-      content: msg.content,
-      timestamp: msg.timestamp ? formatDateTime(msg.timestamp) : "Just now",
-      isCode: !!msg.isCode,
-      taskSuggestion: msg.taskSuggestion || undefined,
-      isCallEvent:  isCallStartMessage || isCallEndMessage,
-      callEventType: (isCallStartMessage ? "started" : isCallEndMessage ? "ended" : undefined),
-    }
-  }
-
-  const socketApiInstanceRef = useRef<TaskChatAPI | null>(null)
-  const [socket, setSocket] = useState<any>(null)
+    if (isOpen && taskId) fetchRepoUrl()
+  }, [taskId, isOpen, getToken])
 
   useEffect(() => {
     let cancelled = false
     if (!isOpen || !taskId) return
 
-    getToken().then(sessionToken => {
+    getToken().then((sessionToken) => {
       if (cancelled) return
 
       socketApiInstanceRef.current = new TaskChatAPI(sessionToken)
-      const socketInstance = socketApiInstanceRef.current.connectChatSocket(taskId, {
+      socketApiInstanceRef.current.connectChatSocket(taskId, {
         onConnect: () => setSocketConnected(true),
         onDisconnect: () => setSocketConnected(false),
         onNewMessage: (msg: any) => {
-          setMessages(prev => {
+          setMessages((prev) => {
             setIsUserSkeletonVisible(false)
+            if (prev.some((m) => m.id === msg.id)) return prev
+
             if (
               msg.sender_type !== "human" &&
+              msg.sender_type !== "user" &&
               activeRetrieveProjectId === undefined
             ) {
               setActiveRetrieveProjectId(msg.id || String(Date.now()))
@@ -291,7 +353,6 @@ const TaskChat = ({
           setCurrentInputMessage(msg)
         },
       })
-      setSocket(socketInstance)
     })
 
     return () => {
@@ -299,63 +360,42 @@ const TaskChat = ({
       if (socketApiInstanceRef.current) {
         socketApiInstanceRef.current.disconnectChatSocket(taskId)
       }
-      setSocket(null)
     }
-  }, [isOpen, taskId, user?.username, activeRetrieveProjectId, getToken])
-
-  const fetchMessages = useCallback(
-    async (taskId: string) => {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      return api.fetchMessages(taskId)
-    },
-    [getToken]
-  )
-
-  const getGeneratedFiles = useCallback(
-    async (messageId: string) => {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      return api.getGeneratedFiles(messageId)
-    },
-    [getToken]
-  )
-
-  const getExecutionLogs = useCallback(
-    async (messageId: string) => {
-      const sessionToken = await getToken()
-      const api = createTaskChatAPI(sessionToken)
-      return api.getExecutionLogs(messageId)
-    },
-    [getToken]
-  )
+  }, [isOpen, taskId, getToken, activeRetrieveProjectId, mapBackendMsg])
 
   useEffect(() => {
-    if (!isOpen || !taskId) return
-    setLoading(true)
+    if (!isOpen || !taskId || hasLoadedMessagesRef.current) return
 
-    fetchMessages(taskId)
-      .then(apiMessages => {
-        const mapped = apiMessages.map(mapBackendMsg)
-        setMessages(mapped)
-        const checkFilesForMessages = async () => {
-          const messagesWithFilesSet = new Set<string>()
-          for (const msg of mapped) {
-            if (msg.type === "ai") {
-              try {
-                const files = await getGeneratedFiles(msg.id)
-                if (files && files.length > 0) {
-                  messagesWithFilesSet.add(msg.id)
-                }
-              } catch (error) {
-                console.error("Failed to get generated files for message", msg.id, error)
-              }
-            }
-          }
-          setMessagesWithFiles(messagesWithFilesSet)
+    setLoading(true)
+    hasLoadedMessagesRef.current = true
+
+    const fetchData = async () => {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      const apiMessages = await api.fetchMessages(taskId)
+
+      const mapped = apiMessages.map(mapBackendMsg)
+      const generatedFilesSet = new Set<string>()
+      const attachedFilesSet = new Set<string>()
+
+      for (const msg of mapped) {
+        if (msg.type === "ai") {
+          try {
+            const filesForMsg = await api.getGeneratedFiles(msg.id)
+            if (filesForMsg && filesForMsg.length > 0) generatedFilesSet.add(msg.id)
+          } catch {}
         }
-        checkFilesForMessages()
-      })
+        if (msg.attachedFiles && msg.attachedFiles.length > 0) {
+          attachedFilesSet.add(msg.id)
+        }
+      }
+
+      const union = new Set<string>([...generatedFilesSet, ...attachedFilesSet])
+      setMessagesWithFiles(union)
+      setMessages(mapped)
+    }
+
+    fetchData()
       .catch(() => {
         setMessages([
           {
@@ -368,50 +408,206 @@ const TaskChat = ({
         ])
       })
       .finally(() => setLoading(false))
-  }, [isOpen, taskId, user?.username, fetchMessages, getGeneratedFiles])
+  }, [isOpen, taskId, getToken, mapBackendMsg])
+
+  const handleAddUser = async (userId: string) => {
+    if (!userId || chatUsers.some((u) => u.id === userId)) return
+    const toAdd = availableUsers.find((u) => u.id === userId)
+    if (!toAdd) return
+    const updatedUsers = [...chatUsers, toAdd]
+    setChatUsers(updatedUsers)
+    try {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      await api.updateTaskAssignees(
+        taskId,
+        updatedUsers.map((u) => u.id),
+      )
+    } catch {}
+  }
+
+  const handleRemoveUser = async (userId: string) => {
+    const updatedUsers = chatUsers.filter((u) => u.id !== userId)
+    setChatUsers(updatedUsers)
+    try {
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      await api.updateTaskAssignees(
+        taskId,
+        updatedUsers.map((u) => u.id),
+      )
+    } catch {}
+  }
+
+  const handleCloseMonacoCanvas = useCallback(() => {
+    setShowMonacoCanvas(false)
+    setShowRepoGraphPreview(false)
+  }, [])
+
+  const handleFilesGenerated = useCallback((filesFromApi: any[]) => {
+    if (filesFromApi && filesFromApi.length > 0) {
+      setGeneratedFiles(
+        filesFromApi.map((f) => ({
+          path: f.path || f.filename || "file",
+          content: f.content,
+          timestamp: new Date().toISOString(),
+        })),
+      )
+      setShowRepoGraphPreview(false)
+      setShowMonacoCanvas(true)
+    } else {
+      setGeneratedFiles([])
+      setShowMonacoCanvas(false)
+    }
+  }, [])
 
   const handleShowGeneratedFiles = async (messageId: string) => {
     try {
-      const [files, logs] = await Promise.all([
-        getGeneratedFiles(messageId),
-        getExecutionLogs(messageId).catch(() => [])
+      const sessionToken = await getToken()
+      const api = createTaskChatAPI(sessionToken)
+      const [filesFromApi, logsFromApi] = await Promise.all([
+        api.getGeneratedFiles(messageId),
+        api.getExecutionLogs(messageId).catch(() => []),
       ])
-      setShowRepoGraphPreview(false) 
-      if (files.length > 0) {
-        setGeneratedFiles(files)
+      setShowRepoGraphPreview(false)
+      if (filesFromApi.length > 0) {
+        setGeneratedFiles(
+          filesFromApi.map((f) => ({
+            path: f.path || f.filename || "file",
+            content: f.content,
+            timestamp: new Date().toISOString(),
+          })),
+        )
         setShowMonacoCanvas(true)
-        setMessagesWithFiles(prev => new Set(prev).add(messageId))
+        setMessagesWithFiles((prev) => new Set(prev).add(messageId))
       } else {
         setGeneratedFiles([])
         setShowMonacoCanvas(false)
       }
-      if (logs.length > 0) {
-        setExecutionLogs(logs)
+      if (logsFromApi.length > 0) {
+        setExecutionLogs(logsFromApi)
         setExecutionLogsOpen(true)
         setExecutionLogsMessageId(messageId)
       }
-    } catch (error) {
-      console.error("Failed to fetch generated files:", error)
-    }
+    } catch {}
   }
 
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setIsUserSkeletonVisible(true)
-      const message = {
-        senderType: "human",
-        senderId: user?.username || "unknown_user",
-        content: newMessage,
-        timestamp: new Date().toISOString(),
-        taskId,
+  const handleAttachedFileClick = useCallback(
+    async (file: UploadedFile) => {
+      try {
+        const token = await getToken()
+        const configuration = new Configuration({
+          basePath: BACKEND_URL,
+          accessToken: token || undefined,
+        })
+        const uploadsApi = new UploadsApi(configuration)
+
+        const res = await uploadsApi.uploadControllerGetFile(file.id)
+        const url = res.data.view_url
+        if (!url) return
+
+        const isPdfByType = file.type === "application/pdf"
+        const isPdfByName = file.name.toLowerCase().endsWith(".pdf")
+
+        if (isPdfByType || isPdfByName) {
+          const resp = await fetch(url)
+          const blob = await resp.blob()
+          const objectUrl = URL.createObjectURL(blob)
+
+          const fileItem: MonacoFileItem = {
+            path: file.name,
+            contentUrl: objectUrl,
+            isPdf: true,
+            timestamp: file.uploadedAt || new Date().toISOString(),
+          }
+
+          setGeneratedFiles([fileItem])
+          setShowMonacoCanvas(true)
+          setShowRepoGraphPreview(false)
+          return
+        }
+
+        const response = await fetch(url)
+        const content = await response.text()
+
+        const fileItem: MonacoFileItem = {
+          path: file.name,
+          content,
+          timestamp: file.uploadedAt || new Date().toISOString(),
+        }
+
+        setGeneratedFiles([fileItem])
+        setShowMonacoCanvas(true)
+        setShowRepoGraphPreview(false)
+        setEditorValue(content)
+      } catch {}
+    },
+    [getToken],
+  )
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() && files.length === 0) return
+
+    setIsUserSkeletonVisible(true)
+
+    try {
+      const messageContent = newMessage
+      const filesToUpload = [...files]
+
+      let userMessageWithFiles: any = null
+
+      if (filesToUpload.length > 0) {
+        const sendPromise = new Promise<any>((resolve) => {
+          socketApiInstanceRef.current?.sendMessage(
+            {
+              taskId,
+              senderType: "user",
+              senderId: user?.username || "unknown_user",
+              content: messageContent,
+            },
+            (socketMsg: any) => {
+              resolve(socketMsg)
+            },
+          )
+        })
+
+        const socketMsg = await sendPromise
+        const uploadedFiles = await uploadFilesWithMessageId(socketMsg.id, filesToUpload)
+
+        userMessageWithFiles = mapBackendMsg({
+          ...socketMsg,
+          files: uploadedFiles.map((f) => ({
+            fileId: f.id,
+            filename: f.name,
+          })),
+        })
+        userMessageWithFiles.attachedFiles = uploadedFiles
+
+        setMessages((prev) => [...prev, userMessageWithFiles])
+        setMessagesWithFiles((prev) => new Set(prev).add(socketMsg.id))
+      } else {
+        await socketApiInstanceRef.current?.sendMessage(
+          {
+            taskId,
+            senderType: "user",
+            senderId: user?.username || "unknown_user",
+            content: messageContent,
+          },
+          async (socketMsg: any) => {
+            setMessages((prev) => [...prev, mapBackendMsg(socketMsg)])
+          },
+        )
       }
-      socketApiInstanceRef.current?.sendMessage(message)
-      const trimmedMessage = newMessage.trim()
+
+      setIsUserSkeletonVisible(false)
+
+      const trimmedMessage = messageContent.trim()
       const shouldExecuteTask =
         trimmedMessage.startsWith("@goose") ||
         trimmedMessage.startsWith("@orbital_cli") ||
         trimmedMessage.startsWith("@gemini_cli") ||
         trimmedMessage.startsWith("@claude_code")
+
       if (shouldExecuteTask) {
         setGeneratedFiles([])
         setExecutionLogs([])
@@ -420,55 +616,59 @@ const TaskChat = ({
         setLiveRetrieveProjectLogs([])
         setLiveRetrieveProjectSummary([])
         setLiveAgentOutput([])
-        setShowRepoGraphPreview(false) 
+        setShowRepoGraphPreview(false)
         setShowMonacoCanvas(false)
       }
+
       setNewMessage("")
+      setFiles([])
+
       if (shouldExecuteTask && executeTaskRef.current) {
-        executeTaskRef.current(newMessage)
+        executeTaskRef.current(messageContent)
       }
+    } catch (error) {
+      console.error("Send message error:", error)
+      setIsUserSkeletonVisible(false)
     }
   }
 
   const handleMaximize = () => {
     if (!isFullPage && taskId) {
-      navigate(`/tasks/${taskId}`, { state: { taskName } })
+      navigate(`/tasks/${taskId}`, {
+        state: { taskName, globalDocs: mergedGlobalDocs },
+      })
     }
   }
 
   const handleMinimize = () => {
-    if (isFullPage) {
-      navigate("/project-board")
-    }
+    if (isFullPage) navigate("/project-board")
   }
 
-  const handleLogsUpdate = useCallback((newLogs: string[]) => {
-    setLogs(newLogs)
-    if (newLogs.length > 0) setLogsOpen(true)
-    if (activeRetrieveProjectId) setLiveRetrieveProjectLogs(newLogs)
-  }, [activeRetrieveProjectId])
+  const handleLogsUpdate = useCallback(
+    (newLogs: string[]) => {
+      setLogs(newLogs)
+      if (newLogs.length > 0) setLogsOpen(true)
+      if (activeRetrieveProjectId) setLiveRetrieveProjectLogs(newLogs)
+    },
+    [activeRetrieveProjectId],
+  )
 
-  const handleSummaryUpdate = useCallback((summaryValue: string[]) => {
-    setSummary(summaryValue)
-    if (activeRetrieveProjectId) setLiveRetrieveProjectSummary(summaryValue)
-  }, [activeRetrieveProjectId])
+  const handleSummaryUpdate = useCallback(
+    (summaryValue: string[]) => {
+      setSummary(summaryValue)
+      if (activeRetrieveProjectId) setLiveRetrieveProjectSummary(summaryValue)
+    },
+    [activeRetrieveProjectId],
+  )
 
-  const handleAgentOutputUpdate = useCallback((agentOutputValue: string[]) => {
-    setAgentOutput(agentOutputValue)
-    if (activeRetrieveProjectId) setLiveAgentOutput(agentOutputValue)
-  }, [activeRetrieveProjectId])
+  const handleAgentOutputUpdate = useCallback(
+    (agentOutputValue: string[]) => {
+      setAgentOutput(agentOutputValue)
+      if (activeRetrieveProjectId) setLiveAgentOutput(agentOutputValue)
+    },
+    [activeRetrieveProjectId],
+  )
 
-  const handleSocketConnected = (connected: boolean) => {
-    setSocketConnected(connected)
-  }
-
-  useEffect(() => {
-    if (generatedFiles.length === 0 && !showRepoGraphPreview) {
-      setShowMonacoCanvas(false)
-    }
-  }, [generatedFiles, showRepoGraphPreview])
-
-  // ---- Suggestion Click Handler ----
   const handleSuggestionClick = (suggestionText: string, parentAgentName?: string) => {
     if (parentAgentName && parentAgentName !== "Bot") {
       setNewMessage(`@${parentAgentName} ${suggestionText}`)
@@ -489,6 +689,33 @@ const TaskChat = ({
     setShowMonacoCanvas(true)
   }
 
+  const handleAttachDocToTask = (doc: UploadedFile) => {
+    const item: FileItem = {
+      file: new File([], doc.name, { type: doc.type || "" }),
+      id: doc.id,
+    }
+    if (!files.some((d) => d.id === doc.id)) {
+      setFiles((prev) => [...prev, item])
+    }
+    setShowGlobalDocsModal(false)
+  }
+
+  useEffect(() => {
+    if (generatedFiles.length === 0 && !showRepoGraphPreview) {
+      setShowMonacoCanvas(false)
+    }
+  }, [generatedFiles, showRepoGraphPreview])
+
+  // FIX 2: Stable callback for the graph click
+  const handleNodeClick = useCallback((nodeLabel: string) => {
+    setMentionToInsert(nodeLabel)
+  }, [])
+
+  // FIX 3: Stable Component instance using useMemo to ensure Referentially Stable Prop
+  const memoizedPreview = useMemo(() => (
+    <Preview onNodeClick={handleNodeClick} />
+  ), [handleNodeClick])
+
   if (!isOpen) return null
 
   const containerClasses = isFullPage
@@ -499,8 +726,8 @@ const TaskChat = ({
     isFullPage && showMonacoCanvas
       ? "flex flex-col w-[70%] min-w-[384px] h-full bg-white border-r border-gray-100 shadow-sm"
       : isFullPage
-        ? "flex flex-col flex-1 h-full bg-white"
-        : "flex flex-col w-full h-full"
+      ? "flex flex-col flex-1 h-full bg-white"
+      : "flex flex-col w-full h-full"
 
   return (
     <div className={containerClasses}>
@@ -523,6 +750,7 @@ const TaskChat = ({
           onRemoveUser={handleRemoveUser}
           availableUsers={availableUsers}
           onOpenRepoGraph={handleOpenRepoGraph}
+          onOpenGlobalDocs={() => setShowGlobalDocsModal(true)}
           onCallStart={() => {
             addCallEventMessage("started")
             onCallStart?.(taskId)
@@ -557,33 +785,50 @@ const TaskChat = ({
           chatUsers={availableUsers}
           onSuggestionClick={handleSuggestionClick}
           onRetryClick={handleRetryClick}
+          onFileClick={handleAttachedFileClick}
         />
 
-       <ChatInput
+        <ChatInput
           newMessage={newMessage}
           setNewMessage={setNewMessage}
           onSendMessage={handleSendMessage}
           isFullPage={isFullPage}
           availableUsers={chatUsers}
+          files={files}
+          setFiles={setFiles}
+          mentionToInsert={mentionToInsert}
+          setMentionToInsert={setMentionToInsert}
         />
       </div>
+
       {isFullPage && (
-        <MonacoCanvas
+        <MemoizedMonacoCanvas
           value={editorValue}
           taskId={taskId}
           setValue={setEditorValue}
           executeTaskRef={executeTaskRef}
           isVisible={showMonacoCanvas}
-          onSocketConnected={handleSocketConnected}
+          onSocketConnected={setSocketConnected}
           filesFromApi={generatedFiles}
-          onLogsUpdate={handleLogsUpdate}         
-          onSummaryUpdate={handleSummaryUpdate}   
-          onAgentOutputUpdate={handleAgentOutputUpdate} 
+          onLogsUpdate={handleLogsUpdate}
+          onSummaryUpdate={handleSummaryUpdate}
+          onAgentOutputUpdate={handleAgentOutputUpdate}
           onClose={handleCloseMonacoCanvas}
           inputMessage={currentInputMessage}
           onFilesGenerated={handleFilesGenerated}
-          customPreview={<Preview />}
+          // FIX 4: Use the memoized element props
+          customPreview={memoizedPreview}
           showCustomPreview={showRepoGraphPreview}
+        />
+      )}
+
+      {showGlobalDocsModal && (
+        <GlobalDocsModal
+          open={showGlobalDocsModal}
+          onClose={() => setShowGlobalDocsModal(false)}
+          globalDocs={mergedGlobalDocs}
+          attachedDocs={[]}
+          onAttach={handleAttachDocToTask}
         />
       )}
     </div>
