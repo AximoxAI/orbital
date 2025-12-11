@@ -41,13 +41,13 @@ const TaskChatTemplateDialog = ({
       <DialogContent className="max-w-2xl w-full p-0">
         <DialogHeader className="px-6 pt-8 pb-2">
           <DialogTitle className="text-2xl font-semibold">
-            Select a Template
+            Select a Workflow
           </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
           {loading && (
             <div className="col-span-2 text-gray-500 text-center">
-              Loading templates...
+              Loading workflows...
             </div>
           )}
           {error && (
