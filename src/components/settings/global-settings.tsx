@@ -10,6 +10,7 @@ interface AgentMCPManagerProps {
 interface ModelConfig {
   id: string
   name: string
+  provider: "openai" | "anthropic" | "google" | "opensource"
   icon: React.ReactNode
   color: string
   temperature: number
@@ -37,7 +38,7 @@ interface AgentConfig {
 
 const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<"agents" | "settings">("agents")
-  const [selectedModel, setSelectedModel] = useState<string>("chatgpt")
+  const [selectedModel, setSelectedModel] = useState<string>("deepseek-r1")
   const [selectedAgent, setSelectedAgent] = useState<number>(1)
   const [hasChanges, setHasChanges] = useState(false)
 
@@ -114,9 +115,21 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
 
   const [models, setModels] = useState<ModelConfig[]>([
     {
+      id: "gpt-4o",
+      name: "GPT-4o",
+      provider: "openai",
+      icon: <img src="/icons/openai.avif" alt="GPT-4o" className="w-6 h-6 object-contain" />,
+      color: "bg-green-600",
+      temperature: 0.7,
+      topP: 1,
+      maxTokens: 4096,
+      version: "gpt-4o-2024-05-13",
+    },
+    {
       id: "chatgpt",
-      name: "ChatGPT",
-      icon: <img src="/icons/openai.avif" alt="ChatGPT" className="w-6 h-6 object-contain" />,
+      name: "GPT-4 Turbo",
+      provider: "openai",
+      icon: <img src="/icons/openai.avif" alt="GPT-4 Turbo" className="w-6 h-6 object-contain" />,
       color: "bg-green-600",
       temperature: 0.7,
       topP: 1,
@@ -124,24 +137,136 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
       version: "gpt-4-turbo",
     },
     {
-      id: "claude",
-      name: "Claude",
+      id: "o1-preview",
+      name: "o1 Preview",
+      provider: "openai",
+      icon: <img src="/icons/openai.avif" alt="o1" className="w-6 h-6 object-contain" />,
+      color: "bg-green-600",
+      temperature: 1,
+      topP: 1,
+      maxTokens: 4096,
+      version: "o1-preview",
+    },
+    {
+      id: "claude-3-5-sonnet",
+      name: "Claude 3.5 Sonnet",
+      provider: "anthropic",
       icon: <img src="/icons/claude.webp" alt="Claude" className="w-6 h-6 object-contain" />,
-      color: "bg-blue-600",
+      color: "bg-orange-600",
       temperature: 0.7,
       topP: 0.9,
       maxTokens: 4096,
-      version: "claude-3-opus",
+      version: "claude-3-5-sonnet-20240620",
     },
     {
-      id: "gemini",
-      name: "Gemini",
+      id: "claude-3-opus",
+      name: "Claude 3 Opus",
+      provider: "anthropic",
+      icon: <img src="/icons/claude.webp" alt="Claude" className="w-6 h-6 object-contain" />,
+      color: "bg-orange-600",
+      temperature: 0.7,
+      topP: 0.9,
+      maxTokens: 4096,
+      version: "claude-3-opus-20240229",
+    },
+    {
+      id: "claude-3-haiku",
+      name: "Claude 3 Haiku",
+      provider: "anthropic",
+      icon: <img src="/icons/claude.webp" alt="Claude" className="w-6 h-6 object-contain" />,
+      color: "bg-orange-600",
+      temperature: 0.7,
+      topP: 0.9,
+      maxTokens: 4096,
+      version: "claude-3-haiku-20240307",
+    },
+    {
+      id: "gemini-2.0-flash",
+      name: "Gemini 2.0 Flash",
+      provider: "google",
       icon: <img src="/icons/google.webp" alt="Gemini" className="w-6 h-6 object-contain" />,
-      color: "bg-yellow-500",
+      color: "bg-blue-500",
       temperature: 0.7,
       topP: 0.95,
-      maxTokens: 4000,
-      version: "gemini-2.0-flash",
+      maxTokens: 8192,
+      version: "gemini-2.0-flash-exp",
+    },
+    {
+      id: "gemini-1.5-pro",
+      name: "Gemini 1.5 Pro",
+      provider: "google",
+      icon: <img src="/icons/google.webp" alt="Gemini" className="w-6 h-6 object-contain" />,
+      color: "bg-blue-500",
+      temperature: 0.7,
+      topP: 0.95,
+      maxTokens: 8192,
+      version: "gemini-1.5-pro-latest",
+    },
+    {
+      id: "gemini-1.5-flash",
+      name: "Gemini 1.5 Flash",
+      provider: "google",
+      icon: <img src="/icons/google.webp" alt="Gemini" className="w-6 h-6 object-contain" />,
+      color: "bg-blue-500",
+      temperature: 0.7,
+      topP: 0.95,
+      maxTokens: 8192,
+      version: "gemini-1.5-flash-latest",
+    },
+    {
+      id: "deepseek-r1",
+      name: "DeepSeek R1",
+      provider: "opensource",
+      icon: <img src="/icons/deepseek.webp" alt="DeepSeek" className="w-6 h-6 object-contain" />,
+      color: "bg-indigo-600",
+      temperature: 0.6,
+      topP: 0.9,
+      maxTokens: 4096,
+      version: "deepseek-r1",
+    },
+    {
+      id: "llama-3.3-70b",
+      name: "Llama 3.3 70B",
+      provider: "opensource",
+      icon: <img src="/icons/meta.webp" alt="Meta Llama" className="w-6 h-6 object-contain" />,
+      color: "bg-indigo-600",
+      temperature: 0.7,
+      topP: 0.9,
+      maxTokens: 4096,
+      version: "llama-3.3-70b-instruct",
+    },
+    {
+      id: "qwen-2.5-coder",
+      name: "Qwen 2.5 Coder",
+      provider: "opensource",
+      icon: <img src="/icons/qwen.png" alt="Qwen" className="w-6 h-6 object-contain" />,
+      color: "bg-indigo-600",
+      temperature: 0.7,
+      topP: 0.8,
+      maxTokens: 4096,
+      version: "qwen-2.5-coder-32b",
+    },
+    {
+      id: "mistral-large-2",
+      name: "Mistral Large 2",
+      provider: "opensource",
+      icon: <img src="/icons/mistral.png" alt="Mistral" className="w-6 h-6 object-contain" />,
+      color: "bg-indigo-600",
+      temperature: 0.7,
+      topP: 1,
+      maxTokens: 4096,
+      version: "mistral-large-latest",
+    },
+    {
+      id: "glm-4",
+      name: "GLM-4",
+      provider: "opensource",
+      icon: <img src="/icons/glm.png" alt="GLM" className="w-6 h-6 object-contain" />,
+      color: "bg-indigo-600",
+      temperature: 0.7,
+      topP: 0.9,
+      maxTokens: 4096,
+      version: "glm-4-9b",
     },
   ])
 
@@ -201,7 +326,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
     )
   }
 
-  const updateModelConfig = <K extends keyof Omit<ModelConfig, "id" | "name" | "icon" | "color">>(
+  const updateModelConfig = <K extends keyof Omit<ModelConfig, "id" | "name" | "icon" | "color" | "provider">>(
     modelId: string,
     field: K,
     value: ModelConfig[K],
@@ -214,8 +339,32 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
     return Object.values(agent.servers).filter((server: { enabled: boolean; tools: number }) => server.enabled).length
   }
 
+  const getAgentProvider = (agentId: number) => {
+    switch (agentId) {
+      case 1:
+        return "opensource"
+      case 2:
+        return "opensource"
+      case 3:
+        return "anthropic"
+      case 4:
+        return "google"
+      default:
+        return "opensource"
+    }
+  }
+
+  const allowedProvider = getAgentProvider(selectedAgent)
+  const filteredModels = models.filter((m) => m.provider === allowedProvider)
+
+  useEffect(() => {
+    const validModel = models.find((m) => m.id === selectedModel && m.provider === allowedProvider)
+    if (!validModel && filteredModels.length > 0) {
+      setSelectedModel(filteredModels[0].id)
+    }
+  }, [selectedAgent, allowedProvider, filteredModels, models, selectedModel])
+
   const currentModel = models.find((model) => model.id === selectedModel)
-  const currentAgent = agents.find((agent) => agent.id === selectedAgent)
 
   const handleApplyChanges = () => {
     setHasChanges(false)
@@ -334,15 +483,15 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
 
           <div className="px-4 pt-3 pb-3 border-b bg-white flex-shrink-0">
             <label className="block text-xs font-medium text-gray-700 mb-2">Select Agent</label>
-            <Select value={String(selectedAgent)} onValueChange={v => setSelectedAgent(Number(v))}>
+            <Select value={String(selectedAgent)} onValueChange={(v) => setSelectedAgent(Number(v))}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select an agent" />
               </SelectTrigger>
               <SelectContent>
-                {agents.map(agent => (
+                {agents.map((agent) => (
                   <SelectItem value={String(agent.id)} key={agent.id}>
                     <div className="flex items-center space-x-2">
-                      <span className="w-7 h-6">{agent.icon}</span>
+                      <span className="w-7 h-6 flex items-center justify-center">{agent.icon}</span>
                       <span>{agent.name}</span>
                     </div>
                   </SelectItem>
@@ -358,10 +507,10 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                 <SelectValue placeholder="Select a model" />
               </SelectTrigger>
               <SelectContent>
-                {models.map((model) => (
+                {filteredModels.map((model) => (
                   <SelectItem value={model.id} key={model.id}>
                     <div className="flex items-center space-x-2">
-                      <span className="w-7 h-6">{model.icon}</span>
+                      <span className="w-7 h-6 flex items-center justify-center">{model.icon}</span>
                       <span>{model.name}</span>
                     </div>
                   </SelectItem>
@@ -386,10 +535,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label
-                        className="text-xs font-medium text-gray-700"
-                        id="temperature-label"
-                      >
+                      <label className="text-xs font-medium text-gray-700" id="temperature-label">
                         Temperature
                       </label>
                       <span
@@ -418,10 +564,7 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label
-                        className="text-xs font-medium text-gray-700"
-                        id="top-p-label"
-                      >
+                      <label className="text-xs font-medium text-gray-700" id="top-p-label">
                         Top P (Nucleus Sampling)
                       </label>
                       <span
@@ -470,7 +613,9 @@ const AgentMCPManager: React.FC<AgentMCPManagerProps> = ({ onClose }) => {
               onClick={handleApplyChanges}
               disabled={!hasChanges}
               className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-                hasChanges ? "bg-slate-600 text-white hover:bg-slate-700" : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                hasChanges
+                  ? "bg-slate-600 text-white hover:bg-slate-700"
+                  : "bg-gray-200 text-gray-500 cursor-not-allowed"
               }`}
             >
               Apply Changes

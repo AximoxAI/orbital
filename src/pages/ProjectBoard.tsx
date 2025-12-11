@@ -20,6 +20,7 @@ import {
 import Sidebar from "@/components/Sidebar"
 import TopBar from "@/components/Topbar"
 import { useNavigate } from "react-router-dom"
+import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel"
 
 const getInitials = (name: string) => {
   if (!name) return "??"
@@ -192,6 +193,7 @@ function ProjectsList({
 
 const ProjectBoard = () => {
   const [chatOpen, setChatOpen] = useState(false)
+  const [showOrbitalPanel, setShowOrbitalPanel] = useState(false)
   const [selectedTask, setSelectedTask] = useState<{ id: string; title: string } | null>(
     null,
   )
@@ -221,7 +223,6 @@ const ProjectBoard = () => {
         accessToken: sessionToken || undefined,
       })
       const uploadsApi = new UploadsApi(configuration)
-      // TODO: if you add a backend endpoint for global files, call it here.
       setUploadedFiles((prev) => prev)
     } catch {
     }
@@ -258,7 +259,6 @@ const ProjectBoard = () => {
               tasksByProject[project.id] = []
             }
 
-            // project docs via GET /api/v1/projects/{id}/files
             try {
               const filesRes = await projectsApi.projectsControllerGetProjectFiles(project.id)
               const files = filesRes.data || filesRes || []
@@ -308,7 +308,7 @@ const ProjectBoard = () => {
       const presignRes = await uploadsApi.uploadControllerPresign({
         filename: f.name,
         contentType: (f.type || "application/octet-stream") as any,
-        projectId, // if provided => project file; otherwise global
+        projectId,
       })
 
       const presignData = presignRes.data
@@ -406,24 +406,6 @@ const ProjectBoard = () => {
     return projectDocs[project.id] || []
   }, [selectedTask, projects, projectDocs])
 
-  const globalSidebarFiles = uploadedFiles.map((f) => ({
-    id: f.id,
-    name: f.name,
-    url: f.url,
-    size: undefined as string | undefined,
-  }))
-
-  const projectSidebarEntries = projects.map((p) => ({
-    projectId: p.id,
-    projectName: p.name,
-    files: (projectDocs[p.id] || []).map((f) => ({
-      id: f.id,
-      name: f.name,
-      url: f.url,
-      size: undefined as string | undefined,
-    })),
-  }))
-
   return (
     <div className="flex h-screen bg-gray-50">
       <TaskChat
@@ -431,12 +413,17 @@ const ProjectBoard = () => {
         onClose={() => setChatOpen(false)}
         taskName={selectedTask?.title ?? ""}
         taskId={selectedTask?.id ?? ""}
-        onCreateTask={handleCreateTask}
+        onCallStart={() => {}}
+        onCallEnd={() => {}}
         globalDocs={uploadedFiles}
         projectDocs={selectedProjectDocs}
       />
 
-      {/* Sidebar no longer receives files as props */}
+\      <OrbitalPanel
+        isOpen={showOrbitalPanel}
+        onClose={() => setShowOrbitalPanel(false)}
+      />
+
       <Sidebar />
       <div className="flex-1 flex flex-col relative">
         <TopBar
@@ -500,7 +487,6 @@ const ProjectBoard = () => {
             <Card
               className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
-                // open Files page when creating a new folder
                 navigate("/files")
               }}
             >
@@ -517,7 +503,6 @@ const ProjectBoard = () => {
             <Card
               className="p-4 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => {
-                // open Files page when creating a new doc
                 navigate("/files")
               }}
             >
@@ -604,13 +589,12 @@ const ProjectBoard = () => {
           />
         )}
 
-        {!chatOpen && (
+        {!chatOpen && !showOrbitalPanel && (
           <Button
             size="lg"
             className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-600 text-white rounded-2xl w-12 h-12 p-0 flex items-center justify-center text-xl font-bold"
             onClick={() => {
-              setSelectedTask({ id: "orbital-chat", title: "Orbital" })
-              setChatOpen(true)
+              setShowOrbitalPanel(true)
             }}
           >
             O
