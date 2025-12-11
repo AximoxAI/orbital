@@ -20,7 +20,7 @@ const OrbitalHeader = ({
     <>
       <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-white to-gray-50 px-4 py-4">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-bold text-gray-900">Orbital</h3>
+          <h3 className="text-base font-bold text-gray-900">Ask Orbital</h3>
         </div>
         
         <div className="flex items-center gap-2">
