@@ -10,7 +10,12 @@ import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
 import FileAttachmentCard from "./FileAttachmentCard"
-import { GRAPH_DATA, isValidNodeLabel } from "../Preview"
+import { 
+  GRAPH_DATA, 
+  dynamicNodeLabels, 
+  registerDynamicLabelListener, 
+  ensureDynamicGraphData 
+} from "../Preview"
 
 const configuration = new OpenApiConfiguration({
   basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -109,6 +114,11 @@ const ENTITY_STYLES = {
     textColor: "text-indigo-700",
     borderColor: "border-indigo-200",
   },
+  Issue: {
+    bgColor: "bg-indigo-50",
+    textColor: "text-indigo-700",
+    borderColor: "border-indigo-200",
+  },
   Workflow: {
     bgColor: "bg-teal-50",
     textColor: "text-teal-700",
@@ -123,6 +133,17 @@ const ENTITY_STYLES = {
 
 function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+const VALID_NODE_LABELS = new Set<string>();
+
+if (Array.isArray(GRAPH_DATA)) {
+  GRAPH_DATA.forEach((el: any) => {
+    if (el.data && !el.data.source && el.data.label) {
+      VALID_NODE_LABELS.add(el.data.label);
+      VALID_NODE_LABELS.add(el.data.label.replace(/\s+/g, '_'));
+    }
+  });
 }
 
 const renderMessageContent = (
@@ -178,9 +199,14 @@ const renderMessageContent = (
 
         if (subPart.startsWith("Node:")) {
             const label = subPart.substring(5); 
-            if (isValidNodeLabel(label)) {
+            
+            const isStatic = VALID_NODE_LABELS.has(label);
+            const isDynamic = dynamicNodeLabels.has(label);
+
+            if (isStatic || isDynamic) {
                 matched = true;
-                const styles = ENTITY_STYLES.Node;
+                const isIssueStyle = label.startsWith('#') || label.startsWith('PR') || label.startsWith('issue');
+                const styles = isIssueStyle ? ENTITY_STYLES.Issue : ENTITY_STYLES.Node;
                 elements.push(
                   <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
                      {subPart}
@@ -193,7 +219,8 @@ const renderMessageContent = (
              const segments = subPart.split(/\s(?:->|<-|→|←)\s/);
              if (segments.length > 1) {
                  const targetLabel = segments[segments.length - 1];
-                 if (isValidNodeLabel(targetLabel)) {
+                 
+                 if (VALID_NODE_LABELS.has(targetLabel) || dynamicNodeLabels.has(targetLabel)) {
                     matched = true;
                     const styles = ENTITY_STYLES.Connection;
                     elements.push(
@@ -203,7 +230,7 @@ const renderMessageContent = (
                       );
                  }
              }
-        } else if (subPart.startsWith("Workflow:")) { 
+        } else if (subPart.startsWith("Workflow:")) {
             const styles = ENTITY_STYLES.Workflow;
             elements.push(
                 <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
@@ -275,6 +302,17 @@ export const MessageContent = ({
   const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevHeightRef = useRef<number>(0)
+  
+  const [, forceUpdate] = useState({});
+
+  useEffect(() => {
+    const unsubscribe = registerDynamicLabelListener(() => {
+      forceUpdate({});
+    });
+    ensureDynamicGraphData();
+
+    return unsubscribe;
+  }, []);
 
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -362,7 +400,7 @@ export const MessageContent = ({
 
   const renderedContent = useMemo(
     () => renderMessageContent(message.content, chatUsers),
-    [message.content, chatUsers],
+    [message.content, chatUsers, dynamicNodeLabels.size],
   )
 
   if (message.isCallEvent) {

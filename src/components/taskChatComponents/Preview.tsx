@@ -12,6 +12,68 @@ import {
   Tag,
 } from 'lucide-react';
 
+export const dynamicNodeLabels = new Set<string>();
+const dynamicLabelListeners = new Set<() => void>();
+
+export const registerDynamicLabelListener = (cb: () => void) => {
+  dynamicLabelListeners.add(cb);
+  return () => dynamicLabelListeners.delete(cb);
+};
+
+const notifyListeners = () => {
+  dynamicLabelListeners.forEach(cb => cb());
+};
+
+let cachedWorkItems: { issues: any[]; prs: any[] } | null = null;
+let isFetching = false;
+
+export const ensureDynamicGraphData = async () => {
+  if (cachedWorkItems) return cachedWorkItems;
+  if (isFetching) {
+    return null; 
+  }
+
+  isFetching = true;
+  const owner = 'AximoxAI';
+  const repo = 'orbital';
+
+  try {
+    const issuesResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const issuesJson = await issuesResp.json();
+    const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it: any) => !it.pull_request) : [];
+
+    const prsResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const prsJson = await prsResp.json();
+    const purePRs = Array.isArray(prsJson) ? prsJson : [];
+
+    pureIssues.forEach((issue: any) => {
+      const label = `#${issue.number}`;
+      dynamicNodeLabels.add(label);
+      dynamicNodeLabels.add(label.replace(/\s+/g, '_'));
+    });
+    purePRs.forEach((pr: any) => {
+      const label = `PR #${pr.number}`;
+      dynamicNodeLabels.add(label);
+      dynamicNodeLabels.add(label.replace(/\s+/g, '_'));
+    });
+
+    cachedWorkItems = { issues: pureIssues, prs: purePRs };
+    notifyListeners();
+    return cachedWorkItems;
+  } catch (e) {
+    console.error("Failed to fetch graph data", e);
+    return null;
+  } finally {
+    isFetching = false;
+  }
+};
+
 // === EXPORTED SOURCE OF TRUTH ===
 export const GRAPH_DATA = [
   // Root Repository
@@ -26,7 +88,7 @@ export const GRAPH_DATA = [
       forks: 1,
     },
   },
-
+  // ... (Keep all your existing GRAPH_DATA static nodes here) ...
   // === CONTRIBUTORS ===
   {
     data: {
@@ -255,53 +317,17 @@ export const GRAPH_DATA = [
   { data: { source: 'repo', target: 'prs-group', label: 'PRS' } },
 ];
 
-let graphInstanceRef: any = null;
-
-export function setGraphInstance(cy: any) {
-  graphInstanceRef = cy;
-}
-
-export function isValidNodeLabel(label: string): boolean {
-  const staticFound = GRAPH_DATA.some((node: any) => {
-    if (!node.data || node.data.source) return false;
-    
-    if (node.data.label === label) return true;
-    
-    const safeLabel = node.data.label.replace(/\s+/g, '_');
-    return safeLabel === label;
-  });
-
-  if (staticFound) return true;
-
-  if (graphInstanceRef) {
-    const nodes = graphInstanceRef.nodes();
-    for (let i = 0; i < nodes.length; i++) {
-        const nodeLabel = nodes[i].data('label');
-        if (!nodeLabel) continue;
-
-        if (nodeLabel === label) return true;
-        if (nodeLabel.replace(/\s+/g, '_') === label) return true;
-    }
-  }
-
-  return false;
-}
-
-
 const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) => void } = {}) => {
   const cyRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  // REF PATTERN: Keep the latest callback in a ref to avoid re-running the graph effect
   const onNodeClickRef = useRef(onNodeClick);
-
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
   }, [onNodeClick]);
 
   useEffect(() => {
-    // === FIX: Resize Observer to handle layout shifts without unmounting ===
     const resizeObserver = new ResizeObserver(() => {
       if (cyRef.current) {
         cyRef.current.resize();
@@ -319,7 +345,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       // @ts-ignore
       const cy = window.cytoscape({
         container: containerRef.current,
-        // USE THE EXPORTED GRAPH DATA
         elements: GRAPH_DATA,
         style: [
           {
@@ -446,7 +471,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
               'font-size': '10px',
             },
           },
-          // Work items groups and nodes (light)
           {
             selector: 'node[type="issue-group"]',
             style: {
@@ -545,26 +569,20 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
         },
       });
 
-      // Select / deselect behavior
       cy.on('tap', 'node', (evt: any) => {
         const node = evt.target;
         const nodeData = node.data();
-
-        // FIX: Use ref here
         if (onNodeClickRef.current && nodeData.label) {
           const safeLabel = nodeData.label.replace(/\s+/g, '_');
           onNodeClickRef.current(`Node:${safeLabel}`);
         }
-
         if (nodeData.type === 'issue') return;
-
         const properties: any = {};
         Object.keys(nodeData).forEach((key) => {
           if (key !== 'id' && key !== 'label' && key !== 'type') {
             properties[key] = nodeData[key];
           }
         });
-
         setSelectedNode({
           id: node.id(),
           label: nodeData.label,
@@ -578,11 +596,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       });
 
       cyRef.current = cy;
-      setGraphInstance(cy);
-
-      // === Fetch Issues and Pull Requests (open by default) ===
-      const owner = 'AximoxAI';
-      const repo = 'orbital';
 
       const loginToContributorNode: Record<string, string> = {
         'pranav-94': 'contrib-pranav',
@@ -591,24 +604,11 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
         ArunRawat404: 'contrib-arun',
       };
 
-      async function loadWorkItems() {
-        try {
-          // Check for cached data or simple fetch
-          const issuesResp = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
-            { headers: { Accept: 'application/vnd.github+json' } }
-          );
-          const issuesJson = await issuesResp.json();
-          const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it) => !it.pull_request) : [];
-
-          const prsResp = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
-            { headers: { Accept: 'application/vnd.github+json' } }
-          );
-          const prsJson = await prsResp.json();
-          const purePRs = Array.isArray(prsJson) ? prsJson : [];
-
-          for (const issue of pureIssues) {
+      ensureDynamicGraphData().then((data) => {
+        if (!data) return;
+        const { issues, prs } = data;
+        
+        for (const issue of issues) {
             const issueId = `issue-${issue.number}`;
             if (cy.getElementById(issueId).nonempty()) continue;
 
@@ -635,9 +635,9 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             if (contribId && cy.getElementById(contribId).nonempty()) {
               cy.add({ data: { source: contribId, target: issueId, label: 'OPENED' } });
             }
-          }
+        }
 
-          for (const pr of purePRs) {
+        for (const pr of prs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
 
@@ -664,9 +664,9 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             if (contribId && cy.getElementById(contribId).nonempty()) {
               cy.add({ data: { source: contribId, target: prId, label: 'OPENED' } });
             }
-          }
-
-          cy.layout({
+        }
+        
+        cy.layout({
             name: 'cose',
             animate: true,
             animationDuration: 1200,
@@ -679,29 +679,10 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             initialTemp: 200,
             coolingFactor: 0.95,
             minTemp: 1.0,
-          }).run();
-        } catch (e) {
-          const errId = 'work-items-error';
-          if (!cy.getElementById(errId).nonempty()) {
-            cy.add({
-              data: {
-                id: errId,
-                label: 'GitHub API error',
-                type: 'issue',
-                details:
-                  'Failed to load issues/PRs. You may be rate-limited. Try again later or add a token-proxy.',
-              },
-            });
-            cy.add({ data: { source: 'repo', target: errId, label: 'ERROR' } });
-          }
-        }
-      }
-
-      loadWorkItems();
+        }).run();
+      });
     };
 
-    // === FIX: Robust Script Loading ===
-    // @ts-ignore
     if (window.cytoscape) {
       initGraph();
     } else {
@@ -722,9 +703,8 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       if (cyRef.current) {
         cyRef.current.destroy();
       }
-      // Don't remove the script tag to avoid reload penalty on remount
     };
-  }, []); // Empty dependency array prevents re-initialization
+  }, []);
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
@@ -789,58 +769,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
                   : selectedNode.label}
               </h3>
               <p className="text-slate-600 text-sm">{nodeConfig[selectedNode.type].name}</p>
-            </div>
-          </div>
-
-          {selectedNode.properties && Object.keys(selectedNode.properties).length > 0 && (
-            <div className="mb-3 rounded-lg p-3" style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(148,163,184,0.25)' }}>
-              <h4 className="text-slate-900 font-semibold text-sm mb-2">Details</h4>
-              <div className="space-y-1">
-                {Object.entries(selectedNode.properties).map(([key, value]) => (
-                  <div key={key} className="text-sm">
-                    <span className="text-slate-600 capitalize font-medium">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}:
-                    </span>
-                    <span className="text-slate-900 ml-2">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="text-slate-700 text-sm">
-            <strong className="text-base">
-              Connections ({Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).length})
-            </strong>
-            <div className="mt-2 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-              {Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).map((edge: any, i: number) => {
-                const source = edge.source();
-                const target = edge.target();
-                const otherNode = source.id() === selectedNode.id ? target : source;
-                const direction = source.id() === selectedNode.id ? '→' : '←';
-                const displayString = `${edge.data('label')} ${direction} ${otherNode.data('label')}`;
-                
-                const safeLabel = otherNode.data('label').replace(/\s+/g, '_');
-                const chatConnectionString = `${edge.data('label')} ${direction} ${safeLabel}`;
-
-                return (
-                  <span
-                    key={i}
-                    className="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer hover:opacity-90 transition-all hover:scale-105"
-                    style={{
-                      backgroundColor: (nodeConfig[otherNode.data('type')]?.color || '#0EA5E9') + '22',
-                      color: nodeConfig[otherNode.data('type')]?.color || '#0EA5E9',
-                      border: `2px solid ${nodeConfig[otherNode.data('type')]?.color || '#0EA5E9'}`,
-                    }}
-                    onClick={() => {
-                      if (onNodeClickRef.current) onNodeClickRef.current(`Connection:${chatConnectionString}`);
-                      cyRef.current.getElementById(otherNode.id()).select();
-                    }}
-                  >
-                    {displayString}
-                  </span>
-                );
-              })}
             </div>
           </div>
         </div>
