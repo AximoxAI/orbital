@@ -827,6 +827,7 @@ const TaskChat = ({
           setFiles={setFiles}
           mentionToInsert={mentionToInsert}
           setMentionToInsert={setMentionToInsert}
+          isSending={isUserSkeletonVisible}
         />
       </div>
 

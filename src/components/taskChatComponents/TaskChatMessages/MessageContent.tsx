@@ -10,7 +10,12 @@ import { MessageActions } from "./MessageActions"
 import { TasksApi } from "@/api-client/api"
 import { Configuration as OpenApiConfiguration } from "@/api-client/configuration"
 import FileAttachmentCard from "./FileAttachmentCard"
-import { GRAPH_DATA } from "../Preview"
+import { 
+  GRAPH_DATA, 
+  dynamicNodeLabels, 
+  registerDynamicLabelListener, 
+  ensureDynamicGraphData 
+} from "../Preview"
 
 const configuration = new OpenApiConfiguration({
   basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -103,14 +108,18 @@ function getUserColorStyle(userIdOrName: string) {
   }
 }
 
-// --- Styles for Nodes, Templates, and Connections (No Icons) ---
 const ENTITY_STYLES = {
   Node: {
     bgColor: "bg-indigo-50",
     textColor: "text-indigo-700",
     borderColor: "border-indigo-200",
   },
-  Template: {
+  Issue: {
+    bgColor: "bg-indigo-50",
+    textColor: "text-indigo-700",
+    borderColor: "border-indigo-200",
+  },
+  Workflow: {
     bgColor: "bg-teal-50",
     textColor: "text-teal-700",
     borderColor: "border-teal-200",
@@ -126,15 +135,11 @@ function escapeRegExp(string: string) {
   return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-// 1. Create a Set of valid node labels for O(1) lookup
 const VALID_NODE_LABELS = new Set<string>();
 
 if (Array.isArray(GRAPH_DATA)) {
   GRAPH_DATA.forEach((el: any) => {
-    // We only care about nodes that have a label
     if (el.data && !el.data.source && el.data.label) {
-      // Normalize: The chat uses spaces replaced by underscores often, 
-      // but let's store both the original and the underscore version to be safe.
       VALID_NODE_LABELS.add(el.data.label);
       VALID_NODE_LABELS.add(el.data.label.replace(/\s+/g, '_'));
     }
@@ -185,21 +190,23 @@ const renderMessageContent = (
         </span>,
       )
     } else if (part.trim()) {
-      // 2. Process Nodes, Templates, and Connections inside normal text blocks
-      const entityRegex = /(Node:[^\s]+|Connection:[^\s]+\s(?:->|<-|→|←)\s[^\s]+|Template:[^\s]+)/g;
+      const entityRegex = /(Node:[^\s]+|Connection:[^\s]+\s(?:->|<-|→|←)\s[^\s]+|Workflow:[^\s]+)/g;
       
       const subParts = part.split(entityRegex);
       
       subParts.forEach((subPart, subIndex) => {
         let matched = false;
 
-        // --- VALIDATION LOGIC START ---
         if (subPart.startsWith("Node:")) {
-            const label = subPart.substring(5); // Remove "Node:"
-            // Only render as pill if it exists in the graph
-            if (VALID_NODE_LABELS.has(label)) {
+            const label = subPart.substring(5); 
+            
+            const isStatic = VALID_NODE_LABELS.has(label);
+            const isDynamic = dynamicNodeLabels.has(label);
+
+            if (isStatic || isDynamic) {
                 matched = true;
-                const styles = ENTITY_STYLES.Node;
+                const isIssueStyle = label.startsWith('#') || label.startsWith('PR') || label.startsWith('issue');
+                const styles = isIssueStyle ? ENTITY_STYLES.Issue : ENTITY_STYLES.Node;
                 elements.push(
                   <span key={`node-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
                      {subPart}
@@ -212,7 +219,8 @@ const renderMessageContent = (
              const segments = subPart.split(/\s(?:->|<-|→|←)\s/);
              if (segments.length > 1) {
                  const targetLabel = segments[segments.length - 1];
-                 if (VALID_NODE_LABELS.has(targetLabel)) {
+                 
+                 if (VALID_NODE_LABELS.has(targetLabel) || dynamicNodeLabels.has(targetLabel)) {
                     matched = true;
                     const styles = ENTITY_STYLES.Connection;
                     elements.push(
@@ -222,8 +230,8 @@ const renderMessageContent = (
                       );
                  }
              }
-        } else if (subPart.startsWith("Template:")) {
-            const styles = ENTITY_STYLES.Template;
+        } else if (subPart.startsWith("Workflow:")) {
+            const styles = ENTITY_STYLES.Workflow;
             elements.push(
                 <span key={`tpl-${index}-${subIndex}`} className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border mx-1 align-middle ${styles.bgColor} ${styles.textColor} ${styles.borderColor}`}>
                    {subPart}
@@ -294,6 +302,17 @@ export const MessageContent = ({
   const [isLoadingAgentSummary, setIsLoadingAgentSummary] = useState<boolean>(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const prevHeightRef = useRef<number>(0)
+  
+  const [, forceUpdate] = useState({});
+
+  useEffect(() => {
+    const unsubscribe = registerDynamicLabelListener(() => {
+      forceUpdate({});
+    });
+    ensureDynamicGraphData();
+
+    return unsubscribe;
+  }, []);
 
   const isLatestHumanMessage = latestHumanIdx === messageIndex
   const isFollowingBotMessage = followingBotIdx === messageIndex
@@ -381,7 +400,7 @@ export const MessageContent = ({
 
   const renderedContent = useMemo(
     () => renderMessageContent(message.content, chatUsers),
-    [message.content, chatUsers],
+    [message.content, chatUsers, dynamicNodeLabels.size],
   )
 
   if (message.isCallEvent) {

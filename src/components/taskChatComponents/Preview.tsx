@@ -12,7 +12,66 @@ import {
   Tag,
 } from 'lucide-react';
 
-// === EXPORTED SOURCE OF TRUTH ===
+export const dynamicNodeLabels = new Set<string>();
+const dynamicLabelListeners = new Set<() => void>();
+
+export const registerDynamicLabelListener = (cb: () => void) => {
+  dynamicLabelListeners.add(cb);
+  return () => dynamicLabelListeners.delete(cb);
+};
+
+const notifyListeners = () => {
+  dynamicLabelListeners.forEach(cb => cb());
+};
+
+let cachedWorkItems: { issues: any[]; prs: any[] } | null = null;
+let isFetching = false;
+
+export const ensureDynamicGraphData = async () => {
+  if (cachedWorkItems) return cachedWorkItems;
+  if (isFetching) return null;
+
+  isFetching = true;
+  const owner = 'AximoxAI';
+  const repo = 'orbital';
+
+  try {
+    const issuesResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const issuesJson = await issuesResp.json();
+    const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it: any) => !it.pull_request) : [];
+
+    const prsResp = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
+      { headers: { Accept: 'application/vnd.github+json' } }
+    );
+    const prsJson = await prsResp.json();
+    const purePRs = Array.isArray(prsJson) ? prsJson : [];
+
+    pureIssues.forEach((issue: any) => {
+      const label = `#${issue.number}`;
+      dynamicNodeLabels.add(label);
+      dynamicNodeLabels.add(label.replace(/\s+/g, '_'));
+    });
+    purePRs.forEach((pr: any) => {
+      const label = `PR #${pr.number}`;
+      dynamicNodeLabels.add(label);
+      dynamicNodeLabels.add(label.replace(/\s+/g, '_'));
+    });
+
+    cachedWorkItems = { issues: pureIssues, prs: purePRs };
+    notifyListeners();
+    return cachedWorkItems;
+  } catch (e) {
+    console.error("Failed to fetch graph data", e);
+    return null;
+  } finally {
+    isFetching = false;
+  }
+};
+
 export const GRAPH_DATA = [
   // Root Repository
   {
@@ -260,7 +319,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
   const containerRef = useRef<HTMLDivElement>(null);
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
-  // REF PATTERN: Keep the latest callback in a ref to avoid re-running the graph effect
   const onNodeClickRef = useRef(onNodeClick);
 
   useEffect(() => {
@@ -286,7 +344,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       // @ts-ignore
       const cy = window.cytoscape({
         container: containerRef.current,
-        // USE THE EXPORTED GRAPH DATA
         elements: GRAPH_DATA,
         style: [
           {
@@ -413,7 +470,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
               'font-size': '10px',
             },
           },
-          // Work items groups and nodes (light)
           {
             selector: 'node[type="issue-group"]',
             style: {
@@ -512,12 +568,10 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
         },
       });
 
-      // Select / deselect behavior
       cy.on('tap', 'node', (evt: any) => {
         const node = evt.target;
         const nodeData = node.data();
 
-        // FIX: Use ref here
         if (onNodeClickRef.current && nodeData.label) {
           const safeLabel = nodeData.label.replace(/\s+/g, '_');
           onNodeClickRef.current(`Node:${safeLabel}`);
@@ -546,10 +600,6 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
 
       cyRef.current = cy;
 
-      // === Fetch Issues and Pull Requests (open by default) ===
-      const owner = 'AximoxAI';
-      const repo = 'orbital';
-
       const loginToContributorNode: Record<string, string> = {
         'pranav-94': 'contrib-pranav',
         SuperMohit: 'contrib-mohit',
@@ -557,24 +607,11 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
         ArunRawat404: 'contrib-arun',
       };
 
-      async function loadWorkItems() {
-        try {
-          // Check for cached data or simple fetch
-          const issuesResp = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/issues?state=open&per_page=30`,
-            { headers: { Accept: 'application/vnd.github+json' } }
-          );
-          const issuesJson = await issuesResp.json();
-          const pureIssues = Array.isArray(issuesJson) ? issuesJson.filter((it) => !it.pull_request) : [];
+      ensureDynamicGraphData().then((data) => {
+        if (!data) return;
+        const { issues, prs } = data;
 
-          const prsResp = await fetch(
-            `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=30`,
-            { headers: { Accept: 'application/vnd.github+json' } }
-          );
-          const prsJson = await prsResp.json();
-          const purePRs = Array.isArray(prsJson) ? prsJson : [];
-
-          for (const issue of pureIssues) {
+        for (const issue of issues) {
             const issueId = `issue-${issue.number}`;
             if (cy.getElementById(issueId).nonempty()) continue;
 
@@ -603,7 +640,7 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             }
           }
 
-          for (const pr of purePRs) {
+          for (const pr of prs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
 
@@ -646,27 +683,9 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             coolingFactor: 0.95,
             minTemp: 1.0,
           }).run();
-        } catch (e) {
-          const errId = 'work-items-error';
-          if (!cy.getElementById(errId).nonempty()) {
-            cy.add({
-              data: {
-                id: errId,
-                label: 'GitHub API error',
-                type: 'issue',
-                details:
-                  'Failed to load issues/PRs. You may be rate-limited. Try again later or add a token-proxy.',
-              },
-            });
-            cy.add({ data: { source: 'repo', target: errId, label: 'ERROR' } });
-          }
-        }
-      }
-
-      loadWorkItems();
+      });
     };
 
-    // === FIX: Robust Script Loading ===
     // @ts-ignore
     if (window.cytoscape) {
       initGraph();
@@ -688,9 +707,8 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       if (cyRef.current) {
         cyRef.current.destroy();
       }
-      // Don't remove the script tag to avoid reload penalty on remount
     };
-  }, []); // Empty dependency array prevents re-initialization
+  }, []); 
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
