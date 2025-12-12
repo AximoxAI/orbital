@@ -29,9 +29,7 @@ let isFetching = false;
 
 export const ensureDynamicGraphData = async () => {
   if (cachedWorkItems) return cachedWorkItems;
-  if (isFetching) {
-    return null; 
-  }
+  if (isFetching) return null;
 
   isFetching = true;
   const owner = 'AximoxAI';
@@ -74,7 +72,6 @@ export const ensureDynamicGraphData = async () => {
   }
 };
 
-// === EXPORTED SOURCE OF TRUTH ===
 export const GRAPH_DATA = [
   // Root Repository
   {
@@ -88,7 +85,7 @@ export const GRAPH_DATA = [
       forks: 1,
     },
   },
-  // ... (Keep all your existing GRAPH_DATA static nodes here) ...
+
   // === CONTRIBUTORS ===
   {
     data: {
@@ -323,11 +320,13 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
   const [selectedNode, setSelectedNode] = useState<any>(null);
 
   const onNodeClickRef = useRef(onNodeClick);
+
   useEffect(() => {
     onNodeClickRef.current = onNodeClick;
   }, [onNodeClick]);
 
   useEffect(() => {
+    // === FIX: Resize Observer to handle layout shifts without unmounting ===
     const resizeObserver = new ResizeObserver(() => {
       if (cyRef.current) {
         cyRef.current.resize();
@@ -572,17 +571,21 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       cy.on('tap', 'node', (evt: any) => {
         const node = evt.target;
         const nodeData = node.data();
+
         if (onNodeClickRef.current && nodeData.label) {
           const safeLabel = nodeData.label.replace(/\s+/g, '_');
           onNodeClickRef.current(`Node:${safeLabel}`);
         }
+
         if (nodeData.type === 'issue') return;
+
         const properties: any = {};
         Object.keys(nodeData).forEach((key) => {
           if (key !== 'id' && key !== 'label' && key !== 'type') {
             properties[key] = nodeData[key];
           }
         });
+
         setSelectedNode({
           id: node.id(),
           label: nodeData.label,
@@ -607,7 +610,7 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       ensureDynamicGraphData().then((data) => {
         if (!data) return;
         const { issues, prs } = data;
-        
+
         for (const issue of issues) {
             const issueId = `issue-${issue.number}`;
             if (cy.getElementById(issueId).nonempty()) continue;
@@ -635,9 +638,9 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             if (contribId && cy.getElementById(contribId).nonempty()) {
               cy.add({ data: { source: contribId, target: issueId, label: 'OPENED' } });
             }
-        }
+          }
 
-        for (const pr of prs) {
+          for (const pr of prs) {
             const prId = `pr-${pr.number}`;
             if (cy.getElementById(prId).nonempty()) continue;
 
@@ -664,9 +667,9 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             if (contribId && cy.getElementById(contribId).nonempty()) {
               cy.add({ data: { source: contribId, target: prId, label: 'OPENED' } });
             }
-        }
-        
-        cy.layout({
+          }
+
+          cy.layout({
             name: 'cose',
             animate: true,
             animationDuration: 1200,
@@ -679,10 +682,11 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
             initialTemp: 200,
             coolingFactor: 0.95,
             minTemp: 1.0,
-        }).run();
+          }).run();
       });
     };
 
+    // @ts-ignore
     if (window.cytoscape) {
       initGraph();
     } else {
@@ -704,7 +708,7 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
         cyRef.current.destroy();
       }
     };
-  }, []);
+  }, []); 
 
   const nodeConfig = {
     repo: { color: '#0EA5E9', icon: GitBranch, name: 'Repository' },
@@ -769,6 +773,58 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
                   : selectedNode.label}
               </h3>
               <p className="text-slate-600 text-sm">{nodeConfig[selectedNode.type].name}</p>
+            </div>
+          </div>
+
+          {selectedNode.properties && Object.keys(selectedNode.properties).length > 0 && (
+            <div className="mb-3 rounded-lg p-3" style={{ backgroundColor: 'rgba(255,255,255,0.9)', border: '1px solid rgba(148,163,184,0.25)' }}>
+              <h4 className="text-slate-900 font-semibold text-sm mb-2">Details</h4>
+              <div className="space-y-1">
+                {Object.entries(selectedNode.properties).map(([key, value]) => (
+                  <div key={key} className="text-sm">
+                    <span className="text-slate-600 capitalize font-medium">
+                      {key.replace(/([A-Z])/g, ' $1').trim()}:
+                    </span>
+                    <span className="text-slate-900 ml-2">{String(value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="text-slate-700 text-sm">
+            <strong className="text-base">
+              Connections ({Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).length})
+            </strong>
+            <div className="mt-2 flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+              {Array.from(cyRef.current.getElementById(selectedNode.id).connectedEdges()).map((edge: any, i: number) => {
+                const source = edge.source();
+                const target = edge.target();
+                const otherNode = source.id() === selectedNode.id ? target : source;
+                const direction = source.id() === selectedNode.id ? '→' : '←';
+                const displayString = `${edge.data('label')} ${direction} ${otherNode.data('label')}`;
+                
+                const safeLabel = otherNode.data('label').replace(/\s+/g, '_');
+                const chatConnectionString = `${edge.data('label')} ${direction} ${safeLabel}`;
+
+                return (
+                  <span
+                    key={i}
+                    className="px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer hover:opacity-90 transition-all hover:scale-105"
+                    style={{
+                      backgroundColor: (nodeConfig[otherNode.data('type')]?.color || '#0EA5E9') + '22',
+                      color: nodeConfig[otherNode.data('type')]?.color || '#0EA5E9',
+                      border: `2px solid ${nodeConfig[otherNode.data('type')]?.color || '#0EA5E9'}`,
+                    }}
+                    onClick={() => {
+                      if (onNodeClickRef.current) onNodeClickRef.current(`Connection:${chatConnectionString}`);
+                      cyRef.current.getElementById(otherNode.id()).select();
+                    }}
+                  >
+                    {displayString}
+                  </span>
+                );
+              })}
             </div>
           </div>
         </div>
