@@ -32,7 +32,7 @@ const TaskChatTemplateDialog = ({
     api
       . templatesControllerFindAll()
       .then((res) => setTemplates(res.data))
-      .catch((err) => setError(err?. message || "Failed to load templates"))
+      .catch((err) => setError(err?. message || "Failed to load workflows"))
       .finally(() => setLoading(false))
   }, [open])
 
@@ -57,7 +57,7 @@ const TaskChatTemplateDialog = ({
           )}
           {! loading && !error && templates.length === 0 && (
             <div className="col-span-2 text-gray-400 text-center">
-              No templates found. 
+              No workflows found. 
             </div>
           )}
           {templates.map((tpl) => (

@@ -67,7 +67,7 @@ const ENTITY_STYLES = {
     textColor: "text-indigo-700",
     borderColor: "border-indigo-200",
   },
-  Template: {
+  Workflow: {
     bgColor: "bg-teal-50",
     textColor: "text-teal-700",
     borderColor: "border-teal-200",
@@ -103,6 +103,7 @@ interface ChatInputProps {
   setFiles: (files: PreviewableFileItem[]) => void
   mentionToInsert?: string | null
   setMentionToInsert?: (val: string | null) => void
+  isSending?: boolean
 }
 
 function isImageFile(type?: string, name?: string): boolean {
@@ -136,16 +137,14 @@ const ChatInput = ({
   setFiles,
   mentionToInsert,
   setMentionToInsert,
+  isSending = false,
 }: ChatInputProps) => {
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([])
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(0)
   const [showTemplateDialog, setShowTemplateDialog] = useState(false)
 
-  // Use a ref for the div that acts as the input
   const inputRef = useRef<HTMLDivElement>(null)
-  
-  // Track where the mention started to know what text to replace
   const mentionRangeRef = useRef<Range | null>(null)
 
   const userSuggestions = availableUsers.map(
@@ -168,7 +167,7 @@ const ChatInput = ({
 
   const createTagElement = useCallback((text: string, type: "bot" | "user" | "entity") => {
     const span = document.createElement("span")
-    span.contentEditable = "false" // CRITICAL: This makes it un-editable!
+    span.contentEditable = "false"
     span.innerText = text
 
     let styles = DEFAULT_BOT_STYLE
@@ -176,11 +175,10 @@ const ChatInput = ({
     else if (type === "user") styles = USER_STYLE
     else if (type === "entity") {
       if (text.startsWith("Node:")) styles = ENTITY_STYLES.Node
-      else if (text.startsWith("Template:")) styles = ENTITY_STYLES.Template
+      else if (text.startsWith("Workflow:")) styles = ENTITY_STYLES.Workflow
       else if (text.startsWith("Connection:")) styles = ENTITY_STYLES.Connection
     }
 
-    // Mimic the tag visual style from MessageContent
     span.className = `inline-flex items-center px-2 py-0.5 rounded-md text-sm font-semibold shadow-sm mx-1 align-middle select-none ${styles.bgColor} ${styles.textColor} border ${styles.borderColor}`
     return span
   }, [])
@@ -234,11 +232,8 @@ const ChatInput = ({
       if (!inputRef.current) return
 
       const span = createTagElement(text, type)
-      const space = document.createTextNode("\u00A0") // Non-breaking space
+      const space = document.createTextNode("\u00A0") 
 
-      // Logic: Linear insertion (Insert Tag -> Move Caret -> Insert Space -> Move Caret)
-      // This ensures the cursor is strictly AFTER the inserted elements.
-      
       const applyLinearInsertion = (range: Range) => {
           range.insertNode(span)
           range.setStartAfter(span)
@@ -257,7 +252,6 @@ const ChatInput = ({
           }
       }
 
-      // 1. If we are completing a typed mention (e.g. "@goo"), replace that specific range
       if (mentionRangeRef.current) {
         const range = mentionRangeRef.current
         range.deleteContents()
@@ -299,7 +293,6 @@ const ChatInput = ({
     [setNewMessage, createTagElement],
   )
 
-  // Handle external insertions (like clicking a Node in the graph)
   useEffect(() => {
     if (mentionToInsert) {
       let type: "bot" | "user" | "entity" = "entity"
@@ -307,7 +300,6 @@ const ChatInput = ({
       insertTag(mentionToInsert, type)
       if (setMentionToInsert) setMentionToInsert(null)
       
-      // Refocus input
       setTimeout(() => {
         if (inputRef.current) {
             inputRef.current.focus()
@@ -321,13 +313,11 @@ const ChatInput = ({
     const text = target.innerText
     setNewMessage(text)
 
-    // Mention detection logic adapted for contentEditable
     const sel = window.getSelection()
     if (sel && sel.rangeCount > 0) {
       const range = sel.getRangeAt(0)
       const node = range.startContainer
       
-      // We only care if typing in a text node
       if (node.nodeType === Node.TEXT_NODE && node.textContent) {
         const textBeforeCaret = node.textContent.substring(0, range.startOffset)
         const match = textBeforeCaret.match(/@([\w\.\-_]*)$/)
@@ -336,7 +326,6 @@ const ChatInput = ({
           const query = match[1]
           const triggerIndex = match.index!
           
-          // Save range for replacement
           const triggerRange = document.createRange()
           triggerRange.setStart(node, triggerIndex)
           triggerRange.setEnd(node, range.startOffset)
@@ -394,9 +383,10 @@ const ChatInput = ({
     if (e.key === "Enter" && !showSuggestions) {
       if (e.ctrlKey || e.metaKey || (!e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey)) {
         if (!e.ctrlKey && !e.metaKey && (e.shiftKey || e.altKey)) {
-          return // Allow new line
+          return 
         }
         e.preventDefault()
+        if (isSending) return;
         onSendMessage()
       }
     }
@@ -421,7 +411,7 @@ const ChatInput = ({
         onSelect={(templateId: string, templateName: string) => {
           setShowTemplateDialog(false)
           if (setMentionToInsert) {
-            setMentionToInsert(`Template:${templateName}`)
+            setMentionToInsert(`Workflow:${templateName}`)
           }
         }}
       />
@@ -494,7 +484,6 @@ const ChatInput = ({
               </Button>
             )}
 
-            {/* Replaced textarea with a Styled Div that looks identical */}
             <div className="flex-1 relative min-h-[60px] max-h-[200px] overflow-y-auto">
                 {!newMessage && (
                     <div className="absolute top-0 left-0 text-gray-500 text-sm pointer-events-none p-1">
@@ -506,7 +495,6 @@ const ChatInput = ({
                     contentEditable
                     onInput={handleInput}
                     onKeyDown={handleKeyDown}
-                    // This class string is copied EXACTLY from your original textarea to match the Look & Feel
                     className="w-full h-full outline-none text-sm text-gray-900 bg-transparent whitespace-pre-wrap font-sans p-1"
                     style={{ lineHeight: "1.5" }}
                 />
@@ -516,7 +504,7 @@ const ChatInput = ({
               <AttachFileButton onFilesSelect={setFiles} files={files} variant="ghost" size="sm" />
               <button
                 onClick={onSendMessage}
-                disabled={!newMessage.trim() && files.length === 0}
+                disabled={(!newMessage.trim() && files.length === 0) || isSending}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white p-2 rounded-lg transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 disabled:hover:translate-y-0 disabled:hover:shadow-none flex-shrink-0"
                 title="Send message (Ctrl+Enter or Enter)"
               >

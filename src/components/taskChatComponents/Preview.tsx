@@ -255,6 +255,39 @@ export const GRAPH_DATA = [
   { data: { source: 'repo', target: 'prs-group', label: 'PRS' } },
 ];
 
+let graphInstanceRef: any = null;
+
+export function setGraphInstance(cy: any) {
+  graphInstanceRef = cy;
+}
+
+export function isValidNodeLabel(label: string): boolean {
+  const staticFound = GRAPH_DATA.some((node: any) => {
+    if (!node.data || node.data.source) return false;
+    
+    if (node.data.label === label) return true;
+    
+    const safeLabel = node.data.label.replace(/\s+/g, '_');
+    return safeLabel === label;
+  });
+
+  if (staticFound) return true;
+
+  if (graphInstanceRef) {
+    const nodes = graphInstanceRef.nodes();
+    for (let i = 0; i < nodes.length; i++) {
+        const nodeLabel = nodes[i].data('label');
+        if (!nodeLabel) continue;
+
+        if (nodeLabel === label) return true;
+        if (nodeLabel.replace(/\s+/g, '_') === label) return true;
+    }
+  }
+
+  return false;
+}
+
+
 const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) => void } = {}) => {
   const cyRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -545,6 +578,7 @@ const OrbitalRepoGraph = ({ onNodeClick }: { onNodeClick?: (nodeLabel: string) =
       });
 
       cyRef.current = cy;
+      setGraphInstance(cy);
 
       // === Fetch Issues and Pull Requests (open by default) ===
       const owner = 'AximoxAI';
