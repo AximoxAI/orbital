@@ -590,15 +590,15 @@ const ProjectBoard = () => {
         )}
 
         {!chatOpen && !showOrbitalPanel && (
-          <Button
-            size="lg"
-            className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-600 text-white rounded-2xl w-12 h-12 p-0 flex items-center justify-center text-xl font-bold"
-            onClick={() => {
-              setShowOrbitalPanel(true)
-            }}
-          >
-            O
-          </Button>
+   <Button
+  size="default"
+  className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-800 text-white rounded-lg w-auto h-10 px-4 flex items-center justify-center text-sm font-medium transition-all"
+  onClick={() => {
+    setShowOrbitalPanel(true)
+  }}
+>
+  Ask Orbital
+</Button>
         )}
       </div>
     </div>

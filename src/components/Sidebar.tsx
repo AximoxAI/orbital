@@ -12,7 +12,7 @@ import { useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
 
 const sidebarLinks = [
-  { label: "Home", icon: Home, to: "/project-board" },
+  { label: "Dashboard", icon: Home, to: "/home" },
   { label: "Files", icon: FileText, to: "/files" }, // new Files page link
   { label: "Profile", icon: Users, to: "/profile" },
   { label: "Inbox", icon: Inbox, to: "/inbox" },
