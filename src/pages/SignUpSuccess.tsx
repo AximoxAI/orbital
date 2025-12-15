@@ -43,11 +43,11 @@ const SignUpSuccess = () => {
           localStorage.setItem("userId", String(response.data.id));
         }
 
-        navigate('/project-board');
+        navigate('/home');
       } catch (error: any) {
         console.error(' Error:', error);
         setError('Failed to create user profile');
-        setTimeout(() => navigate('/project-board'), 3000);
+        setTimeout(() => navigate('/home'), 3000);
       } finally {
         setIsCreating(false);
       }
