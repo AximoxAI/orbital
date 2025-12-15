@@ -51,7 +51,7 @@ const Sidebar = ({}: SidebarProps) => {
           <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">O</span>
           </div>
-          <span className="font-semibold text-gray-800">Ask Orbital</span>
+          <span className="font-semibold text-gray-800">Orbital</span>
         </div>
       </div>
 
