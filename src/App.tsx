@@ -50,7 +50,7 @@ const HomeRedirectIfSignedIn = () => {
 
   useEffect(() => {
     if (isSignedIn) {
-      navigate("/project-board", { replace: true });
+      navigate("/home", { replace: true });
     }
   }, [isSignedIn, navigate]);
 
