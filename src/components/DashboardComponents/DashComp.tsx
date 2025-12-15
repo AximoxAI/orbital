@@ -268,7 +268,7 @@ const DashComponent: React.FC = () => {
 
   const getPageTitle = () => {
     switch (activePage) {
-      case 'dashboard': return 'Technical Health Overview';
+      case 'dashboard': return 'Overview';
       case 'refactoring': return 'Refactoring Metrics';
       case 'dependencies': return 'Dependency Management';
       case 'coverage': return 'Test Coverage Analysis';
