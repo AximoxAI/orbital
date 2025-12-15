@@ -20,6 +20,7 @@ import UserTasks from "./pages/UserTasks";
 import Inbox from "./pages/Inbox";
 import { FileSystemProvider } from "./components/FileSystemContext";
 import Workflow from "./pages/Workflow";
+import Dashboard from "./components/DashboardComponents/DashComp";
 
 
 const TaskChatRoute = () => {
@@ -143,6 +144,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <UserTasks />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/home"
+                element={
+                  <ProtectedRoute>
+                    <Dashboard />
                   </ProtectedRoute>
                 }
               />

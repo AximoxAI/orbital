@@ -1,0 +1,345 @@
+import React, { useState, useEffect } from 'react';
+import { LayoutGrid, RefreshCw, AlertTriangle, ShieldCheck, Layers, GitCommit, Play, Bot, ArrowRight } from 'lucide-react';
+import MetricCard from './MetricCard';
+import { DuplicationChart, CoverageChart, VelocityChart, HotspotHeatmap, DependencyPieChart, RiskTrendChart, PrChart } from './Charts';
+import { KPIS, MIGRATION_DATA, HOTSPOTS } from '@/constants';
+import { Page } from '../../../types';
+import Sidebar from "@/components/Sidebar";
+import TopBar from "@/components/Topbar";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+// Updated Import: Pointing to the new OrbitalPanel component
+import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel";
+
+const DashComponent: React.FC = () => {
+  // Renamed state for clarity, though functionality remains the same
+  const [showOrbitalPanel, setShowOrbitalPanel] = useState(false);
+  const [activePage, setActivePage] = useState<Page>('dashboard');
+  const [search, setSearch] = useState("");
+
+  // FORCE LIGHT MODE: This removes 'dark' class from HTML if it exists globally
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+  }, []);
+
+  const renderContent = () => {
+    switch (activePage) {
+      case 'dashboard':
+        return (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {KPIS.map((kpi, idx) => (
+                <MetricCard key={idx} {...kpi} inverse={kpi.name.includes("Debt")} />
+              ))}
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <div className="lg:col-span-2 bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-semibold text-lg text-slate-900">Code Duplication Trends</h3>
+                  <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100">Monthly View</Badge>
+                </div>
+                <DuplicationChart />
+              </div>
+              <div className="bg-white border border-slate-200 rounded-xl p-6 flex flex-col shadow-sm">
+                <h3 className="font-semibold text-lg text-slate-900 mb-6">Migration Milestones</h3>
+                <div className="flex-1 space-y-6">
+                  {MIGRATION_DATA.map((item, i) => (
+                    <div key={i}>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-slate-600 font-medium">{item.name}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          item.status === 'Completed' ? 'bg-emerald-50 text-emerald-600' :
+                          item.status === 'In Progress' ? 'bg-blue-50 text-blue-600' :
+                          'bg-slate-100 text-slate-500'
+                        }`}>{item.status}</span>
+                      </div>
+                      <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${
+                            item.status === 'Completed' ? 'bg-emerald-500' : 'bg-blue-500'
+                          }`} 
+                          style={{ width: `${item.progress}%` }} 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-semibold text-lg text-slate-900">Test Coverage Evolution</h3>
+                </div>
+                <CoverageChart />
+               </div>
+               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-semibold text-lg text-slate-900">Legacy Hotspots & Churn</h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-500">
+                    <div className="w-2 h-2 rounded-full bg-rose-500"></div> Critical
+                    <div className="w-2 h-2 rounded-full bg-amber-500"></div> Warning
+                  </div>
+                </div>
+                <HotspotHeatmap />
+               </div>
+            </div>
+          </>
+        );
+
+      case 'refactoring':
+        return (
+          <div className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <MetricCard name="Refactoring Velocity" value={24} previousValue={15} change={60} unit="tickets" />
+                <MetricCard name="Tech Debt Repaid" value={120} previousValue={80} change={50} unit="hrs" />
+             </div>
+             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-semibold text-lg text-slate-900">Refactoring Velocity</h3>
+                  <p className="text-sm text-slate-500">Comparing Human vs AI contributions</p>
+                </div>
+                <div className="h-72">
+                  <VelocityChart />
+                </div>
+             </div>
+             <Card className="p-6 bg-white border-slate-200 shadow-sm">
+               <h3 className="font-semibold text-lg text-slate-900 mb-4">Top Candidates for Refactoring</h3>
+               <div className="overflow-x-auto">
+                 <table className="w-full text-left text-sm">
+                   <thead>
+                     <tr className="border-b border-slate-100 text-slate-500">
+                       <th className="pb-3 pl-2 font-medium">Module</th>
+                       <th className="pb-3 font-medium">Complexity</th>
+                       <th className="pb-3 font-medium">Coverage</th>
+                       <th className="pb-3 font-medium">Action</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {HOTSPOTS.filter(h => h.complexity > 60).map((h, i) => (
+                       <tr key={i} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                         <td className="py-3 pl-2 font-medium text-slate-900">{h.name}</td>
+                         <td className="py-3 text-rose-600 font-semibold">{h.complexity}</td>
+                         <td className="py-3 text-slate-600">{h.coverage}%</td>
+                         <td className="py-3">
+                           <button onClick={() => setShowOrbitalPanel(true)} className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium">
+                             Refactor <ArrowRight size={14} />
+                           </button>
+                         </td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
+             </Card>
+          </div>
+        );
+
+      case 'dependencies':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+               <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                 <h3 className="font-semibold text-lg text-slate-900 mb-6">Dependency Health Breakdown</h3>
+                 <DependencyPieChart />
+               </div>
+               <div className="space-y-6">
+                  <MetricCard name="Critical Vulnerabilities" value={5} previousValue={8} change={-37.5} inverse />
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 flex-1 shadow-sm">
+                    <h3 className="font-semibold text-lg text-slate-900 mb-4">Outdated Packages</h3>
+                    <ul className="space-y-3">
+                      {['react-router-dom', 'lodash', 'moment', 'axios'].map((pkg) => (
+                        <li key={pkg} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg border border-slate-100">
+                          <span className="text-slate-700 font-medium">{pkg}</span>
+                          <span className="text-xs text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded">Update Available</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+               </div>
+            </div>
+          </div>
+        );
+      
+      case 'coverage':
+        return (
+          <div className="space-y-6">
+            <MetricCard name="Global Test Coverage" value={78.4} previousValue={65.2} change={20.24} unit="%" />
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <h3 className="font-semibold text-lg text-slate-900 mb-6">Coverage Evolution</h3>
+              <CoverageChart />
+            </div>
+             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+               <h3 className="font-semibold text-lg text-slate-900 mb-4">Low Coverage Hotspots</h3>
+               <p className="text-sm text-slate-500 mb-4">Modules with high churn and low coverage require immediate attention.</p>
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {HOTSPOTS.filter(h => h.coverage < 50).map((h, i) => (
+                    <div key={i} className="p-4 bg-slate-50 border border-rose-100 rounded-lg flex justify-between items-center">
+                      <div>
+                        <p className="font-bold text-slate-900">{h.name}</p>
+                        <p className="text-xs text-slate-500">Churn: {h.churn}%</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xl font-bold text-rose-600">{h.coverage}%</p>
+                        <p className="text-xs text-slate-500">Coverage</p>
+                      </div>
+                    </div>
+                 ))}
+               </div>
+             </div>
+          </div>
+        );
+
+      case 'risk':
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <MetricCard name="Rollback Rate" value={1.2} previousValue={2.5} change={-52} unit="%" inverse />
+              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-slate-500 text-sm font-medium mb-2 uppercase tracking-wider">AI Code Risk Profile</h3>
+                <div className="flex items-end justify-between">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold text-slate-900">0.5%</span>
+                    <span className="text-slate-500 text-lg">Bug Rate</span>
+                  </div>
+                   <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <span>Low Risk</span>
+                  </div>
+                </div>
+                <p className="text-slate-400 text-xs mt-3">AI-generated code has <span className="text-slate-700 font-semibold">60% fewer bugs</span> than human baseline.</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+              <h3 className="font-semibold text-lg text-slate-900 mb-6">Incident & Rollback Trends (Human vs AI)</h3>
+              <RiskTrendChart />
+            </div>
+          </div>
+        );
+
+      case 'prs':
+        return (
+           <div className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <MetricCard name="Open PRs" value={18} previousValue={12} change={50} inverse />
+                <MetricCard name="Avg Review Time" value={4.5} previousValue={6} change={-25} unit="hrs" inverse />
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+                  <h3 className="text-slate-500 text-sm font-medium mb-2 uppercase tracking-wider">AI Contribution</h3>
+                  <div className="flex items-end justify-between">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-3xl font-bold text-slate-900">35%</span>
+                      <span className="text-slate-500 text-lg">of Total PRs</span>
+                    </div>
+                     <div className="flex items-center gap-1 text-sm font-semibold px-2 py-1 rounded-full bg-purple-50 text-purple-600 border border-purple-100">
+                      <Bot size={14} />
+                      <span>Rising</span>
+                    </div>
+                  </div>
+                  <p className="text-slate-400 text-xs mt-3">Merged automatically by AI Agents</p>
+                </div>
+             </div>
+             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+               <div className="flex items-center justify-between mb-6">
+                 <h3 className="font-semibold text-lg text-slate-900">PR Throughput by Source</h3>
+                 <div className="flex items-center gap-4 text-xs text-slate-600">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-blue-500 rounded-sm"></div> Human Open
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-purple-500 rounded-sm"></div> AI Open
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div> Human Merged
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-emerald-300 rounded-sm"></div> AI Merged
+                    </div>
+                 </div>
+               </div>
+               <PrChart />
+             </div>
+           </div>
+        );
+
+      default:
+        return <div>Page not found</div>;
+    }
+  };
+
+  const getPageTitle = () => {
+    switch (activePage) {
+      case 'dashboard': return 'Technical Health Overview';
+      case 'refactoring': return 'Refactoring Metrics';
+      case 'dependencies': return 'Dependency Management';
+      case 'coverage': return 'Test Coverage Analysis';
+      case 'risk': return 'Risk & Quality Assurance';
+      case 'prs': return 'Pull Request Insights';
+      default: return '';
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0">
+        <TopBar searchValue={search} setSearchValue={setSearch} placeholder="Search metrics..." showLogout />
+        
+        {/* Main Dashboard Content */}
+        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+           <div className="flex flex-col gap-6 mb-6">
+             <div className="flex items-center justify-between">
+               <div>
+                  <h1 className="text-2xl font-semibold text-slate-900">{getPageTitle()}</h1>
+                  <p className="text-sm text-slate-500">Live metrics from your codebase</p>
+               </div>
+               <div className="flex items-center gap-3">
+                 <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-xs font-medium text-slate-600 flex items-center gap-2">
+                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                   System Online
+                 </div>
+                 <Button 
+                   onClick={() => setShowOrbitalPanel(true)}
+                   className="bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-lg shadow-slate-900/10"
+                 >
+                   <Play size={16} className="mr-2 fill-current" />
+                   Ask Orbital
+                 </Button>
+               </div>
+             </div>
+
+             {/* Sub Navigation */}
+             <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto max-w-full">
+               <NavTab active={activePage === 'dashboard'} onClick={() => setActivePage('dashboard')} icon={<LayoutGrid size={16} />} label="Overview" />
+               <div className="w-px h-6 bg-slate-200 mx-1"></div>
+               <NavTab active={activePage === 'refactoring'} onClick={() => setActivePage('refactoring')} icon={<RefreshCw size={16} />} label="Refactoring" />
+               <NavTab active={activePage === 'dependencies'} onClick={() => setActivePage('dependencies')} icon={<Layers size={16} />} label="Dependencies" />
+               <div className="w-px h-6 bg-slate-200 mx-1"></div>
+               <NavTab active={activePage === 'coverage'} onClick={() => setActivePage('coverage')} icon={<ShieldCheck size={16} />} label="Coverage" />
+               <NavTab active={activePage === 'risk'} onClick={() => setActivePage('risk')} icon={<AlertTriangle size={16} />} label="Risk" />
+               <NavTab active={activePage === 'prs'} onClick={() => setActivePage('prs')} icon={<GitCommit size={16} />} label="PRs" />
+             </div>
+           </div>
+
+           {renderContent()}
+        </div>
+      </div>
+
+      <OrbitalPanel isOpen={showOrbitalPanel} onClose={() => setShowOrbitalPanel(false)} />
+    </div>
+  );
+};
+
+const NavTab = ({ icon, label, active = false, onClick }: { icon: React.ReactNode, label: string, active?: boolean, onClick: () => void }) => (
+  <button 
+    onClick={onClick}
+    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+    active 
+      ? 'bg-slate-100 text-slate-900 shadow-sm' 
+      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+  }`}>
+    {icon}
+    <span>{label}</span>
+  </button>
+);
+
+export default DashComponent;

@@ -12,7 +12,7 @@ import { useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
 
 const sidebarLinks = [
-  { label: "Home", icon: Home, to: "/project-board" },
+  { label: "Dashboard", icon: Home, to: "/home" },
   { label: "Files", icon: FileText, to: "/files" }, // new Files page link
   { label: "Profile", icon: Users, to: "/profile" },
   { label: "Inbox", icon: Inbox, to: "/inbox" },
@@ -51,7 +51,7 @@ const Sidebar = ({}: SidebarProps) => {
           <div className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">O</span>
           </div>
-          <span className="font-semibold text-gray-800">Orbital</span>
+          <span className="font-semibold text-gray-800">Ask Orbital</span>
         </div>
       </div>
 
