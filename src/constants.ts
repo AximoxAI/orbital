@@ -74,3 +74,18 @@ export const PR_METRICS: ChartDataPoint[] = [
   { name: 'Thu', openedHuman: 9, openedAI: 5, mergedHuman: 8, mergedAI: 4 },
   { name: 'Fri', openedHuman: 5, openedAI: 3, mergedHuman: 10, mergedAI: 4 },
 ];
+
+export const MEASURES_DATA = [
+  { name: 'AuthController.ts', coverage: 2.5, debt: 15, rating: 'A', loc: 120 },
+  { name: 'PaymentGateway.tsx', coverage: 0, debt: 150, rating: 'C', loc: 450 },
+  { name: 'UserUtils.ts', coverage: 5.0, debt: 30, rating: 'A', loc: 80 },
+  { name: 'LegacyParser.js', coverage: 0, debt: 210, rating: 'D', loc: 600 },
+  { name: 'Dashboard.tsx', coverage: 8.5, debt: 60, rating: 'B', loc: 320 },
+  { name: 'ReportGen.ts', coverage: 0, debt: 90, rating: 'B', loc: 250 },
+  { name: 'ApiConfig.ts', coverage: 15.0, debt: 10, rating: 'A', loc: 45 },
+  { name: 'OldLogin.jsx', coverage: 0, debt: 250, rating: 'E', loc: 500 },
+  { name: 'Sidebar.tsx', coverage: 12.0, debt: 45, rating: 'A', loc: 180 },
+  { name: 'ChartConfig.ts', coverage: 20.0, debt: 20, rating: 'A', loc: 90 },
+  { name: 'Middleware.ts', coverage: 1.5, debt: 110, rating: 'C', loc: 300 },
+  { name: 'DataTransform.ts', coverage: 45.0, debt: 5, rating: 'A', loc: 60 },
+];
