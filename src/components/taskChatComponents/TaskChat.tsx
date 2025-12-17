@@ -113,6 +113,7 @@ const TaskChat = ({
   const [showGlobalDocsModal, setShowGlobalDocsModal] = useState(false)
   const [showRepoGraphPreview, setShowRepoGraphPreview] = useState(false)
   const [mentionToInsert, setMentionToInsert] = useState<string | null>(null)
+  const [taskDescription, setTaskDescription] = useState<string>("")
 
 
   const { user } = useUser()
@@ -280,12 +281,17 @@ const TaskChat = ({
   }, [isOpen, getToken])
 
   useEffect(() => {
-    async function fetchTaskAssignees() {
+    async function fetchTaskData() {
       if (!taskId) return
       try {
         const sessionToken = await getToken()
         const api = createTaskChatAPI(sessionToken)
         const task = await api.fetchTask(taskId)
+        
+        if (task.description) {
+          setTaskDescription(task.description)
+        }
+
         if (Array.isArray(task.assignees) && typeof task.assignees[0] === "object") {
           setChatUsers(task.assignees)
         } else if (Array.isArray(task.assignees)) {
@@ -298,9 +304,10 @@ const TaskChat = ({
         }
       } catch {
         setChatUsers([])
+        setTaskDescription("")
       }
     }
-    if (isOpen && availableUsers.length > 0) fetchTaskAssignees()
+    if (isOpen && availableUsers.length > 0) fetchTaskData()
   }, [taskId, isOpen, availableUsers, getToken])
 
   useEffect(() => {
@@ -770,6 +777,7 @@ const TaskChat = ({
       <div className={chatWidthClass}>
         <TaskChatHeader
           taskName={taskName}
+          taskDescription={taskDescription}
           isFullPage={isFullPage}
           onClose={onClose}
           onMaximize={handleMaximize}

@@ -1,6 +1,6 @@
 "use client"
 
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch, FileText } from "lucide-react"
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch, FileText, Info } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -21,6 +21,7 @@ interface User {
 
 interface TaskChatHeaderProps {
   taskName: string
+  taskDescription?: string
   isFullPage: boolean
   onClose: () => void
   onMaximize: () => void
@@ -37,6 +38,7 @@ interface TaskChatHeaderProps {
 
 const TaskChatHeader = ({
   taskName,
+  taskDescription,
   isFullPage,
   onClose,
   onMaximize,
@@ -102,7 +104,31 @@ const TaskChatHeader = ({
               </span>
             )}
           </h3>
-          <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
+          
+          <div className="flex items-center gap-2">
+            <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="start">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm text-gray-900">Task Description</h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {taskDescription || "No description provided for this task."}
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
         </div>
         <div className="flex items-center gap-2">
           {isFullPage && (
