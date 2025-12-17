@@ -1,11 +1,13 @@
 "use client"
 
-import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch, FileText } from "lucide-react"
+import { X, Maximize2, Minimize2, Video, UserPlus, UserMinus, Tag, Plus, Check, GitBranch, FileText, Info, AlignLeft 
+ } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { useState } from "react"
 import VideoCallModal from "./VideoCallModal"
+import ReactMarkdown from "react-markdown"
 
 const ALL_AVAILABLE_TAGS = ["Bug", "Feature", "Urgent", "Blocked", "Frontend", "Backend", "Design", "Research"]
 
@@ -21,6 +23,7 @@ interface User {
 
 interface TaskChatHeaderProps {
   taskName: string
+  taskDescription?: string
   isFullPage: boolean
   onClose: () => void
   onMaximize: () => void
@@ -37,6 +40,7 @@ interface TaskChatHeaderProps {
 
 const TaskChatHeader = ({
   taskName,
+  taskDescription,
   isFullPage,
   onClose,
   onMaximize,
@@ -102,7 +106,63 @@ const TaskChatHeader = ({
               </span>
             )}
           </h3>
-          <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
+          
+          <div className="flex items-center gap-2">
+            <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">{taskName}</p>
+            
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-5 w-5 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                >
+                  <Info className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent 
+                className={`${isFullPage ? "w-[450px]" : "w-[300px]"} p-0 shadow-xl`} 
+                align="start"
+              >
+                <div className="flex flex-col max-h-[350px]">
+                  <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex items-center gap-2">
+                    <AlignLeft className="h-4 w-4 text-gray-500" />
+                    <h4 className="font-semibold text-sm text-gray-900">Task Description</h4>
+                  </div>
+                  
+                  <div className="p-4 overflow-y-auto custom-scrollbar">
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                      {taskDescription ? (
+                        <ReactMarkdown
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="text-lg font-bold text-gray-900 mb-2 mt-4 border-b border-gray-200 pb-1" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="text-base font-bold text-gray-900 mb-2 mt-3" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="text-sm font-bold text-gray-900 mb-1 mt-2" {...props} />,
+                            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-2 space-y-1" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-2 space-y-1" {...props} />,
+                            li: ({node, ...props}) => <li className="pl-1" {...props} />,
+                            a: ({node, ...props}) => <a className="text-blue-600 hover:underline font-medium break-all" target="_blank" rel="noopener noreferrer" {...props} />,
+                            code: ({node, ...props}) => <code className="bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded text-xs font-mono border border-slate-200" {...props} />,
+                            pre: ({node, ...props}) => <pre className="bg-slate-100 text-slate-900 p-3 rounded-md my-2 overflow-x-auto text-xs font-mono border border-slate-200" {...props} />,
+                            blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-gray-200 pl-4 italic text-gray-500 my-2" {...props} />,
+                          }}
+                        >
+                          {taskDescription}
+                        </ReactMarkdown>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center py-6 text-gray-400 italic">
+                          <FileText className="h-8 w-8 mb-2 opacity-20" />
+                          <p>No description provided for this task.</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
         </div>
         <div className="flex items-center gap-2">
           {isFullPage && (
