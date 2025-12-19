@@ -7,13 +7,14 @@ import {
   FileText,
   Users,
   Plus,
+  Activity,
 } from "lucide-react"
 import { useUser } from "@clerk/clerk-react"
 import { useNavigate } from "react-router-dom"
 
 const sidebarLinks = [
   { label: "Dashboard", icon: Home, to: "/home" },
-  { label: "Files", icon: FileText, to: "/files" }, // new Files page link
+  { label: "Files", icon: FileText, to: "/files" },
   { label: "Profile", icon: Users, to: "/profile" },
   { label: "Inbox", icon: Inbox, to: "/inbox" },
   { label: "Your tasks", icon: CheckSquare, to: "/tasks" },
@@ -23,6 +24,7 @@ const workspaceLinks = [
   { label: "Project board", icon: null, to: "/project-board", color: "bg-blue-500" },
   { label: "Upcoming", icon: Calendar, to: "#" },
   { label: "Workflows", icon: FileText, to: "/Workflows" },
+  { label: "Activity Feed", icon: Activity, to: "/activity" },
   { label: "Pipelines", icon: FileText, to: "#" },
   { label: "Teams", icon: Users, to: "#" },
 ]
