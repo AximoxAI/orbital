@@ -43,11 +43,12 @@ const ActivityFeed: React.FC = () => {
     const types = Object.values(EntityType);
     const cat = categories[Math.floor(Math.random() * categories.length)];
     const type = types[Math.floor(Math.random() * types.length)];
+    const agentNames = ["goose", "gemini_cli", "orbital_cli", "claude_code"];
     
     const newActivity: Activity = {
       id: newId,
       timestamp: new Date().toISOString(),
-      entityName: type === EntityType.AGENT ? `Agent-${Math.floor(Math.random() * 100)}` : `Engineer-${Math.floor(Math.random() * 100)}`,
+      entityName: type === EntityType.AGENT ? agentNames[Math.floor(Math.random() * agentNames.length)] : `Engineer-${Math.floor(Math.random() * 100)}`,
       entityType: type,
       role: type === EntityType.AGENT ? Role.AI_AGENT : roles[Math.floor(Math.random() * (roles.length - 1))],
       category: cat,

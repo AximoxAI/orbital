@@ -29,7 +29,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
   {
     id: '1',
     timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-    entityName: 'Agent-Refactor',
+    entityName: 'orbital_cli',
     entityType: EntityType.AGENT,
     role: Role.AI_AGENT,
     category: ActivityCategory.CODE,
@@ -47,7 +47,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
   {
     id: 'sec-1',
     timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
-    entityName: 'Sentinel-Security',
+    entityName: 'claude_code',
     entityType: EntityType.AGENT,
     role: Role.AI_AGENT,
     category: ActivityCategory.SECURITY,
