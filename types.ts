@@ -18,7 +18,7 @@ export enum Role {
   LEAD = 'LEAD',
   ARCHITECT = 'ARCHITECT',
   SRE = 'SRE',
-  AI_AGENT = 'AI_AGENT'
+  AGENT = 'AGENT'
 }
 
 export interface Activity {
