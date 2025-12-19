@@ -100,13 +100,6 @@ const ActivityFeed: React.FC = () => {
                 >
                   Simulate Agent Action
                 </Button>
-                <Button
-                  onClick={() => setShowOrbitalPanel(true)}
-                  className="bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-lg shadow-slate-900/10"
-                >
-                  <Play size={16} className="mr-2 fill-current" />
-                  Ask Orbital
-                </Button>
               </div>
             </div>
           </div>
