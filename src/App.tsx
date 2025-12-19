@@ -21,6 +21,7 @@ import Inbox from "./pages/Inbox";
 import { FileSystemProvider } from "./components/FileSystemContext";
 import Workflow from "./pages/Workflow";
 import Dashboard from "./components/DashboardComponents/DashComp";
+import ActivityFeed from "./pages/ActivityFeed";
 
 
 const TaskChatRoute = () => {
@@ -92,6 +93,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <SignUpSuccess />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/activity" 
+                element={
+                  <ProtectedRoute>
+                    <ActivityFeed />
                   </ProtectedRoute>
                 } 
               />
