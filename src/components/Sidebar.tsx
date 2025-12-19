@@ -18,13 +18,13 @@ const sidebarLinks = [
   { label: "Profile", icon: Users, to: "/profile" },
   { label: "Inbox", icon: Inbox, to: "/inbox" },
   { label: "Your tasks", icon: CheckSquare, to: "/tasks" },
-  { label: "Activity", icon: Activity, to: "/activity" },
 ]
 
 const workspaceLinks = [
   { label: "Project board", icon: null, to: "/project-board", color: "bg-blue-500" },
   { label: "Upcoming", icon: Calendar, to: "#" },
   { label: "Workflows", icon: FileText, to: "/Workflows" },
+  { label: "Activity Feed", icon: Activity, to: "/activity" },
   { label: "Pipelines", icon: FileText, to: "#" },
   { label: "Teams", icon: Users, to: "#" },
 ]
