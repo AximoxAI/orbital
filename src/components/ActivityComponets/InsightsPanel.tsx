@@ -1,14 +1,9 @@
 import React from 'react';
-import { Insight } from '../../../types';
 import { SparklesIcon } from '@heroicons/react/24/solid';
 import { InboxIcon } from '@heroicons/react/24/outline';
+import { INSIGHTS } from '../../constants';
 
-interface InsightsPanelProps {
-  insights: Insight[];
-  loading: boolean;
-}
-
-const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
+const InsightsPanel: React.FC = () => {
   return (
     <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
       <div className="bg-slate-800 px-5 py-4 flex items-center justify-between">
@@ -22,9 +17,9 @@ const InsightsPanel: React.FC<InsightsPanelProps> = ({ insights }) => {
       </div>
 
       <div className="p-5 bg-white">
-        {insights && insights.length > 0 ? (
+        {INSIGHTS.length > 0 ? (
           <div className="space-y-6">
-            {insights.map((insight, idx) => (
+            {INSIGHTS.map((insight, idx) => (
               <div key={idx} className="group">
                 <div className="flex items-start gap-3">
                   <div className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${

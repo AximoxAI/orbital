@@ -28,7 +28,7 @@ export const ENTITY_ICONS: Record<string, React.ReactNode> = {
 export const MOCK_ACTIVITIES: Activity[] = [
   {
     id: '1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
     entityName: 'orbital_cli',
     entityType: EntityType.AGENT,
     role: Role.AI_AGENT,
@@ -36,37 +36,145 @@ export const MOCK_ACTIVITIES: Activity[] = [
     title: 'Automated Refactor Completed',
     description: 'Refactored `authService.ts` to reduce cyclomatic complexity. Reduced from 12 to 4.',
     longDescription: 'The agent analyzed existing authentication logic and identified multiple nested conditionals. Using the strategy pattern, it decoupled the authentication providers.',
-    logs: [
-      '[14:02:01] Scanning repository...',
-      '[14:02:10] Applying refactoring plan...',
-      '[14:02:20] Tests passed. Applying changes.'
-    ],
+    logs: ['[14:02:01] Scanning repository...', '[14:02:10] Applying refactoring plan...', '[14:02:20] Tests passed.'],
     metadata: { file: 'authService.ts', linesChanged: '+42, -58', testCoverage: '98.2%' },
     avatarUrl: 'https://picsum.photos/seed/agent1/200'
   },
   {
     id: 'sec-1',
-    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    timestamp: new Date(Date.now() - 1000 * 60 * 8).toISOString(),
     entityName: 'claude_code',
     entityType: EntityType.AGENT,
     role: Role.AI_AGENT,
     category: ActivityCategory.SECURITY,
     title: 'Critical Vulnerability Mitigated',
-    description: 'Detected and patched a prototype pollution vulnerability.',
-    metadata: { severity: 'CRITICAL', action: 'AUTO_PATCH' },
+    description: 'Detected and patched a prototype pollution vulnerability in the gateway.',
+    metadata: { severity: 'CRITICAL', action: 'AUTO_PATCH', cve: '2024-3312' },
     avatarUrl: 'https://picsum.photos/seed/sec/200'
   },
   {
-    id: '2',
+    id: '3',
     timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
     entityName: 'Sarah Chen',
     entityType: EntityType.HUMAN,
     role: Role.LEAD,
     category: ActivityCategory.MANAGEMENT,
     title: 'Sprint Planning Updated',
-    description: 'Promoted 3 issues to P0.',
+    description: 'Promoted 3 issues to P0 for the v2.4 stable release.',
+    metadata: { sprint: 'Q4-S2', priority_shift: 'High' },
     avatarUrl: 'https://picsum.photos/seed/sarah/200'
-  }
+  },
+  {
+    id: '4',
+    timestamp: new Date(Date.now() - 1000 * 60 * 32).toISOString(),
+    entityName: 'goose',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.CONFIG,
+    title: 'Dev Container Optimization',
+    description: 'Updated `.devcontainer` and Dockerfile to optimize build layers.',
+    longDescription: 'Goose identified redundant layers in the Docker build process. By consolidating RUN commands, image size was reduced by 140MB.',
+    metadata: { file: 'Dockerfile', sizeReduction: '140MB', buildTime: '-12%' },
+    avatarUrl: 'https://picsum.photos/seed/goose/200'
+  },
+  {
+    id: '5',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(),
+    entityName: 'gemini_cli',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.QA,
+    title: 'Test Suite Expansion',
+    description: 'Generated 14 new integration tests for the Stripe payment module.',
+    logs: ['[13:15:02] Analyzing payment routes...', '[13:15:20] Generating test cases...'],
+    metadata: { coverageIncrease: '+4.2%', testsGenerated: '14' },
+    avatarUrl: 'https://picsum.photos/seed/gemini/200'
+  },
+  {
+    id: '6',
+    timestamp: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+    entityName: 'Marcus Wright',
+    entityType: EntityType.HUMAN,
+    role: Role.SRE,
+    category: ActivityCategory.INFRA,
+    title: 'Kubernetes Cluster Scaling',
+    description: 'Manually adjusted replica sets for the notifications-service.',
+    metadata: { cluster: 'prod-us-east', replicas: '10 -> 25' },
+    avatarUrl: 'https://picsum.photos/seed/marcus/200'
+  },
+  {
+    id: '7',
+    timestamp: new Date(Date.now() - 1000 * 60 * 180).toISOString(),
+    entityName: 'orbital_cli',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.INFRA,
+    title: 'Terraform State Drift Fixed',
+    description: 'Automatically reconciled AWS IAM drift detected during nightly scan.',
+    metadata: { resource: 'iam_role.lambda_exec', provider: 'AWS' },
+    avatarUrl: 'https://picsum.photos/seed/orbital/200'
+  },
+  {
+    id: '8',
+    timestamp: new Date(Date.now() - 1000 * 60 * 210).toISOString(),
+    entityName: 'orbital_cli',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.CODE,
+    title: 'Performance Bottleneck Resolved',
+    description: 'Optimized memoization logic in `OrbitalPanel.tsx` to prevent unnecessary re-renders.',
+    metadata: { component: 'OrbitalPanel', fps_gain: '+15', complexity_reduction: 'Medium' },
+    avatarUrl: 'https://picsum.photos/seed/orbital/200'
+  },
+  {
+    id: '9',
+    timestamp: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+    entityName: 'Alex Rivera',
+    entityType: EntityType.HUMAN,
+    role: Role.SRE,
+    category: ActivityCategory.QA,
+    title: 'Regression Discovery',
+    description: 'Identified a layout shift on mobile viewports within the dashboard feed.',
+    metadata: { priority: 'P2', environment: 'Staging', browser: 'Chrome Mobile' },
+    avatarUrl: 'https://picsum.photos/seed/alex/200'
+  },
+  {
+    id: '10',
+    timestamp: new Date(Date.now() - 1000 * 60 * 300).toISOString(),
+    entityName: 'goose',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.INFRA,
+    title: 'Log Retention Policy Update',
+    description: 'Modified CloudWatch retention from infinite to 30 days for dev clusters.',
+    metadata: { service: 'CloudWatch', cost_saving: '$120/mo', region: 'us-east-1' },
+    avatarUrl: 'https://picsum.photos/seed/goose/200'
+  },
+  {
+    id: '11',
+    timestamp: new Date(Date.now() - 1000 * 60 * 360).toISOString(),
+    entityName: 'gemini_cli',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.SECURITY,
+    title: 'Dependency Audit & Upgrade',
+    description: 'Auto-upgraded 4 packages to resolve high-severity `npm audit` warnings.',
+    logs: ['[08:00:10] Running audit...', '[08:01:45] Patching axios...', '[08:02:10] Verification complete.'],
+    metadata: { packages: 'axios, lodash, vite, undici', status: 'Secure' },
+    avatarUrl: 'https://picsum.photos/seed/gemini/200'
+  },
+  {
+    id: '12',
+    timestamp: new Date(Date.now() - 1000 * 60 * 420).toISOString(),
+    entityName: 'claude_code',
+    entityType: EntityType.AGENT,
+    role: Role.AI_AGENT,
+    category: ActivityCategory.CODE,
+    title: 'API Documentation Generated',
+    description: 'Automatically updated JSDoc and Swagger definitions for the v2/activity endpoint.',
+    metadata: { endpoint: '/v2/activity', documentation: 'Swagger/OpenAPI', accuracy: '100%' },
+    avatarUrl: 'https://picsum.photos/seed/sec/200'
+  },
 ];
 
 export const KPIS: MetricTrend[] = [
@@ -128,4 +236,22 @@ export const DEPENDENCY_HEALTH: ChartDataPoint[] = [
 export const MEASURES_DATA = [
   { name: 'AuthController.ts', coverage: 2.5, debt: 15, rating: 'A', loc: 120 },
   { name: 'PaymentGateway.tsx', coverage: 0, debt: 150, rating: 'C', loc: 450 },
+];
+
+export const INSIGHTS = [
+  {
+    title: 'Security Resilience Increased',
+    content: 'Agent claude_code automatically mitigated a critical prototype pollution vulnerability in the gateway.',
+    impact: 'high',
+  },
+  {
+    title: 'Infrastructure Autonomy',
+    content: 'AI agents are currently handling 100% of infrastructure reconciliation and scaling tasks.',
+    impact: 'high',
+  },
+  {
+    title: 'Code Quality Improvement',
+    content: 'Automated refactoring has successfully reduced cyclomatic complexity in core services from 12 to 4.',
+    impact: 'medium',
+  }
 ];

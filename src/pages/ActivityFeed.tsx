@@ -36,41 +36,6 @@ const ActivityFeed: React.FC = () => {
     setFilteredActivities(result);
   }, [filterType, activities, searchQuery]);
 
-  const addRandomActivity = () => {
-    const newId = (activities.length + 100).toString();
-    const categories = Object.values(ActivityCategory);
-    const roles = Object.values(Role);
-    const types = Object.values(EntityType);
-    const cat = categories[Math.floor(Math.random() * categories.length)];
-    const type = types[Math.floor(Math.random() * types.length)];
-    const agentNames = ["goose", "gemini_cli", "orbital_cli", "claude_code"];
-    
-    const newActivity: Activity = {
-      id: newId,
-      timestamp: new Date().toISOString(),
-      entityName: type === EntityType.AGENT ? agentNames[Math.floor(Math.random() * agentNames.length)] : `Engineer-${Math.floor(Math.random() * 100)}`,
-      entityType: type,
-      role: type === EntityType.AGENT ? Role.AI_AGENT : roles[Math.floor(Math.random() * (roles.length - 1))],
-      category: cat,
-      title: `Action: ${cat} Event Captured`,
-      description: `Discovered and resolved a critical ${cat.toLowerCase()} event in the main production workspace.`,
-      longDescription: `Automated capture reflecting high-impact event within the ${cat.toLowerCase()} domain. Full system logs attached for audit.`,
-      logs: [
-        `[${new Date().toLocaleTimeString()}] Event detection triggered.`,
-        `[${new Date().toLocaleTimeString()}] Analyzing ${cat} node state...`,
-        `[${new Date().toLocaleTimeString()}] Resolution applied successfully.`,
-      ],
-      metadata: { 
-        traceId: `tr-${Math.random().toString(36).substr(2, 9)}`, 
-        priority: 'High',
-        environment: 'Production' 
-      },
-      avatarUrl: `https://picsum.photos/seed/${newId}/200`
-    };
-
-    setActivities(prev => [newActivity, ...prev]);
-  };
-
   return (
     <div className="flex h-screen bg-slate-50 antialiased overflow-hidden">
       <Sidebar />
@@ -92,15 +57,6 @@ const ActivityFeed: React.FC = () => {
                   Activity Feed
                 </h1>
                 <p className="text-sm text-slate-500">Real-time collaboration between Human & AI Agent resources</p>
-              </div>
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  onClick={addRandomActivity}
-                  className="bg-white border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg shadow-sm text-xs font-medium"
-                >
-                  Simulate Agent Action
-                </Button>
               </div>
             </div>
           </div>
@@ -150,8 +106,7 @@ const ActivityFeed: React.FC = () => {
 
             <aside className="lg:col-span-4">
               <div className="sticky top-0 space-y-6">
-                <InsightsPanel insights={insights} loading={loadingInsights} />
-                
+                <InsightsPanel  />
                 <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Live Statistics</h4>
                   <div className="space-y-6">
