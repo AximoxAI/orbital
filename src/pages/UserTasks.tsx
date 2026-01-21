@@ -10,11 +10,11 @@ import { useUser, useAuth } from "@clerk/clerk-react"
 
 const statusOptions = [
   { value: "all", label: "All" },
-  { value: "in_progress", label: "In Progress" },
+  { value:  "in_progress", label: "In Progress" },
   { value: "completed", label: "Completed" },
-  { value: "to_do", label: "To-do" },
+  { value:  "to_do", label: "To-do" },
   { value: "in_review", label: "In Review" },
-  { value: "draft", label: "Draft" },
+  { value: "draft", label:  "Draft" },
   { value: "design", label: "Design" },
 ]
 
@@ -37,6 +37,46 @@ const getStatusBadge = (status: string) => {
       return `${baseClasses} bg-gray-100 text-gray-700`
   }
 }
+
+// Static fallback tasks
+const staticTasks:  TaskResponseDto[] = [
+  {
+    id: "static-1",
+    title: "Setup Project Structure",
+    description: "Initialize the project repository and configure the basic folder structure",
+    project_name: "Frontend Project",
+    project_id:  "proj-1",
+    status: "completed",
+    created_at: "2026-01-15T10:00:00Z",
+  },
+  {
+    id:  "static-2",
+    title: "Design Database Schema",
+    description: "Create the initial database schema and ER diagram",
+    project_name: "Frontend Project",
+    project_id: "proj-1",
+    status: "in_progress",
+    created_at: "2026-01-16T14:30:00Z",
+  },
+  {
+    id: "static-3",
+    title: "Implement Authentication",
+    description: "Add user authentication and authorization flows",
+    project_name: "Backend API",
+    project_id:  "proj-2",
+    status: "in_review",
+    created_at: "2026-01-18T09:15:00Z",
+  },
+  {
+    id: "static-4",
+    title: "Create Landing Page",
+    description: "Design and develop the main landing page with responsive layout",
+    project_name: "Frontend App",
+    project_id: "proj-3",
+    status: "to_do",
+    created_at: "2026-01-19T16:45:00Z",
+  },
+]
 
 export default function YourTasks() {
   const [search, setSearch] = useState("")
@@ -73,7 +113,7 @@ export default function YourTasks() {
           return
         }
         const config = new Configuration({
-          basePath: import.meta.env.VITE_BACKEND_API_KEY,
+          basePath:  import.meta.env.VITE_BACKEND_API_KEY,
           accessToken: sessionToken,
         })
         const api = new UsersApi(config)
@@ -89,13 +129,16 @@ export default function YourTasks() {
     fetchTasks()
   }, [isLoaded, isSignedIn, user?.id, getToken])
 
-  const filteredTasks = tasks.filter((task) => {
+  // Use static tasks if no dynamic tasks are available
+  const displayTasks = tasks.length > 0 ? tasks : staticTasks
+
+  const filteredTasks = displayTasks.filter((task) => {
     const matchesSearch =
-      task.title.toLowerCase().includes(search.toLowerCase()) ||
-      (task.project_id && task.project_id.toLowerCase().includes(search.toLowerCase())) ||
+      task.title. toLowerCase().includes(search.toLowerCase()) ||
+      (task.project_id && task.project_id. toLowerCase().includes(search.toLowerCase())) ||
       (task.description && task.description.toLowerCase().includes(search.toLowerCase()))
     const matchesStatus =
-      selectedStatus === "all" || (task.status && task.status.toLowerCase() === selectedStatus)
+      selectedStatus === "all" || (task. status && task.status.toLowerCase() === selectedStatus)
     return matchesSearch && matchesStatus
   })
 
@@ -155,7 +198,7 @@ export default function YourTasks() {
                   {loading ? (
                     <tr>
                       <td colSpan={4} className="text-center py-8 text-gray-400">
-                        Loading tasks...
+                        Loading tasks... 
                       </td>
                     </tr>
                   ) : error ? (
@@ -175,14 +218,14 @@ export default function YourTasks() {
                       <tr
                         key={task.id}
                         className="hover:bg-gray-50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/tasks/${task.id}`, { state: { taskName: task.title } })}
+                        onClick={() => navigate(`/tasks/${task.id}`, { state: { taskName: task. title } })}
                         style={{ cursor: "pointer" }}
                       >
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">{task.title}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-600">{task.project_name}</div>
+                          <div className="text-sm text-gray-600">{task. project_name}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-600">

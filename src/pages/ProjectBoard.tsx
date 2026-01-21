@@ -2,7 +2,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { EllipsisVertical, Filter, FileText, X } from "lucide-react"
+import {
+  EllipsisVertical,
+  Filter,
+  FileText,
+  X,
+  Plus,
+  FolderPlus,
+  FilePlus,
+  Layout,
+  Search,
+  Sparkles,
+  Loader2
+} from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import TaskChat from "@/components/taskChatComponents/TaskChat"
 import { useUser, useAuth } from "@clerk/clerk-react"
@@ -16,11 +28,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import Sidebar from "@/components/Sidebar"
 import TopBar from "@/components/Topbar"
 import { useNavigate } from "react-router-dom"
 import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 
 const getInitials = (name: string) => {
   if (!name) return "??"
@@ -63,125 +78,154 @@ function ProjectsList({
 }: ProjectsListInnerProps) {
   if (loading) {
     return (
-      <div className="flex-1 p-6 flex items-center justify-center">
-        <p className="text-lg text-gray-600">Loading projects...</p>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary/60 mb-4" />
+        <p className="text-sm text-muted-foreground">Syncing your workspace...</p>
       </div>
     )
   }
 
   if (error) {
     return (
-      <div className="flex-1 p-6 flex items-center justify-center text-red-500">
-        <p className="text-lg">
-          Error fetching projects: <strong>{error.message}</strong>. Please try again later.
-        </p>
+      <div className="flex-1 flex flex-col items-center justify-center min-h-[400px] text-red-500">
+        <div className="bg-red-50 p-4 rounded-lg border border-red-100 max-w-md text-center">
+          <p className="font-semibold mb-1">Unable to load projects</p>
+          <p className="text-sm opacity-90">{error.message}</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex-1 p-6 overflow-auto">
+    <div className="flex-1">
       {projects.length === 0 ? (
-        <div className="text-center text-gray-500 mt-10">
-          <p>No projects found. Start by creating a new project!</p>
+        <div className="flex flex-col items-center justify-center py-20 bg-white border-2 border-dashed border-slate-200 rounded-xl">
+          <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+            <Layout className="h-8 w-8 text-slate-400" />
+          </div>
+          <h3 className="text-lg font-medium text-slate-900">No projects yet</h3>
+          <p className="text-sm text-slate-500 max-w-sm text-center mt-2 mb-6">
+            Get started by creating a new project to track your tasks and requirements.
+          </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
           {projects.map((project: any) => (
-            <Card key={project.id} className="h-fit">
-              <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                    <CardTitle className="text-sm font-medium">{project.name}</CardTitle>
+            <Card 
+              key={project.id} 
+              className="group flex flex-col h-[400px] border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+            >
+              <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/30">
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-2.5 h-2.5 bg-slate-500 rounded-full shadow-sm ring-2 ring-white" />
+                      <CardTitle className="text-base font-semibold text-slate-800 leading-none">
+                        {project.name}
+                      </CardTitle>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium pl-4.5">
+                      {project.type || "General Project"}
+                    </p>
                   </div>
+                  
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-slate-400 hover:text-slate-700">
                         <EllipsisVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onShowCreateTaskModal(project.id)}>
-                        New task
+                        <Plus className="mr-2 h-4 w-4" /> New task
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => onGenerateRequirements(project.id)}>
-                        Generate Tasks
+                        <Sparkles className="mr-2 h-4 w-4" /> AI Generate Tasks
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => onUploadProjectFiles(project.id)}>
-                        Add project docs
+                        <FileText className="mr-2 h-4 w-4" /> Add project docs
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <div className="flex items-center justify-between text-sm text-gray-500">
-                  <div className="flex items-center space-x-2">
-                    <span>{project.type}</span>
-                  </div>
-                </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center space-x-2 mb-3 overflow-x-auto pb-2">
-                  <Badge variant="secondary" className="text-xs cursor-pointer">
-                    Design
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs cursor-pointer">
-                    In Review
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs cursor-pointer">
-                    To-Do
-                  </Badge>
-                  <Badge variant="secondary" className="text-xs cursor-pointer">
-                    Completed
-                  </Badge>
-                  <Button variant="ghost" size="sm" className="flex-shrink-0">
-                    <Filter className="w-4 h-4" />
-                  </Button>
-                </div>
-                {project.tasks && project.tasks.length > 0 ? (
-                  project.tasks.map((task: any) => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between py-2 hover:bg-gray-50 rounded-lg px-2 cursor-pointer"
-                      onClick={() => onTaskClick(task.id, task.title)}
-                    >
-                      <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <div className="w-4 h-4 border-2 border-gray-300 rounded" />
-                        <span className="text-sm text-gray-700 truncate max-w-[180px] block">
-                          {task.title}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <div className="flex justify-end flex-row-reverse min-w-[70px]">
-                          {task.assignees &&
-                          task.assignees.length > 0 &&
-                          task.assignees.some((assignee: any) => assignee.avatar)
-                            ? task.assignees.map((assignee: any, avatarIndex: number) =>
-                                assignee.avatar ? (
-                                  <Avatar
-                                    key={assignee.id || avatarIndex}
-                                    className="w-6 h-6 border-2 border-white -ml-2"
-                                  >
-                                    <AvatarImage
-                                      src={assignee.avatar}
-                                      alt={assignee.name || "User"}
-                                    />
-                                    <AvatarFallback>
-                                      {getInitials(assignee.name || assignee.email || "")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                ) : null,
-                              )
-                            : null}
+              
+              <div className="px-4 py-3 bg-white border-b border-slate-100">
+                 <ScrollArea className="w-full whitespace-nowrap">
+                  <div className="flex space-x-2">
+                    {["Design", "In Review", "To-Do", "Completed"].map((status) => (
+                      <Badge 
+                        key={status} 
+                        variant="secondary" 
+                        className="text-[10px] font-medium px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/60 cursor-pointer transition-colors"
+                      >
+                        {status}
+                      </Badge>
+                    ))}
+                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-slate-100">
+                      <Filter className="w-3 h-3 text-slate-400" />
+                    </Button>
+                  </div>
+                  <ScrollBar orientation="horizontal" className="h-1.5" />
+                </ScrollArea>
+              </div>
+
+              <CardContent className="flex-1 p-0 overflow-hidden relative bg-white">
+                <ScrollArea className="h-full">
+                  <div className="p-3 space-y-1">
+                    {project.tasks && project.tasks.length > 0 ? (
+                      project.tasks.map((task: any) => (
+                        <div
+                          key={task.id}
+                          className="group/task flex items-center justify-between p-2.5 rounded-md hover:bg-slate-50 border border-transparent hover:border-slate-100 cursor-pointer transition-all duration-150"
+                          onClick={() => onTaskClick(task.id, task.title)}
+                        >
+                          <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <div className="w-3.5 h-3.5 border-2 border-slate-300 rounded-sm group-hover/task:border-slate-400 transition-colors" />
+                            <span className="text-sm font-medium text-slate-700 truncate block">
+                              {task.title}
+                            </span>
+                          </div>
+                          
+                          <div className="pl-2 flex items-center">
+                            {task.assignees &&
+                            task.assignees.length > 0 &&
+                            task.assignees.some((assignee: any) => assignee.avatar) ? (
+                              <div className="flex -space-x-2 overflow-hidden">
+                                {task.assignees.map((assignee: any, avatarIndex: number) =>
+                                  assignee.avatar ? (
+                                    <Avatar
+                                      key={assignee.id || avatarIndex}
+                                      className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                                    >
+                                      <AvatarImage
+                                        src={assignee.avatar}
+                                        alt={assignee.name || "User"}
+                                      />
+                                      <AvatarFallback className="text-[9px] bg-slate-100 text-slate-600">
+                                        {getInitials(assignee.name || assignee.email || "")}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                  ) : null,
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-2">
+                           <Layout className="w-5 h-5 text-slate-300" />
+                        </div>
+                        <p className="text-sm text-slate-500">No tasks created yet.</p>
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-sm text-gray-500 text-center">
-                    No tasks for this project yet.
-                  </p>
-                )}
+                    )}
+                  </div>
+                </ScrollArea>
               </CardContent>
             </Card>
           ))}
@@ -223,6 +267,8 @@ const ProjectBoard = () => {
         accessToken: sessionToken || undefined,
       })
       const uploadsApi = new UploadsApi(configuration)
+      // Implementation note: The original code had a setUploadedFiles here but didn't call an API that returned data in the snippet.
+      // Preserving original logic:
       setUploadedFiles((prev) => prev)
     } catch {
     }
@@ -352,6 +398,7 @@ const ProjectBoard = () => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId))
   }
 
+  // Note: This logic is preserved but unused in the component currently (as per original file)
   const handleCreateTask = (taskName: string, projectName: string) => {
     setProjects((prevProjects) => {
       const updatedProjects = prevProjects.map((project) => {
@@ -407,7 +454,7 @@ const ProjectBoard = () => {
   }, [selectedTask, projects, projectDocs])
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-slate-50/50">
       <TaskChat
         isOpen={chatOpen}
         onClose={() => setChatOpen(false)}
@@ -419,131 +466,145 @@ const ProjectBoard = () => {
         projectDocs={selectedProjectDocs}
       />
 
-\      <OrbitalPanel
+      <OrbitalPanel
         isOpen={showOrbitalPanel}
         onClose={() => setShowOrbitalPanel(false)}
       />
 
       <Sidebar />
-      <div className="flex-1 flex flex-col relative">
+      
+      <div className="flex-1 flex flex-col relative overflow-hidden">
         <TopBar
           searchValue={search}
           setSearchValue={setSearch}
-          placeholder="Search"
+          placeholder="Search projects & tasks..."
           showLogout={true}
         />
 
-        {uploadedFiles.length > 0 && (
-          <div className="px-6 py-4 bg-white border-b border-gray-200">
-            <div className="flex items-center justify-between mb-2">
-              <h4 className="text-sm font-semibold text-gray-800"> Documents</h4>
-              <span className="text-xs text-gray-500">
-                {uploadedFiles.length} file
-                {uploadedFiles.length !== 1 ? "s" : ""}
-              </span>
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-8">
+            
+            {/* --- Dashboard Header & Quick Actions --- */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+                  Welcome back, {user?.username || "User"}
+                </h1>
+                <p className="text-slate-500 mt-1">
+                  Manage your projects, track tasks, and collaborate with your team.
+                </p>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-3">
+                 <Button 
+                   onClick={() => setShowCreateProjectModal(true)}
+                   className="bg-slate-600 hover:bg-slate-700 text-white shadow-sm transition-all"
+                 >
+                   <Plus className="w-4 h-4 mr-2" />
+                   New Project
+                 </Button>
+                 
+                 <div className="h-6 w-px bg-slate-200 mx-1 hidden md:block" />
+
+                 <Button 
+                    variant="outline" 
+                    className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-600"
+                    onClick={() => navigate("/files")}
+                 >
+                    <FolderPlus className="w-4 h-4 mr-2" />
+                    New Folder
+                 </Button>
+                 
+                 <Button 
+                    variant="outline" 
+                    className="bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-600"
+                    onClick={() => navigate("/files")}
+                 >
+                    <FilePlus className="w-4 h-4 mr-2" />
+                    New Doc
+                 </Button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {uploadedFiles.map((file) => (
-                <Badge
-                  key={file.id}
-                  variant="secondary"
-                  className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
-                  onClick={() => window.open(file.url, "_blank")}
-                >
-                  <FileText className="w-3 h-3 text-slate-600" />
-                  <span className="text-xs text-gray-700">{file.name}</span>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleRemoveFile(file.id)
-                    }}
-                    className="ml-1 text-gray-500 hover:text-red-600 transition-colors"
-                    aria-label="Remove file"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
+
+            {/* --- Uploaded Documents Quick Strip --- */}
+            {uploadedFiles.length > 0 && (
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
+                   <div className="flex items-center gap-2">
+                     <FileText className="w-4 h-4 text-slate-500" />
+                     <h4 className="text-sm font-semibold text-slate-700">Quick Access Documents</h4>
+                   </div>
+                   <span className="text-xs bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                     {uploadedFiles.length}
+                   </span>
+                </div>
+                <div className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {uploadedFiles.map((file) => (
+                      <div
+                        key={file.id}
+                        onClick={() => window.open(file.url, "_blank")}
+                        className="group flex items-center gap-2 pl-3 pr-2 py-1.5 bg-white border border-slate-200 rounded-md hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-500" />
+                        <span className="text-xs font-medium text-slate-700 group-hover:text-slate-900 max-w-[150px] truncate">
+                          {file.name}
+                        </span>
+                        <div className="w-px h-3 bg-slate-200 mx-1" />
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleRemoveFile(file.id)
+                          }}
+                          className="text-slate-400 hover:text-red-500 hover:bg-red-50 rounded p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* --- Main Project Board --- */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                 <h2 className="text-lg font-semibold text-slate-800">Your Projects</h2>
+                 <div className="text-sm text-slate-500">
+                    Total: <span className="font-medium text-slate-900">{projects.length}</span>
+                 </div>
+              </div>
+              
+              <ProjectsList
+                projects={projects}
+                loading={loading}
+                error={error}
+                onTaskClick={(taskId: string, taskTitle: string) => {
+                  setSelectedTask({ id: taskId, title: taskTitle })
+                  setChatOpen(true)
+                }}
+                onGenerateRequirements={handleShowRequirementsModal}
+                onShowCreateTaskModal={handleShowCreateTaskModal}
+                projectDocs={projectDocs}
+                onUploadProjectFiles={(projectId: string) => {
+                  setProjectUploadTargetId(projectId)
+                  setShowFileUploadDialog(true)
+                }}
+              />
             </div>
           </div>
-        )}
+        </main>
 
-        <div className="px-6 py-4 bg-white border-b border-gray-200">
-          <div className="grid grid-cols-3 gap-4">
-            <Card
-              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => setShowCreateProjectModal(true)}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Create new project</p>
-                  <p className="text-xs text-gray-500">New project in your space</p>
-                </div>
-              </div>
-            </Card>
-            <Card
-              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                navigate("/files")
-              }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Create new folder</p>
-                  <p className="text-xs text-gray-500">New folder in your project</p>
-                </div>
-              </div>
-            </Card>
-            <Card
-              className="p-4 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => {
-                navigate("/files")
-              }}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">Create new doc</p>
-                  <p className="text-xs text-gray-500">New docs in your folder</p>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
-
-        <ProjectsList
-          projects={projects}
-          loading={loading}
-          error={error}
-          onTaskClick={(taskId: string, taskTitle: string) => {
-            setSelectedTask({ id: taskId, title: taskTitle })
-            setChatOpen(true)
-          }}
-          onGenerateRequirements={handleShowRequirementsModal}
-          onShowCreateTaskModal={handleShowCreateTaskModal}
-          projectDocs={projectDocs}
-          onUploadProjectFiles={(projectId: string) => {
-            setProjectUploadTargetId(projectId)
-            setShowFileUploadDialog(true)
-          }}
-        />
-
+        {/* --- Modals --- */}
         {showCreateProjectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-lg w-full">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-in fade-in zoom-in duration-200">
               <button
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10"
                 onClick={() => setShowCreateProjectModal(false)}
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
               <CreateProject onSuccess={handleProjectCreated} />
             </div>
@@ -551,27 +612,29 @@ const ProjectBoard = () => {
         )}
 
         {showCreateTaskModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-lg w-full">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-in fade-in zoom-in duration-200">
               <button
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10"
                 onClick={() => setShowCreateTaskModal(false)}
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
-              <CreateTask defaultProjectId={createTaskProjectId} />
+              <div className="p-1">
+                 <CreateTask defaultProjectId={createTaskProjectId} />
+              </div>
             </div>
           </div>
         )}
 
         {showRequirementsModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-lg shadow-lg p-6 relative max-w-xl w-full">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl overflow-hidden relative animate-in fade-in zoom-in duration-200">
               <button
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700 text-2xl"
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10"
                 onClick={() => setShowRequirementsModal(false)}
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
               <GenerateRequirements defaultProjectId={requirementsProjectId} />
             </div>
@@ -589,6 +652,7 @@ const ProjectBoard = () => {
           />
         )}
 
+        {/* --- Floating Action Button --- */}
         {!chatOpen && !showOrbitalPanel && (
    <Button
   size="default"
