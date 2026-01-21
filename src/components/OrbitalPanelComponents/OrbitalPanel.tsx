@@ -1,5 +1,6 @@
 import React, { useState } from "react"
 import { useUser } from "@clerk/clerk-react"
+import { Button } from "@/components/ui/button"
 import OrbitalHeader from "./OrbitalHeader"
 import ChatInput from "../taskChatComponents/TaskChatInput"
 import MessagesList from "../taskChatComponents/TaskChatMessages"
@@ -10,7 +11,7 @@ interface UserType {
   name: string
   avatar: string
   isOnline: boolean
-  email?: string
+  email?:  string
 }
 
 interface OrbitalPanelProps {
@@ -18,19 +19,23 @@ interface OrbitalPanelProps {
   onClose: () => void
 }
 
+const STATIC_SUGGESTIONS = [
+  "Review authentication module with 92 complexity",
+  "Improve coverage for low-tested payment system",
+  "Prioritize outdated react-router-dom dependency",
+]
+
 const OrbitalPanel = ({
   isOpen,
   onClose,
 }: OrbitalPanelProps) => {
   const { user } = useUser()
 
-  const [messages, setMessages] = useState<any[]>([
-    
-  ])
+  const [messages, setMessages] = useState<any[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [files, setFiles] = useState<FileItem[]>([])
   const [mentionToInsert, setMentionToInsert] = useState<string | null>(null)
-    const [logsOpen, setLogsOpen] = useState(false)
+  const [logsOpen, setLogsOpen] = useState(false)
   const [showMonacoCanvas, setShowMonacoCanvas] = useState(false)
   const [executionLogsOpen, setExecutionLogsOpen] = useState(false)
   
@@ -52,8 +57,8 @@ const OrbitalPanel = ({
       isCode: false,
       attachedFiles: files.map(f => ({
           name: f.file.name,
-          type: f.file.type,
-          size: f.file.size,
+          type: f.file. type,
+          size: f. file.size,
           url: "",
           id: f.id || Math.random().toString(), 
           uploadedAt: new Date().toISOString()
@@ -66,7 +71,10 @@ const OrbitalPanel = ({
     
   }
 
-  const handleSuggestionClick = (text: string) => setNewMessage(text)
+  const handleSuggestionClick = (text: string) => {
+    setNewMessage(text)
+  }
+  
   const handleRetryClick = (text: string) => setNewMessage(text)
   const handleFileClick = async () => {} // No-op without backend
   const handleShowGeneratedFiles = async () => {} // No-op
@@ -74,6 +82,8 @@ const OrbitalPanel = ({
   if (!isOpen) return null
 
   const containerClasses = "fixed inset-y-0 right-0 w-96 bg-white border-l border-gray-200 shadow-2xl z-50 flex flex-col"
+
+  const showSuggestions = messages.length === 0
 
   return (
     <div className={containerClasses}>
@@ -112,6 +122,24 @@ const OrbitalPanel = ({
           onRetryClick={handleRetryClick}
           onFileClick={handleFileClick}
         />
+
+        {showSuggestions && (
+          <div className="px-6 pb-4">
+            <div className="flex flex-wrap gap-2">
+              {STATIC_SUGGESTIONS.map((prompt, index) => (
+                <Button
+                  key={index}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleSuggestionClick(prompt)}
+                  className="h-auto py-2 px-4 text-sm text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-full"
+                >
+                  {prompt}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <ChatInput
           newMessage={newMessage}
