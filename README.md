@@ -4,15 +4,15 @@
 
 Orbital offers a comprehensive workspace for software engineering teams, featuring intelligent AI agents, project management tools, real-time task collaboration, and productivity enhancements.
 
-![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/preview-version.png)
+![Orbital Platform Screenshot](https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/activity.png)
 
 
 ## Project View
-<img width="3424" height="1910" alt="image" src="https://github.com/user-attachments/assets/f0530308-55c2-4723-87cd-b4d7f0e3a064" />
+<img width="3424" height="1910" alt="image" src="https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/project.png" />
 
 
 ## MCP Powered
-<img width="3424" height="1910" alt="image" src="https://github.com/AximoxAI/orbital/blob/main/public/mcp.png?raw=true" />
+<img width="3424" height="1910" alt="image" src="https://raw.githubusercontent.com/AximoxAI/orbital/refs/heads/main/public/mcp.png" />
 
 
 ## 🚀 Key Features
