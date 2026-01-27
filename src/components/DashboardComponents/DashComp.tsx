@@ -32,7 +32,7 @@ import TopBar from "@/components/Topbar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel"
+import OrbitalPanel from "@/components/orbitalPanelComponents/OrbitalPanel"
 import OrbitalRepoGraph from "../taskChatComponents/Preview"
 
 const DashComponent: React.FC = () => {

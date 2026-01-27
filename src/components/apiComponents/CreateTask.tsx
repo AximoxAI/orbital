@@ -12,30 +12,27 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import { TasksApi, Configuration } from "@/api-client";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "@/components/ui/card";
+import { Loader2, CheckCircle2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-export function CreateTask({ defaultProjectId }) {
+export function CreateTask({ defaultProjectId }: { defaultProjectId: string | null }) {
   const { toast } = useToast();
   const { getToken } = useAuth();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const form = useForm({
     defaultValues: {
       title: "",
       description: "",
       status: "design",
-      priority: "low",
+      priority: "medium",
       assignees: "",
       estimated_hours: 1,
     },
   });
 
   const onSubmit = async (values: any) => {
+    setIsSubmitting(true);
     const payload = {
       ...values,
       assignees: values.assignees
@@ -47,9 +44,7 @@ export function CreateTask({ defaultProjectId }) {
     };
 
     try {
-      // Get the session token for authentication
       const sessionToken = await getToken();
-      // Create API instance with auth header
       const api = new TasksApi(
         new Configuration({
           basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -57,7 +52,12 @@ export function CreateTask({ defaultProjectId }) {
         })
       );
       await api.tasksControllerCreate(defaultProjectId, payload);
-      toast({ title: "Task created successfully!" });
+      
+      toast({ 
+        title: "Success!",
+        description: "Task created successfully",
+      });
+      
       form.reset();
       setTimeout(() => {
         window.location.reload();
@@ -68,135 +68,242 @@ export function CreateTask({ defaultProjectId }) {
         description: err.message || "Something went wrong",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <Card className="max-w-lg mx-auto mt-4 p-4">
-      <CardHeader>
-        <CardTitle>Create a New Task</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-5 max-h-80 p-2 overflow-y-auto"
-            style={{ maxHeight: 320, overflowY: "auto" }} // fallback for non-tailwind
-          >
-            {/* Title */}
-            <FormField
-              name="title"
-              control={form.control}
-              rules={{ required: "Title is required" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl><Input {...field} placeholder="Task title" /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+    <div className="w-full">
+      {/* Header */}
+      <div className="px-6 py-5 border-b border-border bg-muted/30">
+        <h2 className="text-xl font-semibold text-foreground">Create New Task</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Add a new task to your project and assign team members
+        </p>
+      </div>
 
-            {/* Description */}
-            <FormField
-              name="description"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea {...field} placeholder="Optional description" />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      {/* Form Content */}
+      <ScrollArea className="h-[450px]">
+        <div className="px-6 py-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              
+              {/* Title */}
+              <FormField
+                name="title"
+                control={form.control}
+                rules={{ required: "Title is required" }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      Task Title <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        placeholder="e.g. Design landing page mockup" 
+                        className="h-10"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Status */}
-            <FormField
-              name="status"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <FormControl>
-                    <Select defaultValue={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger><SelectValue placeholder="Select status" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="design">Design</SelectItem>
-                        <SelectItem value="in_progress">In Progress</SelectItem>
-                        <SelectItem value="completed">Completed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            {/* Priority */}
-            <FormField
-              name="priority"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <FormControl>
-                    <Select defaultValue={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="low">Low</SelectItem>
-                        <SelectItem value="medium">Medium</SelectItem>
-                        <SelectItem value="high">High</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                </FormItem>
-              )}
-            />
+              {/* Description */}
+              <FormField
+                name="description"
+                control={form.control}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        placeholder="Provide additional details about this task..."
+                        className="min-h-[100px] resize-none"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-            {/* Assignees (comma separated, optional) */}
-            <FormField
-              name="assignees"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assignees</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="e.g. user1,user2 (optional)"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Status and Priority Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Status */}
+                <FormField
+                  name="status"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Status</FormLabel>
+                      <Select defaultValue={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="design">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-purple-500" />
+                              Design
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="to_do">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-blue-500" />
+                              To-Do
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="in_review">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-amber-500" />
+                              In Review
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="completed">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-500" />
+                              Completed
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Priority */}
+                <FormField
+                  name="priority"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Priority</FormLabel>
+                      <Select defaultValue={field.value} onValueChange={field.onChange}>
+                        <FormControl>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select priority" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="low">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-slate-400" />
+                              Low
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="medium">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-yellow-500" />
+                              Medium
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="high">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500" />
+                              High
+                            </div>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-            {/* Estimated Hours */}
-            <FormField
-              name="estimated_hours"
-              control={form.control}
-              rules={{ required: "Estimated hours required" }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Estimated Hours</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      min={1}
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Estimated Hours and Assignees Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Estimated Hours */}
+                <FormField
+                  name="estimated_hours"
+                  control={form.control}
+                  rules={{ required: "Estimated hours required" }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">
+                        Estimated Hours <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={999}
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          className="h-10"
+                          placeholder="e.g. 8"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            <Button variant="default" type="submit" className="w-[100%] bg-slate-800 hover:bg-slate-600">Create Task</Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+                {/* Assignees */}
+                <FormField
+                  name="assignees"
+                  control={form.control}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">
+                        Assignees
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="user1, user2"
+                          className="h-10"
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Comma-separated user IDs (optional)
+                      </p>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+            </form>
+          </Form>
+        </div>
+      </ScrollArea>
+
+      {/* Footer with Actions */}
+      <div className="px-6 py-4 border-t border-border bg-muted/20 flex items-center justify-end gap-3">
+        <Button 
+          variant="outline" 
+          type="button"
+          onClick={() => form.reset()}
+          disabled={isSubmitting}
+        >
+          Reset
+        </Button>
+        <Button 
+          type="submit"
+          onClick={form.handleSubmit(onSubmit)}
+          disabled={isSubmitting}
+          className="min-w-[120px] bg-slate-800"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="mr-2 h-4 w-4" />
+              Create Task
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 }

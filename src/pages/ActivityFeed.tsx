@@ -1,14 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Activity, EntityType, ActivityCategory, Insight, Role } from '../../types';
 import { MOCK_ACTIVITIES } from '../constants';
-import ActivityCard from '../components/ActivityComponets/ActivityCard';
-import InsightsPanel from '../components/ActivityComponets/InsightsPanel';
-import ActivityDetailModal from '../components/ActivityComponets/ActivityDetailModal';
+import ActivityCard from '../components/activityComponets/ActivityCard';
+import InsightsPanel from '../components/activityComponets/InsightsPanel';
+import ActivityDetailModal from '../components/activityComponets/ActivityDetailModal';
 import Sidebar from '@/components/Sidebar';
 import TopBar from '@/components/Topbar';
 import { Button } from "@/components/ui/button";
 import { Play, Activity as ActivityIcon } from "lucide-react";
-import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel";
+import OrbitalPanel from "@/components/orbitalPanelComponents/OrbitalPanel";
 import { FunnelIcon } from '@heroicons/react/24/outline';
 
 const ActivityFeed: React.FC = () => {

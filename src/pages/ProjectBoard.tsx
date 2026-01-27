@@ -13,7 +13,8 @@ import {
   Layout,
   Search,
   Sparkles,
-  Loader2
+  Loader2,
+  Check
 } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
 import TaskChat from "@/components/taskChatComponents/TaskChat"
@@ -34,8 +35,9 @@ import {
 import Sidebar from "@/components/Sidebar"
 import TopBar from "@/components/Topbar"
 import { useNavigate } from "react-router-dom"
-import OrbitalPanel from "@/components/OrbitalPanelComponents/OrbitalPanel"
+import OrbitalPanel from "@/components/orbitalPanelComponents/OrbitalPanel"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
+import { cn } from "@/lib/utils"
 
 const getInitials = (name: string) => {
   if (!name) return "??"
@@ -55,6 +57,21 @@ interface UploadedFile {
 
 type ProjectDocsMap = Record<string, UploadedFile[]>
 
+// Map display names to backend status values
+const STATUS_MAP: Record<string, string> = {
+  "Design": "design",
+  "In Review": "in_review",
+  "To-Do": "to_do",
+  "Completed": "completed"
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  "Design": "bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200",
+  "In Review": "bg-amber-100 hover:bg-amber-200 text-amber-700 border-amber-200",
+  "To-Do": "bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-200",
+  "Completed": "bg-green-100 hover:bg-green-200 text-green-700 border-green-200"
+}
+
 interface ProjectsListInnerProps {
   projects: any[]
   loading: boolean
@@ -64,6 +81,7 @@ interface ProjectsListInnerProps {
   onShowCreateTaskModal: (projectId: string) => void
   projectDocs: ProjectDocsMap
   onUploadProjectFiles: (projectId: string) => void
+  selectedTaskId: string | null
 }
 
 function ProjectsList({
@@ -75,7 +93,25 @@ function ProjectsList({
   onShowCreateTaskModal,
   projectDocs,
   onUploadProjectFiles,
+  selectedTaskId,
 }: ProjectsListInnerProps) {
+  const [statusFilters, setStatusFilters] = useState<Record<string, string | null>>({})
+
+  const handleStatusFilter = (projectId: string, statusLabel: string) => {
+    setStatusFilters(prev => ({
+      ...prev,
+      [projectId]: prev[projectId] === statusLabel ? null : statusLabel
+    }))
+  }
+
+  const getFilteredTasks = (projectId: string, tasks: any[]) => {
+    const activeFilter = statusFilters[projectId]
+    if (!activeFilter) return tasks
+    
+    const backendStatus = STATUS_MAP[activeFilter]
+    return tasks.filter(task => task.status === backendStatus)
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center min-h-[400px]">
@@ -109,126 +145,180 @@ function ProjectsList({
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
-          {projects.map((project: any) => (
-            <Card 
-              key={project.id} 
-              className="group flex flex-col h-[400px] border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
-            >
-              <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/30">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-2.5 h-2.5 bg-slate-500 rounded-full shadow-sm ring-2 ring-white" />
-                      <CardTitle className="text-base font-semibold text-slate-800 leading-none">
-                        {project.name}
-                      </CardTitle>
-                    </div>
-                    <p className="text-xs text-slate-500 font-medium pl-4.5">
-                      {project.type || "General Project"}
-                    </p>
-                  </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-slate-400 hover:text-slate-700">
-                        <EllipsisVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onShowCreateTaskModal(project.id)}>
-                        <Plus className="mr-2 h-4 w-4" /> New task
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => onGenerateRequirements(project.id)}>
-                        <Sparkles className="mr-2 h-4 w-4" /> AI Generate Tasks
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => onUploadProjectFiles(project.id)}>
-                        <FileText className="mr-2 h-4 w-4" /> Add project docs
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardHeader>
-              
-              <div className="px-4 py-3 bg-white border-b border-slate-100">
-                 <ScrollArea className="w-full whitespace-nowrap">
-                  <div className="flex space-x-2">
-                    {["Design", "In Review", "To-Do", "Completed"].map((status) => (
-                      <Badge 
-                        key={status} 
-                        variant="secondary" 
-                        className="text-[10px] font-medium px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/60 cursor-pointer transition-colors"
-                      >
-                        {status}
-                      </Badge>
-                    ))}
-                    <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full hover:bg-slate-100">
-                      <Filter className="w-3 h-3 text-slate-400" />
-                    </Button>
-                  </div>
-                  <ScrollBar orientation="horizontal" className="h-1.5" />
-                </ScrollArea>
-              </div>
-
-              <CardContent className="flex-1 p-0 overflow-hidden relative bg-white">
-                <ScrollArea className="h-full">
-                  <div className="p-3 space-y-1">
-                    {project.tasks && project.tasks.length > 0 ? (
-                      project.tasks.map((task: any) => (
-                        <div
-                          key={task.id}
-                          className="group/task flex items-center justify-between p-2.5 rounded-md hover:bg-slate-50 border border-transparent hover:border-slate-100 cursor-pointer transition-all duration-150"
-                          onClick={() => onTaskClick(task.id, task.title)}
-                        >
-                          <div className="flex items-center space-x-3 flex-1 min-w-0">
-                            <div className="w-3.5 h-3.5 border-2 border-slate-300 rounded-sm group-hover/task:border-slate-400 transition-colors" />
-                            <span className="text-sm font-medium text-slate-700 truncate block">
-                              {task.title}
-                            </span>
-                          </div>
-                          
-                          <div className="pl-2 flex items-center">
-                            {task.assignees &&
-                            task.assignees.length > 0 &&
-                            task.assignees.some((assignee: any) => assignee.avatar) ? (
-                              <div className="flex -space-x-2 overflow-hidden">
-                                {task.assignees.map((assignee: any, avatarIndex: number) =>
-                                  assignee.avatar ? (
-                                    <Avatar
-                                      key={assignee.id || avatarIndex}
-                                      className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
-                                    >
-                                      <AvatarImage
-                                        src={assignee.avatar}
-                                        alt={assignee.name || "User"}
-                                      />
-                                      <AvatarFallback className="text-[9px] bg-slate-100 text-slate-600">
-                                        {getInitials(assignee.name || assignee.email || "")}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                  ) : null,
-                                )}
-                              </div>
-                            ) : null}
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-40 text-center px-4">
-                        <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-2">
-                           <Layout className="w-5 h-5 text-slate-300" />
-                        </div>
-                        <p className="text-sm text-slate-500">No tasks created yet.</p>
+        <div className="flex flex-wrap gap-6 pb-20">
+          {projects.map((project: any) => {
+            const filteredTasks = getFilteredTasks(project.id, project.tasks || [])
+            const activeFilter = statusFilters[project.id]
+            
+            return (
+              <Card 
+                key={project.id} 
+                className="group flex flex-col w-full md:w-[calc(50%-0.75rem)] xl:w-[calc(33.333%-1rem)] h-[400px] border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
+              >
+                <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/30">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2.5 h-2.5 bg-slate-500 rounded-full shadow-sm ring-2 ring-white" />
+                        <CardTitle className="text-base font-semibold text-slate-800 leading-none">
+                          {project.name}
+                        </CardTitle>
                       </div>
-                    )}
+                      <p className="text-xs text-slate-500 font-medium pl-[18px]">
+                        {project.type || "General Project"}
+                      </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 -mr-2 text-slate-400 hover:text-slate-700">
+                          <EllipsisVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onShowCreateTaskModal(project.id)}>
+                          <Plus className="mr-2 h-4 w-4" /> New task
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onGenerateRequirements(project.id)}>
+                          <Sparkles className="mr-2 h-4 w-4" /> AI Generate Tasks
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => onUploadProjectFiles(project.id)}>
+                          <FileText className="mr-2 h-4 w-4" /> Add project docs
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          ))}
+                </CardHeader>
+                
+                <div className="px-4 py-3 bg-white border-b border-slate-100">
+                  <ScrollArea className="w-full whitespace-nowrap">
+                    <div className="flex space-x-2 pl-2 items-center">
+                      {Object.keys(STATUS_MAP).map((status) => {
+                        const isActive = activeFilter === status
+                        const taskCount = (project.tasks || []).filter(
+                          (task: any) => task.status === STATUS_MAP[status]
+                        ).length
+                        
+                        return (
+                          <Badge 
+                            key={status} 
+                            variant="secondary" 
+                            onClick={() => handleStatusFilter(project.id, status)}
+                            className={cn(
+                              "text-[10px] font-medium px-2 py-0.5 cursor-pointer transition-all relative",
+                              isActive 
+                                ? STATUS_STYLES[status] + " ring-2 ring-offset-1" 
+                                : "bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200/60"
+                            )}
+                          >
+                            {status}
+                            {taskCount > 0 && (
+                              <span className="ml-1 opacity-70">({taskCount})</span>
+                            )}
+                          </Badge>
+                        )
+                      })}
+                      
+                      {activeFilter && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-5 w-5 rounded-full hover:bg-slate-100"
+                          onClick={() => setStatusFilters(prev => ({ ...prev, [project.id]: null }))}
+                          title="Clear filter"
+                        >
+                          <X className="w-3 h-3 text-slate-600" />
+                        </Button>
+                      )}
+                    </div>
+                    <ScrollBar orientation="horizontal" className="h-1.5" />
+                  </ScrollArea>
+                </div>
+
+                <CardContent className="flex-1 p-0 overflow-hidden relative bg-white">
+                  <ScrollArea className="h-full">
+                    <div className="p-3 space-y-1">
+                      {filteredTasks.length > 0 ? (
+                        filteredTasks.map((task: any) => {
+                          const isSelected = selectedTaskId === task.id
+                          return (
+                            <div
+                              key={task.id}
+                              className="group/task flex items-center justify-between p-2.5 rounded-md hover:bg-slate-50 border border-transparent hover:border-slate-100 cursor-pointer transition-all duration-150"
+                              onClick={() => onTaskClick(task.id, task.title)}
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className={cn(
+                                  "w-3.5 h-3.5 border-2 rounded-sm transition-all duration-200 flex items-center justify-center",
+                                  isSelected 
+                                    ? "bg-slate-500 border-slate-500" 
+                                    : "border-slate-300 group-hover/task:border-slate-400"
+                                )}>
+                                  {isSelected && (
+                                    <Check className="w-2.5 h-2.5 text-white stroke-[3]" />
+                                  )}
+                                </div>
+                                <span className="text-sm font-medium text-slate-700 truncate block">
+                                  {task.title}
+                                </span>
+                              </div>
+                              
+                              <div className="pl-2 flex items-center">
+                                {task.assignees &&
+                                task.assignees.length > 0 &&
+                                task.assignees.some((assignee: any) => assignee.avatar) ? (
+                                  <div className="flex -space-x-2 overflow-hidden">
+                                    {task.assignees.map((assignee: any, avatarIndex: number) =>
+                                      assignee.avatar ? (
+                                        <Avatar
+                                          key={assignee.id || avatarIndex}
+                                          className="inline-block h-6 w-6 rounded-full ring-2 ring-white"
+                                        >
+                                          <AvatarImage
+                                            src={assignee.avatar}
+                                            alt={assignee.name || "User"}
+                                          />
+                                          <AvatarFallback className="text-[9px] bg-slate-100 text-slate-600">
+                                            {getInitials(assignee.name || assignee.email || "")}
+                                          </AvatarFallback>
+                                        </Avatar>
+                                      ) : null,
+                                    )}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          )
+                        })
+                      ) : (
+                        <div className="flex flex-col items-center justify-center h-40 text-center px-4">
+                          <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-2">
+                            <Layout className="w-5 h-5 text-slate-300" />
+                          </div>
+                          <p className="text-sm text-slate-500">
+                            {activeFilter ? `No ${activeFilter.toLowerCase()} tasks` : "No tasks created yet."}
+                          </p>
+                          {activeFilter && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="mt-2 text-xs"
+                              onClick={() => setStatusFilters(prev => ({ ...prev, [project.id]: null }))}
+                            >
+                              Clear filter
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
@@ -251,7 +341,7 @@ const ProjectBoard = () => {
   const [requirementsProjectId, setRequirementsProjectId] = useState("")
   const [createTaskProjectId, setCreateTaskProjectId] = useState<string | null>(null)
   const [search, setSearch] = useState("")
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]) // global docs
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [projectDocs, setProjectDocs] = useState<ProjectDocsMap>({})
   const [projectUploadTargetId, setProjectUploadTargetId] = useState<string | null>(null)
 
@@ -267,8 +357,6 @@ const ProjectBoard = () => {
         accessToken: sessionToken || undefined,
       })
       const uploadsApi = new UploadsApi(configuration)
-      // Implementation note: The original code had a setUploadedFiles here but didn't call an API that returned data in the snippet.
-      // Preserving original logic:
       setUploadedFiles((prev) => prev)
     } catch {
     }
@@ -297,7 +385,6 @@ const ProjectBoard = () => {
           projectsData.map(async (project: any) => {
             if (!project.id) return
 
-            // tasks
             try {
               const res = await tasksApi.tasksControllerFindAllByProject(project.id, "")
               tasksByProject[project.id] = res.data || res || []
@@ -398,38 +485,6 @@ const ProjectBoard = () => {
     setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId))
   }
 
-  // Note: This logic is preserved but unused in the component currently (as per original file)
-  const handleCreateTask = (taskName: string, projectName: string) => {
-    setProjects((prevProjects) => {
-      const updatedProjects = prevProjects.map((project) => {
-        if (project.name.includes(projectName)) {
-          const newTask = {
-            id: `task-${Date.now()}-${Math.random()}`,
-            project_id: project.id,
-            title: taskName,
-            description: "",
-            status: "design",
-            priority: "medium",
-            progress: 0,
-            estimated_hours: null,
-            due_date: null,
-            ai_generated: false,
-            ai_confidence: null,
-            assignees: [],
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          }
-          return {
-            ...project,
-            tasks: [...project.tasks, newTask],
-          }
-        }
-        return project
-      })
-      return updatedProjects
-    })
-  }
-
   const handleShowCreateTaskModal = (projectId: string) => {
     setCreateTaskProjectId(projectId)
     setShowCreateTaskModal(true)
@@ -484,7 +539,6 @@ const ProjectBoard = () => {
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-[1600px] mx-auto p-6 md:p-8 space-y-8">
             
-            {/* --- Dashboard Header & Quick Actions --- */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
               <div>
                 <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
@@ -526,7 +580,6 @@ const ProjectBoard = () => {
               </div>
             </div>
 
-            {/* --- Uploaded Documents Quick Strip --- */}
             {uploadedFiles.length > 0 && (
               <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                 <div className="px-4 py-3 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between">
@@ -567,7 +620,6 @@ const ProjectBoard = () => {
               </div>
             )}
 
-            {/* --- Main Project Board --- */}
             <div>
               <div className="flex items-center justify-between mb-4">
                  <h2 className="text-lg font-semibold text-slate-800">Your Projects</h2>
@@ -591,25 +643,17 @@ const ProjectBoard = () => {
                   setProjectUploadTargetId(projectId)
                   setShowFileUploadDialog(true)
                 }}
+                selectedTaskId={selectedTask?.id || null}
               />
             </div>
           </div>
         </main>
 
-        {/* --- Modals --- */}
-        {showCreateProjectModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden relative animate-in fade-in zoom-in duration-200">
-              <button
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors z-10"
-                onClick={() => setShowCreateProjectModal(false)}
-              >
-                <X className="w-5 h-5" />
-              </button>
-              <CreateProject onSuccess={handleProjectCreated} />
-            </div>
-          </div>
-        )}
+        <CreateProject 
+          open={showCreateProjectModal}
+          onOpenChange={setShowCreateProjectModal}
+          onSuccess={handleProjectCreated} 
+        />
 
         {showCreateTaskModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
@@ -652,17 +696,16 @@ const ProjectBoard = () => {
           />
         )}
 
-        {/* --- Floating Action Button --- */}
         {!chatOpen && !showOrbitalPanel && (
-   <Button
-  size="default"
-  className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-800 text-white rounded-lg w-auto h-10 px-4 flex items-center justify-center text-sm font-medium transition-all"
-  onClick={() => {
-    setShowOrbitalPanel(true)
-  }}
->
-  Ask Orbital
-</Button>
+          <Button
+            size="default"
+            className="fixed bottom-24 right-6 z-50 shadow-xl bg-slate-800 hover:bg-slate-800 text-white rounded-lg w-auto h-10 px-4 flex items-center justify-center text-sm font-medium transition-all"
+            onClick={() => {
+              setShowOrbitalPanel(true)
+            }}
+          >
+            Ask Orbital
+          </Button>
         )}
       </div>
     </div>

@@ -74,7 +74,6 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Send className="w-5 h-5" />
             <span>Generate Tasks</span>
           </CardTitle>
         </CardHeader>
