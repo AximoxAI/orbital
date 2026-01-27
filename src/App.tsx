@@ -20,7 +20,7 @@ import UserTasks from "./pages/UserTasks";
 import Inbox from "./pages/Inbox";
 import { FileSystemProvider } from "./components/FileSystemContext";
 import Workflow from "./pages/Workflow";
-import Dashboard from "./components/dashboardComponents/DashComp";
+import Dashboard from "./components/dashBoardComponents/DashComp";
 import ActivityFeed from "./pages/ActivityFeed";
 
 
