@@ -1,4 +1,4 @@
-import Dashboard from '@/components/DashboardComponents/DashComp';
+import Dashboard from '@/components/dashBoardComponents/DashComp';
 import React from 'react';
 
 function App() {

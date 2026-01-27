@@ -4,7 +4,8 @@ import { Send, Bot, User, LayoutTemplate, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import TaskChatTemplateDialog from "./TaskChatTemplateDialog"
 import AttachFileButton, { FileItem } from "./AttachFileButton"
-import FileAttachmentCard from "./TaskChatMessages/FileAttachmentCard"
+import FileAttachmentCard from "./taskChatMessages/FileAttachmentCard"
+import { cn } from "@/lib/utils"
 
 const availableBots = ["@goose", "@orbital_cli", "@gemini_cli", "@claude_code"]
 
@@ -16,6 +17,7 @@ const BOT_STYLES = {
     selectedText: "text-pink-900",
     iconColor: "text-pink-600",
     borderColor: "border-pink-200",
+    accentColor: "bg-pink-500",
   },
   "@orbital_cli": {
     bgColor: "bg-purple-50",
@@ -24,6 +26,7 @@ const BOT_STYLES = {
     selectedText: "text-purple-900",
     iconColor: "text-purple-600",
     borderColor: "border-purple-200",
+    accentColor: "bg-purple-500",
   },
   "@gemini_cli": {
     bgColor: "bg-blue-50",
@@ -32,6 +35,7 @@ const BOT_STYLES = {
     selectedText: "text-blue-900",
     iconColor: "text-blue-600",
     borderColor: "border-blue-200",
+    accentColor: "bg-blue-500",
   },
   "@claude_code": {
     bgColor: "bg-green-50",
@@ -40,6 +44,7 @@ const BOT_STYLES = {
     selectedText: "text-green-900",
     iconColor: "text-green-600",
     borderColor: "border-green-200",
+    accentColor: "bg-green-500",
   },
 } as const
 
@@ -50,6 +55,7 @@ const DEFAULT_BOT_STYLE = {
   selectedText: "text-slate-900",
   iconColor: "text-slate-600",
   borderColor: "border-slate-200",
+  accentColor: "bg-slate-500",
 }
 
 const USER_STYLE = {
@@ -59,6 +65,7 @@ const USER_STYLE = {
   selectedText: "text-amber-900",
   iconColor: "text-amber-600",
   borderColor: "border-amber-200",
+  accentColor: "bg-amber-500",
 }
 
 const ENTITY_STYLES = {
@@ -393,14 +400,14 @@ const ChatInput = ({
   }
 
   const suggestionsLeftClass = isFullPage
-    ? "left-1/2 transform -translate-x-1/2 w-[80%] max-w-6xl"
+    ? "left-1/2 transform -translate-x-1/2 w-[80%] max-w-2xl"
     : "left-6 right-6"
 
-  const getSuggestionStyles = (suggestion: string, index: number) => {
+  const getSuggestionStyles = (suggestion: string) => {
     const isBot = availableBots.includes(suggestion)
     const styles = isBot ? getBotStyles(suggestion) : USER_STYLE
     const icon = isBot ? Bot : User
-    return { styles, icon }
+    return { styles, icon, isBot }
   }
 
   return (
@@ -422,25 +429,92 @@ const ChatInput = ({
       >
         {showSuggestions && (
           <div
-            className={`absolute bottom-full mb-2 bg-white border border-gray-200 rounded-xl shadow-xl z-10 overflow-hidden ${suggestionsLeftClass}`}
+            className={cn(
+              "absolute bottom-full mb-3 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden",
+              suggestionsLeftClass
+            )}
           >
-            {filteredSuggestions.map((suggestion, index) => {
-              const { styles, icon: IconComponent } = getSuggestionStyles(suggestion, index)
-              return (
-                <div
-                  key={suggestion}
-                  className={`px-4 py-3 cursor-pointer text-sm font-semibold flex items-center space-x-3 transition-all duration-150 ${
-                    index === selectedSuggestionIndex
-                      ? `${styles.selectedBg} ${styles.selectedText} border-l-4 ${styles.borderColor}`
-                      : `hover:${styles.bgColor} ${styles.textColor}`
-                  }`}
-                  onClick={() => selectSuggestion(suggestion)}
-                >
-                  <IconComponent className={`w-4 h-4 ${styles.iconColor}`} />
-                  <span>{suggestion}</span>
-                </div>
-              )
-            })}
+            <div className="p-2 space-y-1 max-h-[300px] overflow-y-auto">
+              <div className="px-3 py-1.5 text-xs font-medium text-gray-500">
+                Suggestions
+              </div>
+              {filteredSuggestions.map((suggestion, index) => {
+                const { styles, icon: IconComponent, isBot } = getSuggestionStyles(suggestion)
+                const isSelected = index === selectedSuggestionIndex
+                
+                return (
+                  <div
+                    key={suggestion}
+                    className={cn(
+                      "relative flex items-center gap-3 px-3 py-2.5 rounded-md cursor-pointer transition-all group",
+                      isSelected 
+                        ? `${styles.selectedBg} shadow-sm` 
+                        : "hover:bg-gray-50"
+                    )}
+                    onClick={() => selectSuggestion(suggestion)}
+                  >
+                    {/* Icon with colored background */}
+                    <div className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-md transition-all",
+                      styles.bgColor
+                    )}>
+                      <IconComponent className={cn("w-4 h-4", styles.iconColor)} />
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className={cn("font-medium text-sm", isSelected && styles.selectedText)}>
+                        {suggestion}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {isBot ? "AI Assistant" : "Team Member"}
+                      </div>
+                    </div>
+
+                    {/* Keyboard hint for selected item */}
+                    {isSelected && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[10px] font-medium">
+                          ↵
+                        </kbd>
+                      </div>
+                    )}
+
+                    {/* Accent line for selected */}
+                    {isSelected && (
+                      <div className={cn(
+                        "absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full",
+                        styles.accentColor
+                      )} />
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+            
+            {/* Footer with keyboard hints */}
+            <div className="border-t border-gray-200 bg-gray-50 px-3 py-2 flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-gray-200 bg-white px-1.5 font-mono text-[10px] font-medium">
+                    ↑↓
+                  </kbd>
+                  Navigate
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-gray-200 bg-white px-1.5 font-mono text-[10px] font-medium">
+                    ↵
+                  </kbd>
+                  Select
+                </span>
+                <span className="flex items-center gap-1">
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-gray-200 bg-white px-1.5 font-mono text-[10px] font-medium">
+                    Esc
+                  </kbd>
+                  Close
+                </span>
+              </div>
+            </div>
           </div>
         )}
 

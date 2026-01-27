@@ -3,7 +3,7 @@ import { useUser } from "@clerk/clerk-react"
 import { Button } from "@/components/ui/button"
 import OrbitalHeader from "./OrbitalHeader"
 import ChatInput from "../taskChatComponents/TaskChatInput"
-import MessagesList from "../taskChatComponents/TaskChatMessages"
+import MessagesList from "../taskChatComponents/taskChatMessages"
 import { FileItem } from "../taskChatComponents/AttachFileButton"
 
 interface UserType {

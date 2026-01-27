@@ -44,7 +44,6 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
     setSuccess(false);
 
     try {
-      // Get session token and create authenticated API instance
       const sessionToken = await getToken();
       const configuration = new Configuration({
         basePath: import.meta.env.VITE_BACKEND_API_KEY,
@@ -56,10 +55,10 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
       setResponse(result.data);
       setSuccess(true);
 
+      // Soft refresh the page after showing success message
       setTimeout(() => {
-        setSuccess(false);
-        setResponse(null);
-      }, 5000);
+        window.location.reload();
+      }, 1500);
 
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Failed to create project');
@@ -71,10 +70,9 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <Card>
+      <Card className="border-0 shadow-none">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
-            <Send className="w-5 h-5" />
             <span>Generate Tasks</span>
           </CardTitle>
         </CardHeader>
@@ -91,10 +89,11 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
                 required
               />
             </div>
+
             <Button 
               type="submit" 
               disabled={loading || !formData.requirements || !formData.project_id}
-              className="w-[100%] bg-slate-800 hover:bg-slate-600"
+              className="w-full bg-slate-800 hover:bg-slate-600"
             >
               {loading ? (
                 <>
@@ -111,14 +110,16 @@ const GenerateRequirements: React.FC<{ defaultProjectId?: string }> = ({ default
           </form>
         </CardContent>
       </Card>
+
       {success && (
         <Alert className="border-green-200 bg-green-50">
           <CheckCircle className="h-4 w-4 text-green-600" />
           <AlertDescription className="text-green-800">
-            Project created successfully!
+            Tasks Generated successfully!
           </AlertDescription>
         </Alert>
       )}
+
       {error && (
         <Alert className="border-red-200 bg-red-50">
           <AlertCircle className="h-4 w-4 text-red-600" />

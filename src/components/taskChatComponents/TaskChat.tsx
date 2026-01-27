@@ -6,7 +6,7 @@ import { useNavigate, useLocation, useParams } from "react-router-dom"
 import TaskChatHeader from "./TaskChatHeader"
 import ChatInput from "./TaskChatInput"
 import { createTaskChatAPI, TaskChatAPI } from "../apiComponents/TaskChatApi"
-import MessagesList from "./TaskChatMessages"
+import MessagesList from "./taskChatMessages"
 import {
   UsersApi,
   UserResponseDto,
