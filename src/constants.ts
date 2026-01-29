@@ -255,3 +255,100 @@ export const INSIGHTS = [
     impact: 'medium',
   }
 ];
+
+const generateSparkline = () => Array.from({ length: 24 }, () => ({ value: 20 + Math.random() * 80 }));
+
+export const AGENTS_OBSERVABILITY_DATA = [
+  { 
+    id: 'orbital',
+    name: "orbital_cli", 
+    role: "Orchestrator", 
+    successRate: 94, 
+    cost: 42.5, 
+    latency: 2.1, 
+    sparkline: generateSparkline(),
+    tokens: [ { name: 'Input', value: 4500 }, { name: 'Output', value: 2100 }, { name: 'Cached', value: 12000 } ],
+    burn: [ { day: 'M', cost: 12 }, { day: 'T', cost: 15 }, { day: 'W', cost: 42 }, { day: 'T', cost: 25 }, { day: 'F', cost: 30 }, { day: 'S', cost: 10 }, { day: 'S', cost: 5 } ],
+    latencyBreakdown: [
+      { stage: 'Context Retrieval', time: 800 },
+      { stage: 'Planner Inference', time: 900 },
+      { stage: 'Tool Delegation', time: 400 },
+    ],
+    trace: [
+      { type: 'prompt', title: "Trigger Received", detail: "Webhook: Push to main", color: "bg-blue-500" },
+      { type: 'thought', title: "Orchestration Plan", detail: "Detected 3 changed files. Assigning tasks...", color: "bg-purple-500" },
+      { type: 'tool', title: "Delegation", detail: "Spawned: gemini_cli (Tests), claude_code (Review)", color: "bg-slate-700" },
+      { type: 'output', title: "Workflow Complete", detail: "All child tasks finished successfully.", color: "bg-green-500" },
+    ],
+    groundedness: 0.98
+  },
+  { 
+    id: 'gemini',
+    name: "gemini_cli", 
+    role: "Fast Reasoning", 
+    successRate: 88, 
+    cost: 12.8, 
+    latency: 0.8, 
+    sparkline: generateSparkline(),
+    tokens: [ { name: 'Input', value: 8000 }, { name: 'Output', value: 4000 }, { name: 'Cached', value: 2000 } ],
+    burn: [ { day: 'M', cost: 5 }, { day: 'T', cost: 8 }, { day: 'W', cost: 6 }, { day: 'T', cost: 9 }, { day: 'F', cost: 12 }, { day: 'S', cost: 4 }, { day: 'S', cost: 2 } ],
+    latencyBreakdown: [
+      { stage: 'Model Inference', time: 300 },
+      { stage: 'Search Tool', time: 400 },
+      { stage: 'Response Gen', time: 100 },
+    ],
+    trace: [
+      { type: 'prompt', title: "Task Received", detail: "Generate Unit Tests for PaymentGateway", color: "bg-blue-500" },
+      { type: 'thought', title: "Reasoning", detail: "Analyzing boundary cases for currency conversion...", color: "bg-purple-500" },
+      { type: 'tool', title: "File Access", detail: "read_file src/utils/currency.ts", color: "bg-slate-700" },
+      { type: 'output', title: "Code Generated", detail: "Created 12 test cases in PaymentGateway.test.tsx", color: "bg-green-500" },
+    ],
+    groundedness: 0.85
+  },
+  { 
+    id: 'claude',
+    name: "claude_code", 
+    role: "Complex Coding", 
+    successRate: 98, 
+    cost: 85.2, 
+    latency: 5.4, 
+    sparkline: generateSparkline(),
+    tokens: [ { name: 'Input', value: 6000 }, { name: 'Output', value: 5500 }, { name: 'Cached', value: 15000 } ],
+    burn: [ { day: 'M', cost: 50 }, { day: 'T', cost: 65 }, { day: 'W', cost: 40 }, { day: 'T', cost: 85 }, { day: 'F', cost: 70 }, { day: 'S', cost: 20 }, { day: 'S', cost: 10 } ],
+    latencyBreakdown: [
+      { stage: 'Deep Analysis', time: 2500 },
+      { stage: 'Safety Check', time: 500 },
+      { stage: 'Code Synthesis', time: 2400 },
+    ],
+    trace: [
+      { type: 'prompt', title: "Security Audit", detail: "Scan PR #402 for vulnerabilities", color: "bg-blue-500" },
+      { type: 'thought', title: "Static Analysis", detail: "Tracing data flow from user input to SQL query...", color: "bg-purple-500" },
+      { type: 'tool', title: "AST Parsing", detail: "parse_ast src/db/query.ts", color: "bg-slate-700" },
+      { type: 'output', title: "Report Generated", detail: "Found 0 critical, 2 low severity issues.", color: "bg-green-500" },
+    ],
+    groundedness: 0.99
+  },
+  { 
+    id: 'goose',
+    name: "goose", 
+    role: "Experimental", 
+    successRate: 65, 
+    cost: 5.4, 
+    latency: 1.2, 
+    sparkline: generateSparkline(),
+    tokens: [ { name: 'Input', value: 2000 }, { name: 'Output', value: 1000 }, { name: 'Cached', value: 500 } ],
+    burn: [ { day: 'M', cost: 2 }, { day: 'T', cost: 3 }, { day: 'W', cost: 1 }, { day: 'T', cost: 5 }, { day: 'F', cost: 4 }, { day: 'S', cost: 1 }, { day: 'S', cost: 0 } ],
+    latencyBreakdown: [
+      { stage: 'Config Load', time: 200 },
+      { stage: 'Inference', time: 800 },
+      { stage: 'Retry Loop', time: 200 },
+    ],
+    trace: [
+      { type: 'prompt', title: "Config Update", detail: "Update retention policy", color: "bg-blue-500" },
+      { type: 'thought', title: "Schema Check", detail: "Validating against schema v2...", color: "bg-purple-500" },
+      { type: 'tool', title: "Shell Exec", detail: "aws logs put-retention-policy", color: "bg-slate-700" },
+      { type: 'output', title: "Action Failed", detail: "PermissionDenied: IAM role missing policy.", color: "bg-red-500" },
+    ],
+    groundedness: 0.60
+  }
+];
