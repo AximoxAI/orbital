@@ -13,7 +13,8 @@ import {
   GitBranch,
   BarChart3,
   LayoutList,
-  ArrowRight
+  ArrowRight,
+  Code2
 } from "lucide-react"
 
 import MetricCard from "./MetricCard"
@@ -40,7 +41,7 @@ import { AgentShowcase, AgentDetailView } from "./AgentComponents"
 
 const DashComponent: React.FC = () => {
   const [showOrbitalPanel, setShowOrbitalPanel] = useState(false)
-  // FIX: Changed to <string> to prevent type errors blocking the Refactoring tab
+  const [activeSection, setActiveSection] = useState<"codebases" | "agents">("codebases")
   const [activePage, setActivePage] = useState<string>("dashboard")
   const [search, setSearch] = useState("")
   
@@ -51,90 +52,102 @@ const DashComponent: React.FC = () => {
     document.documentElement.classList.remove("dark")
   }, [])
 
+  const handleSectionChange = (section: "codebases" | "agents") => {
+    setActiveSection(section)
+    setSelectedAgent(null)
+    if (section === "codebases") {
+      setActivePage("dashboard")
+    } else {
+      setActivePage("agents")
+    }
+  }
+
   const handlePageChange = (page: string) => {
     setActivePage(page)
     setSelectedAgent(null)
   }
 
   const renderContent = () => {
-    switch (activePage) {
-      case "agents":
-        if (selectedAgent) {
-          return (
-            <AgentDetailView 
-              agent={selectedAgent} 
-              onBack={() => setSelectedAgent(null)} 
-            />
-          )
-        }
+    if (activeSection === "agents") {
+      if (selectedAgent) {
         return (
-          <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <MetricCard 
-                name="Total Spent (24h)" 
-                value={145.9} 
-                previousValue={110} 
-                change={32} 
-                unit="$" 
-                inverse 
-              />
-              <MetricCard 
-                name="Avg Success Rate" 
-                value={86.2} 
-                previousValue={82} 
-                change={4.2} 
-                unit="%" 
-              />
-              <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
-                <div>
-                  <h3 className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-1">Active Anomalies</h3>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-rose-600">3</span>
-                    <span className="text-xs text-rose-500 font-medium bg-rose-50 px-2 py-1 rounded-full">
-                      Review Needed
-                    </span>
-                  </div>
-                  <p className="text-slate-400 text-xs mt-2">1 Loop detected, 2 High Latency</p>
+          <AgentDetailView 
+            agent={selectedAgent} 
+            onBack={() => setSelectedAgent(null)} 
+          />
+        )
+      }
+      return (
+        <div className="space-y-8 animate-in fade-in duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <MetricCard 
+              name="Total Spent (24h)" 
+              value={145.9} 
+              previousValue={110} 
+              change={32} 
+              unit="$" 
+              inverse 
+            />
+            <MetricCard 
+              name="Avg Success Rate" 
+              value={86.2} 
+              previousValue={82} 
+              change={4.2} 
+              unit="%" 
+            />
+            <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex items-center justify-between">
+              <div>
+                <h3 className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-1">Active Anomalies</h3>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-rose-600">3</span>
+                  <span className="text-xs text-rose-500 font-medium bg-rose-50 px-2 py-1 rounded-full">
+                    Review Needed
+                  </span>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-rose-50 flex items-center justify-center">
-                  <AlertTriangle className="text-rose-500" size={24} />
-                </div>
+                <p className="text-slate-400 text-xs mt-2">1 Loop detected, 2 High Latency</p>
               </div>
-            </div>
-
-            <div className="bg-slate-50/50 rounded-xl">
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h3 className="font-semibold text-lg text-slate-900">Agent Showcase</h3>
-                  <p className="text-sm text-slate-500">Real-time monitoring of your active fleet</p>
-                </div>
-                <div className="flex gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     onClick={() => setAgentViewMode('grid')}
-                     className={`h-8 px-3 text-xs font-medium ${agentViewMode === 'grid' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                   >
-                     <LayoutGrid size={14} className="mr-2" /> Grid
-                   </Button>
-                   <Button 
-                     variant="ghost" 
-                     size="sm" 
-                     onClick={() => setAgentViewMode('table')}
-                     className={`h-8 px-3 text-xs font-medium ${agentViewMode === 'table' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
-                   >
-                     <LayoutList size={14} className="mr-2" /> Table
-                   </Button>
-                </div>
+              <div className="h-12 w-12 rounded-full bg-rose-50 flex items-center justify-center">
+                <AlertTriangle className="text-rose-500" size={24} />
               </div>
-              <AgentShowcase 
-                onAgentClick={(agent) => setSelectedAgent(agent)} 
-                viewMode={agentViewMode}
-              />
             </div>
           </div>
-        )
 
+          <div className="bg-slate-50/50 rounded-xl">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="font-semibold text-lg text-slate-900">Agent Showcase</h3>
+                <p className="text-sm text-slate-500">Real-time monitoring of your active fleet</p>
+              </div>
+              <div className="flex gap-1 bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => setAgentViewMode('grid')}
+                   className={`h-8 px-3 text-xs font-medium ${agentViewMode === 'grid' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                 >
+                   <LayoutGrid size={14} className="mr-2" /> Grid
+                 </Button>
+                 <Button 
+                   variant="ghost" 
+                   size="sm" 
+                   onClick={() => setAgentViewMode('table')}
+                   className={`h-8 px-3 text-xs font-medium ${agentViewMode === 'table' ? 'bg-slate-100 text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}
+                 >
+                   <LayoutList size={14} className="mr-2" /> Table
+                 </Button>
+              </div>
+            </div>
+            <AgentShowcase 
+              onAgentClick={(agent) => setSelectedAgent(agent)} 
+              viewMode={agentViewMode}
+            />
+          </div>
+        </div>
+      )
+    }
+
+    // Codebases section
+    switch (activePage) {
       case "dashboard":
         return (
           <>
@@ -457,9 +470,12 @@ const DashComponent: React.FC = () => {
   }
 
   const getPageTitle = () => {
+    if (activeSection === "agents") {
+      return selectedAgent ? `Agents > ${selectedAgent.name}` : "Agent Command Center"
+    }
+
     switch (activePage) {
-      case "dashboard": return "Overview"
-      case "agents": return selectedAgent ? `Agents > ${selectedAgent.name}` : "Agent Command Center"
+      case "dashboard": return "Codebases Overview"
       case "refactoring": return "Refactoring Metrics"
       case "dependencies": return "Dependency Management"
       case "coverage": return "Test Coverage Analysis"
@@ -467,8 +483,15 @@ const DashComponent: React.FC = () => {
       case "risk": return "Risk & Quality Assurance"
       case "prs": return "Pull Request Insights"
       case "graph": return "Repository Graph"
-      default: return ""
+      default: return "Codebases"
     }
+  }
+
+  const getPageDescription = () => {
+    if (activeSection === "agents") {
+      return "Manage and monitor your AI agents"
+    }
+    return "Live metrics from your codebase"
   }
 
   return (
@@ -482,7 +505,7 @@ const DashComponent: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-slate-900">{getPageTitle()}</h1>
-                <p className="text-sm text-slate-500">Live metrics from your codebase</p>
+                <p className="text-sm text-slate-500">{getPageDescription()}</p>
               </div>
               <div className="flex items-center gap-3">
                 <div className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg shadow-sm text-xs font-medium text-slate-600 flex items-center gap-2">
@@ -499,21 +522,49 @@ const DashComponent: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto max-w-full">
-              <NavTab active={activePage === "dashboard"} onClick={() => handlePageChange("dashboard")} icon={<LayoutGrid size={16} />} label="Overview" />
-              <NavTab active={activePage === "agents"} onClick={() => handlePageChange("agents")} icon={<Bot size={16} />} label="Agents" />
-              <div className="w-px h-6 bg-slate-200 mx-1"></div>
-              <NavTab active={activePage === "refactoring"} onClick={() => handlePageChange("refactoring")} icon={<RefreshCw size={16} />} label="Refactoring" />
-              <NavTab active={activePage === "dependencies"} onClick={() => handlePageChange("dependencies")} icon={<Layers size={16} />} label="Dependencies" />
-              <div className="w-px h-6 bg-slate-200 mx-1"></div>
-              <NavTab active={activePage === "coverage"} onClick={() => handlePageChange("coverage")} icon={<ShieldCheck size={16} />} label="Coverage" />
-              <NavTab active={activePage === "measures"} onClick={() => handlePageChange("measures")} icon={<BarChart3 size={16} />} label="Measures" />
-              <div className="w-px h-6 bg-slate-200 mx-1"></div>
-              <NavTab active={activePage === "risk"} onClick={() => handlePageChange("risk")} icon={<AlertTriangle size={16} />} label="Risk" />
-              <NavTab active={activePage === "prs"} onClick={() => handlePageChange("prs")} icon={<GitCommit size={16} />} label="PRs" />
-              <div className="w-px h-6 bg-slate-200 mx-1"></div>
-              <NavTab active={activePage === "graph"} onClick={() => handlePageChange("graph")} icon={<GitBranch size={16} />} label="Graph" />
+            {/* Main Section Tabs */}
+            <div className="flex items-center gap-2 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit">
+              <button
+                onClick={() => handleSectionChange("codebases")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeSection === "codebases" 
+                    ? "bg-slate-900 text-white shadow-md" 
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <Code2 size={18} />
+                <span>Codebases</span>
+              </button>
+              <button
+                onClick={() => handleSectionChange("agents")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeSection === "agents" 
+                    ? "bg-slate-900 text-white shadow-md" 
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <Bot size={18} />
+                <span>Agents</span>
+              </button>
             </div>
+
+            {/* Sub-navigation for Codebases */}
+            {activeSection === "codebases" && (
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-sm w-fit overflow-x-auto max-w-full">
+                <NavTab active={activePage === "dashboard"} onClick={() => handlePageChange("dashboard")} icon={<LayoutGrid size={16} />} label="Overview" />
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <NavTab active={activePage === "refactoring"} onClick={() => handlePageChange("refactoring")} icon={<RefreshCw size={16} />} label="Refactoring" />
+                <NavTab active={activePage === "dependencies"} onClick={() => handlePageChange("dependencies")} icon={<Layers size={16} />} label="Dependencies" />
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <NavTab active={activePage === "coverage"} onClick={() => handlePageChange("coverage")} icon={<ShieldCheck size={16} />} label="Coverage" />
+                <NavTab active={activePage === "measures"} onClick={() => handlePageChange("measures")} icon={<BarChart3 size={16} />} label="Measures" />
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <NavTab active={activePage === "risk"} onClick={() => handlePageChange("risk")} icon={<AlertTriangle size={16} />} label="Risk" />
+                <NavTab active={activePage === "prs"} onClick={() => handlePageChange("prs")} icon={<GitCommit size={16} />} label="PRs" />
+                <div className="w-px h-6 bg-slate-200 mx-1"></div>
+                <NavTab active={activePage === "graph"} onClick={() => handlePageChange("graph")} icon={<GitBranch size={16} />} label="Graph" />
+              </div>
+            )}
           </div>
 
           {renderContent()}

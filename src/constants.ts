@@ -258,6 +258,56 @@ export const INSIGHTS = [
 
 const generateSparkline = () => Array.from({ length: 24 }, () => ({ value: 20 + Math.random() * 80 }));
 
+const generateEfficiencyData = () => [
+  { date: '7/2', score: 0.65 },
+  { date: '7/4', score: 0.72 },
+  { date: '7/5', score: 0.68 },
+  { date: '7/6', score: 0.78 },
+  { date: '7/6', score: 0.83 },
+];
+
+const generateAgentFlowData = () => [
+  { date: '7/2', intentResolution: 30, inference: 25, toolUsage: 20, waiting: 25 },
+  { date: '7/3', intentResolution: 35, inference: 20, toolUsage: 25, waiting: 20 },
+  { date: '7/4', intentResolution: 28, inference: 30, toolUsage: 22, waiting: 20 },
+  { date: '7/5', intentResolution: 32, inference: 28, toolUsage: 20, waiting: 20 },
+  { date: '7/6', intentResolution: 30, inference: 25, toolUsage: 25, waiting: 20 },
+  { date: '7/8', intentResolution: 35, inference: 22, toolUsage: 23, waiting: 20 },
+];
+
+const generateToolQualityData = () => [
+  { date: '7/2', rating: 3.8 },
+  { date: '7/3', rating: 4.0 },
+  { date: '7/4', rating: 4.1 },
+  { date: '7/5', rating: 4.3 },
+  { date: '7/6', rating: 4.4 },
+  { date: '7/8', rating: 4.7 },
+];
+
+const generateToolErrorData = () => [
+  { date: '7/2', errorRate: 8 },
+  { date: '7/3', errorRate: 12 },
+  { date: '7/5', errorRate: 6 },
+  { date: '7/5', errorRate: 9 },
+  { date: '7/8', errorRate: 4.6 },
+];
+
+const generateActionCompletionData = () => [
+  { name: 'Successful', value: 85 },
+  { name: 'Retry Attempt', value: 8 },
+  { name: 'Aborted', value: 4 },
+  { name: 'Incomplete', value: 3 },
+];
+
+const generateActionAdvancementData = () => [
+  { date: '7/2', advancement: 72 },
+  { date: '7/3', advancement: 75 },
+  { date: '7/4', advancement: 73 },
+  { date: '7/5', advancement: 76 },
+  { date: '7/6', advancement: 78 },
+  { date: '7/8', advancement: 79 },
+];
+
 export const AGENTS_OBSERVABILITY_DATA = [
   { 
     id: 'orbital',
@@ -280,7 +330,26 @@ export const AGENTS_OBSERVABILITY_DATA = [
       { type: 'tool', title: "Delegation", detail: "Spawned: gemini_cli (Tests), claude_code (Review)", color: "bg-slate-700" },
       { type: 'output', title: "Workflow Complete", detail: "All child tasks finished successfully.", color: "bg-green-500" },
     ],
-    groundedness: 0.98
+    groundedness: 0.98,
+    metrics: {
+      efficiencyScore: 0.83,
+      efficiencyData: generateEfficiencyData(),
+      agentFlowData: generateAgentFlowData(),
+      toolQuality: 4.7,
+      toolQualityData: generateToolQualityData(),
+      toolErrorRate: 4.6,
+      toolErrorData: generateToolErrorData(),
+      actionCompletion: 95,
+      actionCompletionData: generateActionCompletionData(),
+      actionAverage: '±$$',
+      actionAdvancement: 79,
+      actionAdvancementData: generateActionAdvancementData(),
+      reasoningCoherence: 8.3,
+      instructionAdherence: 87,
+      instructionAverage: 79,
+      userIntentChange: 11,
+      userIntentScore: 9.1,
+    }
   },
   { 
     id: 'gemini',
@@ -303,7 +372,26 @@ export const AGENTS_OBSERVABILITY_DATA = [
       { type: 'tool', title: "File Access", detail: "read_file src/utils/currency.ts", color: "bg-slate-700" },
       { type: 'output', title: "Code Generated", detail: "Created 12 test cases in PaymentGateway.test.tsx", color: "bg-green-500" },
     ],
-    groundedness: 0.85
+    groundedness: 0.85,
+    metrics: {
+      efficiencyScore: 0.78,
+      efficiencyData: generateEfficiencyData(),
+      agentFlowData: generateAgentFlowData(),
+      toolQuality: 4.3,
+      toolQualityData: generateToolQualityData(),
+      toolErrorRate: 6.2,
+      toolErrorData: generateToolErrorData(),
+      actionCompletion: 92,
+      actionCompletionData: generateActionCompletionData(),
+      actionAverage: '±$$',
+      actionAdvancement: 82,
+      actionAdvancementData: generateActionAdvancementData(),
+      reasoningCoherence: 7.8,
+      instructionAdherence: 83,
+      instructionAverage: 79,
+      userIntentChange: 15,
+      userIntentScore: 8.5,
+    }
   },
   { 
     id: 'claude',
@@ -326,7 +414,26 @@ export const AGENTS_OBSERVABILITY_DATA = [
       { type: 'tool', title: "AST Parsing", detail: "parse_ast src/db/query.ts", color: "bg-slate-700" },
       { type: 'output', title: "Report Generated", detail: "Found 0 critical, 2 low severity issues.", color: "bg-green-500" },
     ],
-    groundedness: 0.99
+    groundedness: 0.99,
+    metrics: {
+      efficiencyScore: 0.91,
+      efficiencyData: generateEfficiencyData(),
+      agentFlowData: generateAgentFlowData(),
+      toolQuality: 4.8,
+      toolQualityData: generateToolQualityData(),
+      toolErrorRate: 2.1,
+      toolErrorData: generateToolErrorData(),
+      actionCompletion: 98,
+      actionCompletionData: generateActionCompletionData(),
+      actionAverage: '±$$',
+      actionAdvancement: 92,
+      actionAdvancementData: generateActionAdvancementData(),
+      reasoningCoherence: 9.2,
+      instructionAdherence: 94,
+      instructionAverage: 79,
+      userIntentChange: 7,
+      userIntentScore: 9.5,
+    }
   },
   { 
     id: 'goose',
@@ -349,6 +456,25 @@ export const AGENTS_OBSERVABILITY_DATA = [
       { type: 'tool', title: "Shell Exec", detail: "aws logs put-retention-policy", color: "bg-slate-700" },
       { type: 'output', title: "Action Failed", detail: "PermissionDenied: IAM role missing policy.", color: "bg-red-500" },
     ],
-    groundedness: 0.60
+    groundedness: 0.60,
+    metrics: {
+      efficiencyScore: 0.62,
+      efficiencyData: generateEfficiencyData(),
+      agentFlowData: generateAgentFlowData(),
+      toolQuality: 3.5,
+      toolQualityData: generateToolQualityData(),
+      toolErrorRate: 18.5,
+      toolErrorData: generateToolErrorData(),
+      actionCompletion: 72,
+      actionCompletionData: generateActionCompletionData(),
+      actionAverage: '±$$',
+      actionAdvancement: 65,
+      actionAdvancementData: generateActionAdvancementData(),
+      reasoningCoherence: 5.8,
+      instructionAdherence: 68,
+      instructionAverage: 79,
+      userIntentChange: 24,
+      userIntentScore: 6.2,
+    }
   }
 ];

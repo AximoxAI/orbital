@@ -2,12 +2,24 @@ import React, { useState } from 'react';
 import { 
   Bot, Clock, Zap, CheckCircle2, 
   Terminal, Globe, ArrowRight, LayoutList, LayoutGrid,
-  AlertTriangle 
+  AlertTriangle, TrendingUp, Activity
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AgentSparkline, LatencyBreakdownChart, TokenDonutChart, CostBurnChart } from './AgentCharts';
+import { 
+  AgentSparkline, 
+  LatencyBreakdownChart, 
+  TokenDonutChart, 
+  CostBurnChart,
+  EfficiencyChart,
+  AgentFlowChart,
+  ToolSelectionQualityChart,
+  ToolErrorRateChart,
+  ActionCompletionDonut,
+  ActionAdvancementChart,
+  ProgressBar
+} from './AgentCharts';
 import { AGENTS_OBSERVABILITY_DATA } from '@/constants';
 
 const TraceView = ({ trace }: { trace: any[] }) => (
@@ -152,35 +164,218 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
       </div>
 
       {activeTab === 'observability' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="lg:col-span-2 p-6 border-slate-200 shadow-sm">
-            <h3 className="font-semibold text-slate-900 mb-6 flex items-center gap-2">
-              <Terminal size={18} className="text-slate-500" /> Live Execution Trace
-            </h3>
-            <TraceView trace={agent.trace} />
-          </Card>
+        <>
+          {/* OLD COMPONENTS - Live Execution Trace, Latency, Groundedness */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="lg:col-span-2 p-6 border-slate-200 shadow-sm">
+              <h3 className="font-semibold text-slate-900 mb-6 flex items-center gap-2">
+                <Terminal size={18} className="text-slate-500" /> Live Execution Trace
+              </h3>
+              <TraceView trace={agent.trace} />
+            </Card>
 
-          <div className="space-y-6">
-             <Card className="p-6 border-slate-200 shadow-sm">
-               <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                 <Clock size={18} className="text-slate-500" /> Latency Breakdown
-               </h3>
-               <LatencyBreakdownChart data={agent.latencyBreakdown} />
-             </Card>
+            <div className="space-y-6">
+              <Card className="p-6 border-slate-200 shadow-sm">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <Clock size={18} className="text-slate-500" /> Latency Breakdown
+                </h3>
+                <LatencyBreakdownChart data={agent.latencyBreakdown} />
+              </Card>
 
-             <Card className="p-6 border-slate-200 shadow-sm">
-               <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                 <CheckCircle2 size={18} className="text-slate-500" /> Groundedness Score
-               </h3>
-               <div className="flex items-center justify-center py-6 relative">
-                 <div className="text-4xl font-bold text-slate-800">{agent.groundedness}</div>
-                 <div className="absolute w-full h-full border-4 border-slate-100 rounded-full opacity-20" />
-                 
-               </div>
-               <p className="text-center text-xs text-slate-500">Fidelity to source context</p>
-             </Card>
+              <Card className="p-6 border-slate-200 shadow-sm">
+                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                  <CheckCircle2 size={18} className="text-slate-500" /> Groundedness Score
+                </h3>
+                <div className="flex items-center justify-center py-6 relative">
+                  <div className="text-4xl font-bold text-slate-800">{agent.groundedness}</div>
+                  <div className="absolute w-full h-full border-4 border-slate-100 rounded-full opacity-20" />
+                </div>
+                <p className="text-center text-xs text-slate-500">Fidelity to source context</p>
+              </Card>
+            </div>
           </div>
-        </div>
+
+          {/* NEW METRICS START HERE */}
+          <div className="border-t-2 border-slate-200 pt-8 mt-8">
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Advanced Metrics</h2>
+            
+            {/* Core Agent Metrics */}
+            <div className="mb-8">
+              <h3 className="font-semibold text-lg text-slate-900 mb-4">Core Agent Metrics</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1">Efficiency Score</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">{agent.metrics.efficiencyScore}</span>
+                        <TrendingUp size={16} className="text-emerald-500" />
+                      </div>
+                    </div>
+                  </div>
+                  <EfficiencyChart data={agent.metrics.efficiencyData} />
+                </Card>
+
+                <Card className="lg:col-span-2 p-6 border-slate-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <Activity size={18} className="text-slate-500" /> Agent Flow
+                  </h3>
+                  <div className="flex items-center gap-6 mb-2 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                      <span className="text-slate-600">Intent Resolution</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                      <span className="text-slate-600">Inference & Planning</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                      <span className="text-slate-600">Tool Usage</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-slate-400"></div>
+                      <span className="text-slate-600">Waiting for filancing</span>
+                    </div>
+                  </div>
+                  <AgentFlowChart data={agent.metrics.agentFlowData} />
+                </Card>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              <Card className="p-6 border-slate-200 shadow-sm">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="text-slate-500 text-sm font-medium mb-1">Tool Selection Quality</h3>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-slate-600 text-sm">Avg Rating</span>
+                    </div>
+                    <span className="text-3xl font-bold text-slate-900">{agent.metrics.toolQuality}</span>
+                    <span className="text-slate-400 text-lg">/5</span>
+                  </div>
+                </div>
+                <ToolSelectionQualityChart data={agent.metrics.toolQualityData} />
+              </Card>
+            </div>
+
+            {/* Tool & Action Metrics */}
+            <div className="mb-8">
+              <h3 className="font-semibold text-lg text-slate-900 mb-4">Tool & Action Metrics</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-slate-900 font-semibold mb-1">Tool Error Rate</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">{agent.metrics.toolErrorRate}%</span>
+                        <ArrowRight size={16} className="text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+                  <ToolErrorRateChart data={agent.metrics.toolErrorData} />
+                </Card>
+
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h3 className="text-slate-900 font-semibold mb-1">Action Completion</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">{agent.metrics.actionCompletion}%</span>
+                        <TrendingUp size={16} className="text-emerald-500" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <ActionCompletionDonut data={agent.metrics.actionCompletionData} />
+                    <div className="flex flex-col gap-2 mt-4 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                          <span className="text-slate-600">Successful</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <span className="text-slate-600">Retry Attempt</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                          <span className="text-slate-600">Aborted</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                          <span className="text-slate-600">Incomplete</span>
+                        </div>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-500 text-center mt-2">Average: {agent.metrics.actionAverage}</p>
+                  </div>
+                </Card>
+
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h3 className="text-slate-900 font-semibold mb-1">Action Advancement</h3>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-bold text-slate-900">{agent.metrics.actionAdvancement}%</span>
+                        <ArrowRight size={16} className="text-slate-400" />
+                      </div>
+                    </div>
+                  </div>
+                  <ActionAdvancementChart data={agent.metrics.actionAdvancementData} />
+                </Card>
+              </div>
+            </div>
+
+            {/* Cognitive & Behavioral Metrics */}
+            <div className="mb-8">
+              <h3 className="font-semibold text-lg text-slate-900 mb-4">Cognitive & Behavioral Metrics</h3>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-3">Reasoning Coherence</h3>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-3xl font-bold text-slate-900">{agent.metrics.reasoningCoherence}</span>
+                    <span className="text-slate-400 text-lg">/10</span>
+                  </div>
+                  <ProgressBar value={agent.metrics.reasoningCoherence} max={10} color="#3b82f6" bgColor="#e0e7ff" />
+                  <p className="text-xs text-slate-500 mt-2">Average state of progressions</p>
+                </Card>
+
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-3">Instruction Adherence</h3>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-3xl font-bold text-slate-900">{agent.metrics.instructionAdherence}%</span>
+                  </div>
+                  <ProgressBar value={agent.metrics.instructionAdherence} max={100} color="#06b6d4" bgColor="#cffafe" />
+                  <p className="text-xs text-slate-500 mt-2">Average steep of newagents: <span className="font-semibold">{agent.metrics.instructionAverage}%</span></p>
+                </Card>
+
+                <Card className="p-6 border-slate-200 shadow-sm">
+                  <h3 className="font-semibold text-slate-900 mb-3">User IntentChange</h3>
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-3xl font-bold text-slate-900">{agent.metrics.userIntentChange}%</span>
+                    <Badge className="bg-blue-500 text-white text-xs px-2 py-0.5">
+                      5m
+                    </Badge>
+                  </div>
+                  <ProgressBar value={agent.metrics.userIntentChange} max={100} color="#f59e0b" bgColor="#fef3c7" />
+                  <p className="text-xs text-slate-500 mt-2">Changed user goals. <span className="font-semibold">{agent.metrics.userIntentChange}%</span></p>
+                  <div className="mt-3 flex items-center justify-end">
+                    <Badge className="bg-blue-500 text-white text-sm px-3 py-1">
+                      {agent.metrics.userIntentScore}/10
+                    </Badge>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        </>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            <Card className="p-6 border-slate-200 shadow-sm">
