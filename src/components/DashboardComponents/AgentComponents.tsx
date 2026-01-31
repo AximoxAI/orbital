@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   Bot, Clock, Zap, CheckCircle2, 
   Terminal, Globe, ArrowRight, LayoutList, LayoutGrid,
-  AlertTriangle, TrendingUp, Activity
+  AlertTriangle, TrendingUp, Activity, HelpCircle
 } from 'lucide-react';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,29 @@ import {
   ProgressBar
 } from './AgentCharts';
 import { AGENTS_OBSERVABILITY_DATA } from '@/constants';
+
+const Tooltip = ({ content }: { content: string }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  return (
+    <div className="relative inline-block">
+      <button
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="ml-1 text-slate-400 hover:text-slate-600 transition-colors"
+        type="button"
+      >
+        <HelpCircle size={14} />
+      </button>
+      {isVisible && (
+        <div className="absolute left-0 top-6 z-50 w-64 p-3 bg-slate-900 text-white text-xs rounded-lg shadow-xl border border-slate-700 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute -top-1 left-4 w-2 h-2 bg-slate-900 border-l border-t border-slate-700 transform rotate-45"></div>
+          {content}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const TraceView = ({ trace }: { trace: any[] }) => (
   <div className="relative border-l-2 border-slate-200 ml-4 space-y-8 py-2">
@@ -169,7 +192,9 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <Card className="lg:col-span-2 p-6 border-slate-200 shadow-sm">
               <h3 className="font-semibold text-slate-900 mb-6 flex items-center gap-2">
-                <Terminal size={18} className="text-slate-500" /> Live Execution Trace
+                <Terminal size={18} className="text-slate-500" /> 
+                Live Execution Trace
+                <Tooltip content="Real-time visualization of agent execution steps including prompts, reasoning, tool usage, and outputs. Shows the complete workflow from task receipt to completion." />
               </h3>
               <TraceView trace={agent.trace} />
             </Card>
@@ -177,14 +202,18 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
             <div className="space-y-6">
               <Card className="p-6 border-slate-200 shadow-sm">
                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Clock size={18} className="text-slate-500" /> Latency Breakdown
+                  <Clock size={18} className="text-slate-500" /> 
+                  Latency Breakdown
+                  <Tooltip content="Time distribution across different execution phases. Calculated by measuring milliseconds spent in context retrieval, model inference, and tool delegation stages." />
                 </h3>
                 <LatencyBreakdownChart data={agent.latencyBreakdown} />
               </Card>
 
               <Card className="p-6 border-slate-200 shadow-sm">
                 <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <CheckCircle2 size={18} className="text-slate-500" /> Groundedness Score
+                  <CheckCircle2 size={18} className="text-slate-500" /> 
+                  Groundedness Score
+                  <Tooltip content="Measures how well agent responses align with source context (0-1 scale). Calculated using semantic similarity between generated output and retrieved context documents." />
                 </h3>
                 <div className="flex items-center justify-center py-6 relative">
                   <div className="text-4xl font-bold text-slate-800">{agent.groundedness}</div>
@@ -206,7 +235,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 <Card className="p-6 border-slate-200 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-slate-500 text-sm font-medium mb-1">Efficiency Score</h3>
+                      <h3 className="text-slate-500 text-sm font-medium mb-1 flex items-center">
+                        Efficiency Score
+                        <Tooltip content="Overall agent performance metric (0-1 scale). Calculated as: (Successful Tasks × Avg Speed) / (Total Tasks × Cost). Higher scores indicate better resource utilization." />
+                      </h3>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-slate-900">{agent.metrics.efficiencyScore}</span>
                         <TrendingUp size={16} className="text-emerald-500" />
@@ -218,7 +250,9 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
 
                 <Card className="lg:col-span-2 p-6 border-slate-200 shadow-sm">
                   <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                    <Activity size={18} className="text-slate-500" /> Agent Flow
+                    <Activity size={18} className="text-slate-500" /> 
+                    Agent Flow
+                    <Tooltip content="100% stacked area chart showing time distribution across agent workflow stages. Calculated by tracking execution time in each phase: intent resolution, planning/inference, tool usage, and waiting states." />
                   </h3>
                   <div className="flex items-center gap-6 mb-2 text-xs">
                     <div className="flex items-center gap-2">
@@ -247,7 +281,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
               <Card className="p-6 border-slate-200 shadow-sm">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-slate-500 text-sm font-medium mb-1">Tool Selection Quality</h3>
+                    <h3 className="text-slate-500 text-sm font-medium mb-1 flex items-center">
+                      Tool Selection Quality
+                      <Tooltip content="User rating of agent's tool choices (1-5 scale). Calculated from feedback on whether the agent selected appropriate tools for each task. Average of all tool selection decisions over time." />
+                    </h3>
                     <div className="flex items-baseline gap-2">
                       <span className="text-slate-600 text-sm">Avg Rating</span>
                     </div>
@@ -266,7 +303,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 <Card className="p-6 border-slate-200 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-slate-900 font-semibold mb-1">Tool Error Rate</h3>
+                      <h3 className="text-slate-900 font-semibold mb-1 flex items-center">
+                        Tool Error Rate
+                        <Tooltip content="Percentage of tool executions that failed or returned errors. Calculated as: (Failed Tool Calls / Total Tool Calls) × 100. Includes timeouts, invalid parameters, and execution failures." />
+                      </h3>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-slate-900">{agent.metrics.toolErrorRate}%</span>
                         <ArrowRight size={16} className="text-slate-400" />
@@ -279,7 +319,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 <Card className="p-6 border-slate-200 shadow-sm">
                   <div className="flex justify-between items-start mb-2">
                     <div>
-                      <h3 className="text-slate-900 font-semibold mb-1">Action Completion</h3>
+                      <h3 className="text-slate-900 font-semibold mb-1 flex items-center">
+                        Action Completion
+                        <Tooltip content="Distribution of action outcomes. Calculated by categorizing each action: Successful (completed fully), Retry Attempt (required re-execution), Aborted (manually stopped), Incomplete (timed out or partial)." />
+                      </h3>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-slate-900">{agent.metrics.actionCompletion}%</span>
                         <TrendingUp size={16} className="text-emerald-500" />
@@ -321,7 +364,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 <Card className="p-6 border-slate-200 shadow-sm">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-slate-900 font-semibold mb-1">Action Advancement</h3>
+                      <h3 className="text-slate-900 font-semibold mb-1 flex items-center">
+                        Action Advancement
+                        <Tooltip content="Percentage of actions that moved tasks toward completion. Calculated as: (Actions with Forward Progress / Total Actions) × 100. Measures productive vs. redundant work." />
+                      </h3>
                       <div className="flex items-baseline gap-2">
                         <span className="text-3xl font-bold text-slate-900">{agent.metrics.actionAdvancement}%</span>
                         <ArrowRight size={16} className="text-slate-400" />
@@ -338,7 +384,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
               <h3 className="font-semibold text-lg text-slate-900 mb-4">Cognitive & Behavioral Metrics</h3>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <Card className="p-6 border-slate-200 shadow-sm">
-                  <h3 className="font-semibold text-slate-900 mb-3">Reasoning Coherence</h3>
+                  <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+                    Reasoning Coherence
+                    <Tooltip content="Logical consistency in agent's thought process (0-10 scale). Calculated by analyzing reasoning chains for contradictions, circular logic, and premise-conclusion alignment using NLP coherence models." />
+                  </h3>
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-3xl font-bold text-slate-900">{agent.metrics.reasoningCoherence}</span>
                     <span className="text-slate-400 text-lg">/10</span>
@@ -348,7 +397,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 </Card>
 
                 <Card className="p-6 border-slate-200 shadow-sm">
-                  <h3 className="font-semibold text-slate-900 mb-3">Instruction Adherence</h3>
+                  <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+                    Instruction Adherence
+                    <Tooltip content="How closely agent follows given instructions (0-100%). Calculated by comparing agent actions against instruction requirements using semantic matching. Measures deviation from specified constraints and guidelines." />
+                  </h3>
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-3xl font-bold text-slate-900">{agent.metrics.instructionAdherence}%</span>
                   </div>
@@ -357,7 +409,10 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
                 </Card>
 
                 <Card className="p-6 border-slate-200 shadow-sm">
-                  <h3 className="font-semibold text-slate-900 mb-3">User IntentChange</h3>
+                  <h3 className="font-semibold text-slate-900 mb-3 flex items-center">
+                    User IntentChange
+                    <Tooltip content="Frequency of user goal modifications during interaction (0-100%). Calculated as: (Conversations with Intent Changes / Total Conversations) × 100. Higher values may indicate unclear initial requests or agent misunderstanding." />
+                  </h3>
                   <div className="flex items-baseline gap-2 mb-3">
                     <span className="text-3xl font-bold text-slate-900">{agent.metrics.userIntentChange}%</span>
                     <Badge className="bg-blue-500 text-white text-xs px-2 py-0.5">
@@ -379,18 +434,27 @@ export const AgentDetailView = ({ agent, onBack }: { agent: any, onBack: () => v
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
            <Card className="p-6 border-slate-200 shadow-sm">
-             <h3 className="font-semibold text-slate-900 mb-4">Token Consumption</h3>
+             <h3 className="font-semibold text-slate-900 mb-4 flex items-center">
+               Token Consumption
+               <Tooltip content="Breakdown of token usage across input prompts, output generation, and cached context. Calculated by tracking tokens used in each LLM API call, categorized by type." />
+             </h3>
              <TokenDonutChart data={agent.tokens} />
            </Card>
 
            <Card className="p-6 col-span-2 border-slate-200 shadow-sm">
-             <h3 className="font-semibold text-slate-900 mb-4">Cost Burn Rate (7d)</h3>
+             <h3 className="font-semibold text-slate-900 mb-4 flex items-center">
+               Cost Burn Rate (7d)
+               <Tooltip content="Daily operational costs over the past week. Calculated by summing all token costs, API calls, and compute resources used per day. Helps identify cost spikes and usage patterns." />
+             </h3>
              <CostBurnChart data={agent.burn} />
            </Card>
 
            <Card className="p-6 bg-slate-900 text-white col-span-3 flex items-center justify-between shadow-lg">
              <div>
-               <h3 className="font-medium text-slate-300">Efficiency Metric (Cost-per-Success)</h3>
+               <h3 className="font-medium text-slate-300 flex items-center">
+                 Efficiency Metric (Cost-per-Success)
+                 <Tooltip content="Average cost to complete one successful task. Calculated as: Total Daily Cost / Number of Successful Completions. Lower values indicate better cost efficiency." />
+               </h3>
                <p className="text-3xl font-bold text-white mt-1">${(agent.cost / agent.successRate).toFixed(3)}</p>
              </div>
              <div className="text-right">
